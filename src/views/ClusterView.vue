@@ -1,0 +1,242 @@
+<template>
+  <div class="py-12 bg-background">
+    <div class="container-width">
+      <!-- Breadcrumbs -->
+      <div class="mb-6">
+        <Breadcrumbs
+          :categoryPath="(selectedProduct as any)?.categoryPath || []"
+          :language="languageStore.language"
+          :configuration="configuration"
+          :showCurrent="true"
+        />
+      </div>
+
+      <!-- Main Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <!-- Gallery -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <ProductGallery :images="displayImages" />
+        </div>
+
+        <!-- Info -->
+        <div class="flex flex-col">
+          <div class="mb-6">
+            <ClusterInfo
+              :user="authStore.user"
+              :clusterId="clusterId"
+              :graphqlClient="graphqlClient"
+              :onClusterLoaded="handleClusterLoaded"
+              :language="languageStore.language"
+              :configuration="configuration"
+            />
+
+            <template v-if="cluster">
+              <ProductPrice
+                :price="(selectedProduct?.price ?? (cluster as any).defaultProduct?.price)"
+                :includeTax="priceStore.includeTax"
+              />
+
+              <ProductBulkPrices
+                :product="selectedProduct || (cluster as any).defaultProduct"
+                :includeTax="priceStore.includeTax"
+                :language="languageStore.language"
+              />
+
+              <div class="mt-6">
+                <ProductShortDescription
+                  :product="selectedProduct || (cluster as any).defaultProduct"
+                  :language="languageStore.language"
+                />
+              </div>
+
+              <div v-if="(selectedProduct as any)?.inventory" class="mt-4">
+                <ItemStock
+                  :inventory="(selectedProduct as any).inventory"
+                  :showAvailability="false"
+                />
+              </div>
+
+              <!-- ClusterConfigurator -->
+              <div
+                v-if="(cluster as any).products?.length > 1 && (cluster as any).config"
+                class="mt-6 mb-6 pb-6 border-b border-gray-200"
+              >
+                <ClusterConfigurator
+                  :clusterId="clusterId"
+                  :products="(cluster as any).products"
+                  :config="(cluster as any).config"
+                  :defaultProduct="(cluster as any).defaultProduct"
+                  :onConfigurationChange="(product: any) => { selectedProduct = product }"
+                />
+              </div>
+
+              <!-- ClusterOptions -->
+              <div v-if="(cluster as any).options?.length > 0" class="mb-6">
+                <ClusterOptions
+                  :clusterId="clusterId"
+                  :options="(cluster as any).options"
+                  :onOptionSelect="handleOptionSelect"
+                  :showErrors="showClusterErrors"
+                />
+              </div>
+            </template>
+
+            <div class="flex items-center gap-2">
+              <AddToCart
+                :graphqlClient="graphqlClient"
+                :user="authStore.user"
+                :product="selectedProduct"
+                :cluster="(cluster as any)"
+                :beforeAddToCart="validateClusterOptions"
+                :childItems="Object.values(selectedOptionProducts).map((p: any) => p.productId)"
+                :cartId="cartStore.cartId || undefined"
+                :language="languageStore.language"
+                :companyId="companyStore.companyId || undefined"
+                :createCart="true"
+                :showModal="true"
+                :configuration="configuration"
+                :onCartCreated="(cart: any) => cartStore.setCart(cart)"
+                :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
+                :onProceedToCheckout="() => router.push('/checkout')"
+                :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+              />
+              <AddToFavorite
+                v-if="authStore.user"
+                :graphqlClient="graphqlClient"
+                :user="authStore.user"
+                :clusterId="clusterId"
+                :language="languageStore.language"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Tabs -->
+      <ProductTabs
+        v-if="displayProduct"
+        :product="displayProduct"
+        :language="languageStore.language"
+        :includeTax="priceStore.includeTax"
+        class="pb-8"
+      />
+
+      <!-- 5 ProductSliders -->
+      <ProductSlider
+        v-for="crossType in crossUpsellSliders"
+        :key="crossType"
+        :graphqlClient="graphqlClient"
+        :crossUpsellTypes="[crossType]"
+        :clusterId="clusterId"
+        :language="languageStore.language"
+        :includeTax="priceStore.includeTax"
+        :user="authStore.user"
+        :companyId="companyStore.companyId || undefined"
+        :cartId="cartStore.cartId || undefined"
+        :configuration="configuration"
+        :showAvailability="false"
+        :showStock="true"
+        :showModal="true"
+        :createCart="true"
+        :onCartCreated="(cart: any) => cartStore.setCart(cart)"
+        :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
+        :onProceedToCheckout="() => router.push('/checkout')"
+        :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+        :onProductClick="(p: any) => router.push(configuration.urls.getProductUrl(p, languageStore.language))"
+        :onClusterClick="(c: any) => router.push(configuration.urls.getClusterUrl(c, languageStore.language))"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Enums } from 'propeller-sdk-v2'
+import { useAuthStore } from '@/stores/auth'
+import { useCartStore } from '@/stores/cart'
+import { useCompanyStore } from '@/stores/company'
+import { usePriceStore } from '@/stores/price'
+import { useLanguageStore } from '@/stores/language'
+import { graphqlClient } from '@/lib/api'
+import { configuration } from '@/lib/config'
+
+import Breadcrumbs from '@/components/propeller/Breadcrumbs.vue'
+import ProductGallery from '@/components/propeller/ProductGallery.vue'
+import ClusterInfo from '@/components/propeller/ClusterInfo.vue'
+import ClusterOptions from '@/components/propeller/ClusterOptions.vue'
+import ClusterConfigurator from '@/components/propeller/ClusterConfigurator.vue'
+import ProductPrice from '@/components/propeller/ProductPrice.vue'
+import ProductBulkPrices from '@/components/propeller/ProductBulkPrices.vue'
+import ProductShortDescription from '@/components/propeller/ProductShortDescription.vue'
+import ItemStock from '@/components/propeller/ItemStock.vue'
+import ProductTabs from '@/components/propeller/ProductTabs.vue'
+import ProductSlider from '@/components/propeller/ProductSlider.vue'
+import AddToCart from '@/components/propeller/AddToCart.vue'
+import AddToFavorite from '@/components/propeller/AddToFavorite.vue'
+
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+const cartStore = useCartStore()
+const companyStore = useCompanyStore()
+const priceStore = usePriceStore()
+const languageStore = useLanguageStore()
+
+const clusterId = computed(() => parseInt(route.params.clusterId as string))
+const cluster = ref<any>(null)
+const selectedProduct = ref<any>(null)
+const selectedOptionProducts = ref<Record<number, any>>({})
+const showClusterErrors = ref(false)
+
+const crossUpsellSliders = [
+  Enums.CrossupsellType.ACCESSORIES,
+  Enums.CrossupsellType.ALTERNATIVES,
+  Enums.CrossupsellType.RELATED,
+  Enums.CrossupsellType.OPTIONS,
+  Enums.CrossupsellType.PARTS,
+]
+
+const displayProduct = computed(() => selectedProduct.value || cluster.value?.defaultProduct || null)
+
+const displayImages = computed(() =>
+  displayProduct.value?.media?.images?.items?.flatMap(
+    (img: any) => img.imageVariants?.map((v: any) => v.url).filter(Boolean) ?? []
+  ) ?? []
+)
+
+function handleClusterLoaded(loadedCluster: any) {
+  cluster.value = loadedCluster
+  if (loadedCluster.defaultProduct) {
+    selectedProduct.value = loadedCluster.defaultProduct
+  }
+}
+
+function handleOptionSelect(product: any) {
+  const option = cluster.value?.options?.find((opt: any) =>
+    opt.products?.some((p: any) => p.productId === product.productId)
+  )
+  if (option) {
+    selectedOptionProducts.value = { ...selectedOptionProducts.value, [option.id]: product }
+  }
+}
+
+function validateClusterOptions(): boolean {
+  if (!cluster.value?.options) return true
+  const hasUnfilled = cluster.value.options.some(
+    (opt: any) => opt.hidden !== 'Y' && opt.isRequired === 'Y' && !(opt.id in selectedOptionProducts.value)
+  )
+  if (hasUnfilled) {
+    showClusterErrors.value = true
+    return false
+  }
+  return true
+}
+
+watch(() => route.params.clusterId, () => {
+  cluster.value = null
+  selectedProduct.value = null
+  selectedOptionProducts.value = {}
+  showClusterErrors.value = false
+})
+</script>
