@@ -250,7 +250,7 @@
                 @click="
                   async (event) => {
                     closeModal();
-                    if (onRequestQuoteClick && cart.value) onRequestQuoteClick(cart.value);
+                    if (onRequestQuoteClick && cart) onRequestQuoteClick(cart);
                   }
                 "
               >
