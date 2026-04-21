@@ -82,7 +82,10 @@ interface CartCarriersState {
   handleSelect: (carrier: CartCarrier) => void;
 }
 
-const props = defineProps<CartCarriersProps>();
+const props = withDefaults(defineProps<CartCarriersProps>(), {
+  showCarrierLogo: true,
+  showPrice: true,
+});
 const selectedName = ref<CartCarriersState['selectedName']>('');
 
 const containerClass = computed(() => {

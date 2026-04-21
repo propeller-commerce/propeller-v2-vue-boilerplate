@@ -237,7 +237,12 @@ interface UserDetailsState {
   shouldShowDeliveryAddress: () => boolean;
 }
 
-const props = defineProps<UserDetailsProps>();
+const props = withDefaults(defineProps<UserDetailsProps>(), {
+  showCompanyInfo: true,
+  listAllContactCompanies: false,
+  showDefaultInvoiceAddress: true,
+  showDefaultDeliveryAddress: false,
+});
 const isMounted = ref<UserDetailsState['isMounted']>(false);
 
 onMounted(() => {

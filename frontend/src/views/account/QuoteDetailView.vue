@@ -132,14 +132,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, markRaw } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import { Base64File, Order, OrderService } from 'propeller-sdk-v2'
+import type { Order } from 'propeller-sdk-v2'
+import { useOrders } from '@/composables/useOrders'
+import type { AnyUser } from '@/shared/utils/userIdentity'
 import OrderSummary from '@/components/propeller/OrderSummary.vue'
 import OrderItemCard from '@/components/propeller/OrderItemCard.vue'
 import QuoteActions from '@/components/propeller/QuoteActions.vue'
@@ -162,9 +164,12 @@ const languageStore = useLanguageStore()
 
 const quoteId = route.params.id as string
 
-const quote = ref<any>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { fetchOrder, currentOrder: quote, orderLoading: loading, error, downloadQuotePdf } = useOrders({
+  graphqlClient,
+  user: computed(() => authStore.user as AnyUser),
+  language: computed(() => languageStore.language),
+  configuration,
+})
 
 const parentItems = computed(() => {
   const allProducts = (quote.value?.items || []).filter((i: any) => i.class === 'product' && i.isBonus === 'N')
@@ -195,61 +200,11 @@ function handleAfterAccept(acceptedQuote: any) {
 }
 
 async function handleDownloadPDF() {
-  try {
-    const service = new OrderService(graphqlClient)
-    const pdfResponse = await service.getQuotePDF(Number(quoteId))
-    if (!pdfResponse) { alert('Failed to download PDF: No response'); return }
-
-    let byteArray: Uint8Array
-    let fileName = `quote-${quoteId}.pdf`
-    let contentType = 'application/pdf'
-
-    if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {
-      const pdf = pdfResponse as Base64File
-      const chars = atob(pdf.base64)
-      byteArray = new Uint8Array(chars.length)
-      for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i)
-      if (pdf.fileName) fileName = pdf.fileName
-      if (pdf.contentType) contentType = pdf.contentType
-    } else if (typeof pdfResponse === 'string') {
-      const chars = atob(pdfResponse)
-      byteArray = new Uint8Array(chars.length)
-      for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i)
-    } else {
-      alert('Failed to download PDF: Invalid response'); return
-    }
-
-    const blob = new Blob([byteArray], { type: contentType })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-  } catch (e) {
-    console.error('Error downloading PDF:', e)
-    alert('Failed to download PDF. Please try again.')
-  }
+  await downloadQuotePdf(Number(quoteId))
 }
 
 onMounted(async () => {
-  try {
-    const service = new OrderService(graphqlClient)
-    const result = await service.getOrder({
-      orderId: parseInt(quoteId),
-      language: languageStore.language,
-      imageSearchFilters: configuration.imageSearchFiltersGrid,
-      imageVariantFilters: configuration.imageVariantFiltersSmall,
-    })
-    if (!result) { error.value = 'Quote not found'; return }
-    quote.value = markRaw(result)
-  } catch (e) {
-    console.error('Failed to load quote', e)
-    error.value = 'Failed to load quote details'
-  } finally {
-    loading.value = false
-  }
+  await fetchOrder(parseInt(quoteId))
+  if (!quote.value) error.value = 'Quote not found'
 })
 </script>

@@ -769,7 +769,10 @@ import type { RegisterContactInput, RegisterCustomerInput } from '../../composab
   */
  countries?: Record<string, string>;
 }
-const props = defineProps<RegisterFormProps>();
+const props = withDefaults(defineProps<RegisterFormProps>(), {
+  automaticLogin: true,
+  displayLoginLink: true,
+});
 const firstName = ref('');
 const middleName = ref('');
 const lastName = ref('');

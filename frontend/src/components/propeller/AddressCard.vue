@@ -827,7 +827,26 @@ interface AddressCardState {
   closeEditModal: () => void;
 }
 
-const props = defineProps<AddressCardProps>();
+const props = withDefaults(defineProps<AddressCardProps>(), {
+  showCompanyName: true,
+  showSalutation: true,
+  showFullName: true,
+  showStreet: true,
+  showNumberExtension: true,
+  showPostalCode: true,
+  showCity: true,
+  showCountry: true,
+  showEmail: false,
+  showPhone: false,
+  enableActions: true,
+  enableEdit: true,
+  enableDelete: true,
+  enableSetDefault: true,
+  showDefaultBadge: false,
+  isNew: false,
+  inline: false,
+  showIcp: false,
+});
 const showEditModal = ref<AddressCardState['showEditModal']>(false);
 const showDeleteConfirm = ref<AddressCardState['showDeleteConfirm']>(false);
 const saving = ref<AddressCardState['saving']>(false);

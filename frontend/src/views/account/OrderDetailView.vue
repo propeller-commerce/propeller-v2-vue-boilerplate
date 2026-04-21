@@ -159,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, markRaw } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
@@ -168,7 +168,9 @@ import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import { Cart, Contact, Customer, Order, OrderService } from 'propeller-sdk-v2'
+import type { Cart, Contact, Customer, Order } from 'propeller-sdk-v2'
+import { useOrders } from '@/composables/useOrders'
+import type { AnyUser } from '@/shared/utils/userIdentity'
 import OrderSummary from '@/components/propeller/OrderSummary.vue'
 import OrderItemCard from '@/components/propeller/OrderItemCard.vue'
 import OrderActions from '@/components/propeller/OrderActions.vue'
@@ -192,9 +194,13 @@ const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 
-const order = ref<any>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { fetchOrder, currentOrder: order, orderLoading: loading, error } = useOrders({
+  graphqlClient,
+  user: computed(() => authStore.user as AnyUser),
+  companyId: computed(() => companyStore.companyId ?? undefined),
+  language: computed(() => languageStore.language),
+  configuration,
+})
 
 const parentItems = computed(() => {
   const allProducts = (order.value?.items || []).filter((i: any) => i.class === 'product' && i.isBonus === 'N')
@@ -221,21 +227,7 @@ const surchargeItems = computed(() =>
 )
 
 onMounted(async () => {
-  try {
-    const service = new OrderService(graphqlClient)
-    const result = await service.getOrder({
-      orderId: parseInt(route.params.id as string),
-      language: languageStore.language,
-      imageSearchFilters: configuration.imageSearchFiltersGrid,
-      imageVariantFilters: configuration.imageVariantFiltersSmall,
-    })
-    if (!result) { error.value = 'Order not found'; return }
-    order.value = markRaw(result)
-  } catch (e) {
-    console.error('Failed to load order', e)
-    error.value = 'Failed to load order details'
-  } finally {
-    loading.value = false
-  }
+  await fetchOrder(parseInt(route.params.id as string))
+  if (!order.value) error.value = 'Order not found'
 })
 </script>

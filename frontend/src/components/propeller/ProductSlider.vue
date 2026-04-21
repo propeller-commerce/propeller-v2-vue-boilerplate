@@ -327,7 +327,12 @@ export interface ProductSliderProps {
   labels?: Record<string, string>;
 }
 
-const props = defineProps<ProductSliderProps>();
+const props = withDefaults(defineProps<ProductSliderProps>(), {
+  showAvailability: true,
+  showIncrDecr: true,
+  showStock: false,
+  enableAddFavorite: false,
+});
 
 const langRef = computed(() => props.language || 'NL');
 const sliderRef = ref<HTMLElement | null>(null);

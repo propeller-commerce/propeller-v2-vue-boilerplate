@@ -214,7 +214,14 @@ interface ItemsOverviewState {
   getBundleItemPrice: (bundleItem: any) => string;
 }
 
-const props = defineProps<ItemsOverviewProps>();
+const props = withDefaults(defineProps<ItemsOverviewProps>(), {
+  itemNameClickable: true,
+  showQuantity: true,
+  showAvailability: true,
+  showSku: true,
+  showImage: true,
+  showPrice: true,
+});
 
 const containerClass = computed(() => {
   return props.itemsOverviewContainerClass || 'cart-items-overview';

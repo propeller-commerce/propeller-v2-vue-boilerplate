@@ -480,7 +480,14 @@ interface ProductGridState {
  getSkeletonItems: () => number[];
 }
 
-     const props = defineProps<ProductGridProps>()
+const props = withDefaults(defineProps<ProductGridProps>(), {
+  allowAddToCart: true,
+  allowIncrDecr: true,
+  showAvailability: true,
+  showPrice: true,
+  showStock: false,
+  isLoading: false,
+})
 
 const categoryIdRef  = computed(() => props.categoryId);
 const termRef        = computed(() => props.term);

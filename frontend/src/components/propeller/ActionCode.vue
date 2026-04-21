@@ -125,7 +125,9 @@ interface ActionCodeState {
   handleKeyDown: (e: any) => void;
 }
 
-const props = defineProps<ActionCodeProps>();
+const props = withDefaults(defineProps<ActionCodeProps>(), {
+  showRemoveCode: true,
+});
 const code = ref<ActionCodeState['code']>('');
 const isMounted = ref<ActionCodeState['isMounted']>(false);
 

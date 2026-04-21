@@ -252,7 +252,16 @@ interface OrderSummaryState {
   requestDate: string;
 }
 
-const props = defineProps<OrderSummaryProps>();
+const props = withDefaults(defineProps<OrderSummaryProps>(), {
+  showOrderNumber: true,
+  showOrderDate: true,
+  showOrderStatus: true,
+  showOrderTotal: true,
+  showInvoiceAddress: true,
+  showDeliveryAddress: true,
+  showDeliveryInfo: true,
+  showRemarks: true,
+});
 
 const containerClass = computed(() => {
   return props.orderSummaryContainerClass || 'order-summary';

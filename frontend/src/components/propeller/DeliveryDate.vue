@@ -136,7 +136,11 @@ interface DeliveryDateState {
   handleBackdropClick: (event: Event) => void;
 }
 
-const props = defineProps<DeliveryDateProps>();
+const props = withDefaults(defineProps<DeliveryDateProps>(), {
+  showUpcomingDays: 3,
+  skipWeekends: true,
+  showDatePicker: true,
+});
 const selectedDate = ref<DeliveryDateState['selectedDate']>('');
 const modalOpen = ref<DeliveryDateState['modalOpen']>(false);
 const customDateValue = ref<DeliveryDateState['customDateValue']>('');

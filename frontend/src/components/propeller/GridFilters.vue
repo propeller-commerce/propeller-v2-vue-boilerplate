@@ -219,7 +219,9 @@ interface GridFiltersState {
   getMaxBound: () => number;
 }
 
-const props = defineProps<GridFiltersProps>();
+const props = withDefaults(defineProps<GridFiltersProps>(), {
+  collapsed: true,
+});
 const selectedFilters = ref<GridFiltersState['selectedFilters']>({});
 const currentMin = ref<GridFiltersState['currentMin']>(0);
 const currentMax = ref<GridFiltersState['currentMax']>(9999);

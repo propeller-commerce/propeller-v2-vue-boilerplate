@@ -307,7 +307,15 @@ interface FavoriteListItemState {
   handleDelete: () => void;
 }
 
-const props = defineProps<FavoriteListItemProps>();
+const props = withDefaults(defineProps<FavoriteListItemProps>(), {
+  titleLinkable: true,
+  showSku: true,
+  allowAddToCart: true,
+  showDelete: true,
+  showStockComponent: false,
+  showAvailability: false,
+  showStock: false,
+});
 
 function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
   return 'productId' in props.item;

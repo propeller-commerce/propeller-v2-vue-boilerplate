@@ -244,7 +244,12 @@ interface CartOverviewState {
   handlePurchaseClick: () => void;
 }
 
-const props = defineProps<CartOverviewProps>();
+const props = withDefaults(defineProps<CartOverviewProps>(), {
+  showNotes: true,
+  showReference: true,
+  showTermsAndConditions: true,
+  showPurchaseButton: true,
+});
 const reference = ref<CartOverviewState['reference']>('');
 const notes = ref<CartOverviewState['notes']>('');
 const termsAccepted = ref<CartOverviewState['termsAccepted']>(false);

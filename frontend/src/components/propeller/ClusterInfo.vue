@@ -119,7 +119,10 @@ export interface ClusterInfoProps {
   textLabels?: string[];
 }
 
-const props = defineProps<ClusterInfoProps>();
+const props = withDefaults(defineProps<ClusterInfoProps>(), {
+  showTitle: true,
+  showSku: true,
+});
 
 const userRef = computed(() => props.user ?? null);
 const langRef = computed(() => props.language || 'NL');

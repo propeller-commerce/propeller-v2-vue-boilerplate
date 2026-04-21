@@ -157,14 +157,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import type { OrderItem } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
-import { orderService } from '@/lib/api'
+import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-
+import { useOrders } from '@/composables/useOrders'
+import type { AnyUser } from '@/shared/utils/userIdentity'
 import OrderSummary from '@/components/propeller/OrderSummary.vue'
 import OrderItemCard from '@/components/propeller/OrderItemCard.vue'
 
@@ -175,9 +176,12 @@ const languageStore = useLanguageStore()
 const orderId = computed(() => route.params.orderId as string)
 const isQuoteMode = computed(() => route.query.mode === 'quote')
 
-const order = ref<any>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { fetchOrder, currentOrder: order, orderLoading: loading, error } = useOrders({
+  graphqlClient,
+  user: computed(() => authStore.user as AnyUser),
+  language: computed(() => languageStore.language),
+  configuration,
+})
 
 const parentItems = computed<OrderItem[]>(() => {
   const all: OrderItem[] = order.value?.items?.filter((i: OrderItem) => i.class === 'product' && i.isBonus === 'N') || []
@@ -205,19 +209,6 @@ const surchargeItems = computed<OrderItem[]>(() =>
 
 onMounted(async () => {
   if (!orderId.value) return
-  try {
-    loading.value = true
-    order.value = await orderService.getOrder({
-      orderId: Number(orderId.value),
-      imageSearchFilters: configuration.imageSearchFiltersGrid,
-      imageVariantFilters: configuration.imageVariantFiltersSmall,
-      language: languageStore.language,
-    })
-  } catch (e) {
-    console.error('Failed to fetch order details:', e)
-    error.value = 'Failed to load order details'
-  } finally {
-    loading.value = false
-  }
+  await fetchOrder(Number(orderId.value))
 })
 </script>

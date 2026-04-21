@@ -443,7 +443,9 @@ export interface PurchaseAuthorizationConfiguratorProps {
   pageOffset?: number;
 }
 
-const props = defineProps<PurchaseAuthorizationConfiguratorProps>();
+const props = withDefaults(defineProps<PurchaseAuthorizationConfiguratorProps>(), {
+  allowContactCreate: true,
+});
 
 const userRef    = computed(() => props.user ?? null);
 const companyRef = computed(() => props.companyId as number);

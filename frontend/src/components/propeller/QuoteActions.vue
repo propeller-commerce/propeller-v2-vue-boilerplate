@@ -83,7 +83,9 @@ interface QuoteActionsState {
   handleAcceptClick: () => Promise<void>;
 }
 
-const props = defineProps<QuoteActionsProps>();
+const props = withDefaults(defineProps<QuoteActionsProps>(), {
+  showTermsAndConditions: true,
+});
 const termsAccepted = ref<QuoteActionsState['termsAccepted']>(false);
 const loading = ref<QuoteActionsState['loading']>(false);
 

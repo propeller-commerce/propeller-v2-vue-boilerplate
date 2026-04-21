@@ -14,6 +14,7 @@ import type {
   GraphQLClient,
   Cart,
   CartMainItem,
+  CartSearchInput,
   Product,
   Cluster,
   Contact,
@@ -28,6 +29,7 @@ import type {
 } from 'propeller-sdk-v2';
 import { initCart, type CartInitConfig } from '../shared/utils/cartInit';
 import type { AnyUser } from '../shared/utils/userIdentity';
+import { isContact, isCustomer } from '../shared/utils/userIdentity';
 
 export interface UseCartOptions {
   graphqlClient: GraphQLClient;
@@ -72,6 +74,7 @@ export interface UseCartReturn {
   error: Ref<string | null>;
   checkoutAllowed: ComputedRef<boolean>;
   resolveCart: () => Promise<Cart>;
+  fetchActiveCart: () => Promise<Cart | null>;
   addItem: (options: AddItemOptions) => Promise<{ success: boolean; cart?: Cart; item?: CartMainItem | null; error?: string }>;
   updateItemQuantity: (cartItemId: string, quantity: number) => Promise<Cart | undefined>;
   updateItemNotes: (cartItemId: string, notes: string, debounceMs?: number) => void;
@@ -262,6 +265,44 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     }
   }
 
+  async function fetchActiveCart(): Promise<Cart | null> {
+    const u = user.value;
+    if (!u) return null;
+    try {
+      const service = new CartService(graphqlClient);
+      const language = languageRef.value || configuration.language || 'NL';
+      const searchInput: CartSearchInput = {
+        offset: 100,
+        statuses: [Enums.CartStatus.OPEN],
+      };
+      if (isContact(u)) {
+        searchInput.contactIds = [(u as Contact).contactId];
+        if (companyIdRef.value) searchInput.companyIds = [companyIdRef.value];
+      } else if (isCustomer(u)) {
+        searchInput.customerIds = [(u as Customer).customerId];
+      }
+      const carts = await service.getCarts(searchInput);
+      if (carts?.items?.length) {
+        const existingCartId = carts.items[carts.items.length - 1].cartId;
+        const activeCart = await service.getCart({
+          cartId: existingCartId,
+          imageSearchFilters: configuration.imageSearchFiltersGrid,
+          imageVariantFilters: configuration.imageVariantFiltersSmall,
+          language,
+        });
+        if (activeCart) {
+          cart.value = activeCart;
+          cartId.value = activeCart.cartId;
+        }
+        return activeCart ?? null;
+      }
+      return null;
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch active cart';
+      return null;
+    }
+  }
+
   async function getCrossupsells(opts: GetCrossupsellsOptions): Promise<Crossupsell[]> {
     const { productId, clusterId, types, taxZone, imageVariantFilters } = opts;
     if (!productId && !clusterId) return [];
@@ -292,5 +333,5 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     } catch { return []; }
   }
 
-  return { cart, cartId, loading, error, checkoutAllowed, resolveCart, addItem, updateItemQuantity, updateItemNotes, deleteItem, addActionCode, removeActionCode, requestAuthorization, processCart, getCrossupsells, getMinQuantity, getStep };
+  return { cart, cartId, loading, error, checkoutAllowed, resolveCart, fetchActiveCart, addItem, updateItemQuantity, updateItemNotes, deleteItem, addActionCode, removeActionCode, requestAuthorization, processCart, getCrossupsells, getMinQuantity, getStep };
 }

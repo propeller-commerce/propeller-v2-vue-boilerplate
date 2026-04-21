@@ -10,7 +10,7 @@
  * - Quote status update (QuoteActions)
  */
 
-import { ref, watch, type Ref } from 'vue';
+import { ref, markRaw, watch, type Ref } from 'vue';
 import {
   OrderService,
   CartService,
@@ -71,6 +71,10 @@ export interface UseOrdersReturn {
   error: Ref<string | null>;
   searchForm: Ref<OrderSearchForm>;
 
+  // Single order
+  currentOrder: Ref<Order | null>;
+  orderLoading: Ref<boolean>;
+
   // Pagination (from usePagination)
   currentPage: Ref<number>;
   totalPages: Ref<number>;
@@ -79,9 +83,11 @@ export interface UseOrdersReturn {
 
   // Actions
   fetchOrders: (page?: number) => Promise<void>;
+  fetchOrder: (orderId: number) => Promise<Order | null>;
   goToPage: (page: number) => void;
   resetSearch: () => void;
   downloadPdf: (order: Order) => Promise<{ success: boolean; error?: string }>;
+  downloadQuotePdf: (quoteId: number) => Promise<{ success: boolean; error?: string }>;
   reorder: (order: Order, cartId?: string) => Promise<{ success: boolean; cart?: Cart; error?: string }>;
   setQuoteStatus: (
     orderId: number,
@@ -112,6 +118,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
   const loading = ref(false);
   const error = ref<string | null>(null);
   const searchForm = ref<OrderSearchForm>({});
+  const currentOrder = ref<Order | null>(null) as Ref<Order | null>;
+  const orderLoading = ref(false);
 
   const termFields = options.termFields ?? [
     Enums.OrderSearchFields.REFERENCE,
@@ -179,6 +187,64 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
     { immediate: true }
   );
 
+  // ── Fetch single order ────────────────────────────────────────────────────
+
+  async function fetchOrder(orderId: number): Promise<Order | null> {
+    orderLoading.value = true;
+    error.value = null;
+    try {
+      const service = new OrderService(graphqlClient);
+      const result = await service.getOrder({
+        orderId,
+        language: languageRef.value || 'NL',
+        imageSearchFilters: configuration.imageSearchFiltersGrid,
+        imageVariantFilters: configuration.imageVariantFiltersSmall,
+      });
+      currentOrder.value = result ? markRaw(result) : null;
+      return currentOrder.value;
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch order';
+      currentOrder.value = null;
+      return null;
+    } finally {
+      orderLoading.value = false;
+    }
+  }
+
+  // ── PDF blob download helper ──────────────────────────────────────────────
+
+  function triggerBlobDownload(pdfResponse: Base64File | string, fallbackFileName: string): { success: boolean; error?: string } {
+    let byteArray: Uint8Array;
+    let contentType = 'application/pdf';
+    let fileName = fallbackFileName;
+
+    if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {
+      const r = pdfResponse as Base64File;
+      const chars = atob(r.base64);
+      byteArray = new Uint8Array(chars.length);
+      for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i);
+      contentType = r.contentType || contentType;
+      fileName = r.fileName || fileName;
+    } else if (typeof pdfResponse === 'string') {
+      const chars = atob(pdfResponse);
+      byteArray = new Uint8Array(chars.length);
+      for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i);
+    } else {
+      return { success: false, error: 'Unrecognised PDF format' };
+    }
+
+    const blob = new Blob([byteArray.buffer as ArrayBuffer], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return { success: true };
+  }
+
   // ── PDF download ──────────────────────────────────────────────────────────
 
   async function downloadPdf(order: Order): Promise<{ success: boolean; error?: string }> {
@@ -186,41 +252,22 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
     try {
       const service = new OrderService(graphqlClient);
       const pdfResponse = await service.getOrderPDF(order.id);
-
       if (!pdfResponse) return { success: false, error: 'No PDF response' };
-
-      let byteArray: Uint8Array;
-      let contentType = 'application/pdf';
-      let fileName = `order-${order.id}-confirmation.pdf`;
-
-      if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {
-        const r = pdfResponse as Base64File;
-        const chars = atob(r.base64);
-        byteArray = new Uint8Array(chars.length);
-        for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i);
-        contentType = r.contentType || contentType;
-        fileName = r.fileName || fileName;
-      } else if (typeof pdfResponse === 'string') {
-        const chars = atob(pdfResponse);
-        byteArray = new Uint8Array(chars.length);
-        for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i);
-      } else {
-        return { success: false, error: 'Unrecognised PDF format' };
-      }
-
-      const blob = new Blob([byteArray.buffer as ArrayBuffer], { type: contentType });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      return { success: true };
+      return triggerBlobDownload(pdfResponse as Base64File | string, `order-${order.id}-confirmation.pdf`);
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Failed to download PDF' };
+    }
+  }
+
+  async function downloadQuotePdf(quoteId: number): Promise<{ success: boolean; error?: string }> {
+    if (!quoteId) return { success: false, error: 'No quote ID' };
+    try {
+      const service = new OrderService(graphqlClient);
+      const pdfResponse = await service.getQuotePDF(quoteId);
+      if (!pdfResponse) return { success: false, error: 'No PDF response' };
+      return triggerBlobDownload(pdfResponse as Base64File | string, `quote-${quoteId}.pdf`);
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Failed to download quote PDF' };
     }
   }
 
@@ -340,14 +387,18 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
     loading,
     error,
     searchForm,
+    currentOrder,
+    orderLoading,
     currentPage: pagination.currentPage,
     totalPages: pagination.totalPages,
     totalItems: pagination.totalItems,
     itemsPerPage: pagination.itemsPerPage,
     fetchOrders,
+    fetchOrder,
     goToPage: pagination.goToPage,
     resetSearch,
     downloadPdf,
+    downloadQuotePdf,
     reorder,
     setQuoteStatus,
   };

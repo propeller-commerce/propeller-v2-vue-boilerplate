@@ -27,14 +27,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { FavoriteListService } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { usePriceStore } from '@/stores/price'
 import { graphqlClient } from '@/lib/api'
 import { configuration } from '@/lib/config'
+import { useFavorites } from '@/composables/useFavorites'
+import type { AnyUser } from '@/shared/utils/userIdentity'
 import FavoriteListDetails from '@/components/propeller/FavoriteListDetails.vue'
 
 const route = useRoute()
@@ -45,18 +46,19 @@ const priceStore = usePriceStore()
 
 const listName = ref('')
 
+const { removeFromList } = useFavorites({
+  graphqlClient,
+  user: computed(() => authStore.user as AnyUser),
+})
+
 async function handleItemDelete(itemId: string, itemType?: string) {
-  try {
-    const service = new FavoriteListService(graphqlClient)
-    const listId = String(route.params.id)
-    const numericId = Number(itemId)
-    const input = itemType === 'cluster'
-      ? { clusterIds: [numericId] }
-      : { productIds: [numericId] }
-    await service.removeFavoriteListItems(listId, input)
-    await authStore.refreshUser()
-  } catch (error) {
-    console.error('Error removing item from list:', error)
+  const listId = String(route.params.id)
+  const numericId = Number(itemId)
+  if (itemType === 'cluster') {
+    await removeFromList(listId, undefined, numericId)
+  } else {
+    await removeFromList(listId, numericId, undefined)
   }
+  await authStore.refreshUser()
 }
 </script>

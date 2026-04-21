@@ -111,16 +111,14 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import {
-  Address, AddressService, Contact, Customer,
-  type Company,
-  type CompanyAddressCreateInput, type CompanyAddressUpdateInput,
-  type CustomerAddressCreateInput, type CustomerAddressUpdateInput,
-  Enums
-} from 'propeller-sdk-v2'
+import { type Address, type Company, Enums } from 'propeller-sdk-v2'
+import type { Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
+import { useAddress } from '@/composables/useAddress'
+import type { AddressInput } from '@/composables/useAddress'
+import type { AnyUser } from '@/shared/utils/userIdentity'
 import AddressCard from '@/components/propeller/AddressCard.vue'
 
 const authStore = useAuthStore()
@@ -138,10 +136,19 @@ const COUNTRIES = [
 const showAddModal = ref(false)
 const addModalType = ref<Enums.AddressType>(Enums.AddressType.invoice)
 
-const user = computed(() => authStore.user)
+const userRef = computed(() => authStore.user as AnyUser)
+const companyIdRef = computed(() => companyStore.selectedCompany?.companyId)
+
+const { createAddress, updateAddress, deleteAddress, setDefaultAddress } = useAddress({
+  graphqlClient,
+  user: userRef,
+  companyId: companyIdRef,
+})
+
+// ── Display helpers (read-only, no SDK) ──────────────────────────────────────
 
 function isContact(u: Contact | Customer | null): u is Contact {
-  return u !== null && 'company' in u
+  return u !== null && 'contactId' in u
 }
 
 function isCustomer(u: Contact | Customer | null): u is Customer {
@@ -149,7 +156,7 @@ function isCustomer(u: Contact | Customer | null): u is Customer {
 }
 
 function getActiveCompany(): Company | null {
-  const u = user.value
+  const u = userRef.value
   if (!u || !isContact(u as Contact)) return null
   const targetId = companyStore.selectedCompany?.companyId
   if (targetId) {
@@ -165,7 +172,7 @@ function getActiveCompany(): Company | null {
 }
 
 function getAllAddresses(): Address[] {
-  const u = user.value
+  const u = userRef.value
   if (!u) return []
   if (isContact(u as Contact)) return getActiveCompany()?.addresses || []
   if (isCustomer(u as Customer)) return (u as Customer).addresses || []
@@ -188,109 +195,48 @@ const deliveryAddresses = computed(() =>
   getAllAddresses().filter((a: Address) => a.type === Enums.AddressType.delivery && a.isDefault === Enums.YesNo.N)
 )
 
+// ── Handlers ─────────────────────────────────────────────────────────────────
+
 function handleAddAddress(type: Enums.AddressType) {
   addModalType.value = type
   showAddModal.value = true
 }
 
 async function handleEditAddress(address: Address) {
-  const u = user.value
-  if (!u) return
-  const activeCompany = getActiveCompany()
-  try {
-    const service = new AddressService(graphqlClient)
-    if (isContact(u as Contact) && activeCompany) {
-      const input: CompanyAddressUpdateInput = {
-        id: Number(address.id),
-        companyId: activeCompany.companyId,
-        company: address.company, gender: address.gender,
-        firstName: address.firstName, middleName: address.middleName, lastName: address.lastName,
-        email: address.email, street: address.street, number: address.number,
-        numberExtension: address.numberExtension, postalCode: address.postalCode,
-        city: address.city, country: address.country, notes: address.notes,
-        isDefault: address.isDefault as Enums.YesNo
-      }
-      await service.updateCompanyAddress(input)
-    } else if (isCustomer(u as Customer)) {
-      const input: CustomerAddressUpdateInput = {
-        id: Number(address.id),
-        customerId: (u as Customer).customerId,
-        company: address.company, gender: address.gender,
-        firstName: address.firstName, middleName: address.middleName, lastName: address.lastName,
-        email: address.email, street: address.street, number: address.number,
-        numberExtension: address.numberExtension, postalCode: address.postalCode,
-        city: address.city, country: address.country, notes: address.notes,
-        isDefault: address.isDefault as Enums.YesNo
-      }
-      await service.updateCustomerAddress(input)
-    }
-    await authStore.refreshUser()
-  } catch (e) {
-    console.error('Error updating address:', e)
-  }
+  await updateAddress(Number(address.id), address as Partial<AddressInput>)
+  await authStore.refreshUser()
 }
 
 async function handleDeleteAddress(address: Address) {
-  const u = user.value
-  if (!u) return
-  const activeCompany = getActiveCompany()
-  try {
-    const service = new AddressService(graphqlClient)
-    if (isContact(u as Contact) && activeCompany) {
-      await service.deleteCompanyAddress({ id: Number(address.id), companyId: activeCompany.companyId })
-    } else if (isCustomer(u as Customer)) {
-      await service.deleteCustomerAddress({ id: Number(address.id), customerId: (u as Customer).customerId })
-    }
-    await authStore.refreshUser()
-  } catch (e) {
-    console.error('Error deleting address:', e)
-  }
+  await deleteAddress(Number(address.id))
+  await authStore.refreshUser()
 }
 
 async function handleSetDefault(address: Address) {
-  const u = user.value
-  if (!u || !address.id) return
-  const activeCompany = getActiveCompany()
-  try {
-    const service = new AddressService(graphqlClient)
-    if (isContact(u as Contact) && activeCompany) {
-      await service.updateCompanyAddress({ id: Number(address.id), companyId: activeCompany.companyId, isDefault: Enums.YesNo.Y })
-    } else if (isCustomer(u as Customer)) {
-      await service.updateCustomerAddress({ id: Number(address.id), customerId: (u as Customer).customerId, isDefault: Enums.YesNo.Y })
-    }
-    await authStore.refreshUser()
-  } catch (e) {
-    console.error('Error setting default address:', e)
-  }
+  if (!address.id) return
+  await setDefaultAddress(Number(address.id))
+  await authStore.refreshUser()
 }
 
 async function handleSaveNewAddress(address: any) {
-  const u = user.value
-  if (!u) return
-  const activeCompany = getActiveCompany()
-  try {
-    const service = new AddressService(graphqlClient)
-    const commonData = {
-      company: address.company || undefined, gender: address.gender || undefined,
-      firstName: address.firstName || undefined, middleName: address.middleName || undefined,
-      lastName: address.lastName || undefined, email: address.email || undefined,
-      street: address.street || '', number: address.number || undefined,
-      numberExtension: address.numberExtension || undefined, postalCode: address.postalCode || '',
-      city: address.city || '', country: address.country || 'NL',
-      notes: address.notes || undefined, isDefault: (address.isDefault as Enums.YesNo) || Enums.YesNo.N,
-      type: addModalType.value
-    }
-    if (isContact(u as Contact) && activeCompany) {
-      const input: CompanyAddressCreateInput = { ...commonData, companyId: activeCompany.companyId }
-      await service.createCompanyAddress(input)
-    } else if (isCustomer(u as Customer)) {
-      const input: CustomerAddressCreateInput = { ...commonData, customerId: (u as Customer).customerId }
-      await service.createCustomerAddress(input)
-    }
-    await authStore.refreshUser()
-    showAddModal.value = false
-  } catch (e) {
-    console.error('Error creating address:', e)
-  }
+  await createAddress({
+    company: address.company || undefined,
+    gender: address.gender || undefined,
+    firstName: address.firstName || undefined,
+    middleName: address.middleName || undefined,
+    lastName: address.lastName || undefined,
+    email: address.email || undefined,
+    street: address.street || '',
+    number: address.number || undefined,
+    numberExtension: address.numberExtension || undefined,
+    postalCode: address.postalCode || '',
+    city: address.city || '',
+    country: address.country || 'NL',
+    notes: address.notes || undefined,
+    isDefault: (address.isDefault as Enums.YesNo) || Enums.YesNo.N,
+    type: addModalType.value,
+  })
+  await authStore.refreshUser()
+  showAddModal.value = false
 }
 </script>

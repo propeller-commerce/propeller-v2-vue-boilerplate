@@ -522,7 +522,13 @@ interface FavoriteListsState {
   displayedLists: FavoriteList[];
 }
 
-const props = defineProps<FavoriteListsProps>();
+const props = withDefaults(defineProps<FavoriteListsProps>(), {
+  showDefaultIndicator: true,
+  showLastModified: true,
+  showItemsCount: true,
+  showActions: true,
+  allowFavoriteListCreate: true,
+});
 
 const userRef = computed(() => props.user ?? null);
 

@@ -182,7 +182,17 @@ interface OrderItemCardState {
   formatDiscountDisplay: () => string;
 }
 
-const props = defineProps<OrderItemCardProps>();
+const props = withDefaults(defineProps<OrderItemCardProps>(), {
+  titleLinkable: true,
+  showImage: true,
+  showSku: true,
+  showQuantity: true,
+  showPrice: true,
+  showDiscount: false,
+  showStockComponent: false,
+  showItemNotes: false,
+  isChildItem: false,
+});
 
 const titleLinkable = computed(() => {
   return props.titleLinkable !== undefined ? props.titleLinkable : true;

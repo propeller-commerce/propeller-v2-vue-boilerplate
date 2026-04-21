@@ -73,7 +73,9 @@ interface CartPaymethodsState {
   handleSelect: (method: CartPaymethod) => void;
 }
 
-const props = defineProps<CartPaymethodsProps>();
+const props = withDefaults(defineProps<CartPaymethodsProps>(), {
+  showOnAccountForGuests: false,
+});
 const selectedCode = ref<CartPaymethodsState['selectedCode']>('');
 
 const containerClass = computed(() => {

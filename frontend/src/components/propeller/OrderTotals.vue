@@ -122,7 +122,14 @@ interface OrderTotalsState {
   totalVat: number;
 }
 
-const props = defineProps<OrderTotalsProps>();
+const props = withDefaults(defineProps<OrderTotalsProps>(), {
+  showSubtotal: true,
+  showDiscount: true,
+  showShippingCosts: true,
+  showVATs: true,
+  showTotalExclVat: true,
+  showTotalVat: true,
+});
 
 const title = computed(() => {
   return props.title || 'Order summary';

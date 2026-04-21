@@ -261,7 +261,16 @@ interface FavoriteListDetailsState {
   handleItemDelete: (itemId: string) => void;
 }
 
-const props = defineProps<FavoriteListDetailsProps>();
+const props = withDefaults(defineProps<FavoriteListDetailsProps>(), {
+  titleLinkable: true,
+  showSku: true,
+  allowAddToCart: true,
+  showDelete: true,
+  showPagination: true,
+  showStockComponent: false,
+  showAvailability: false,
+  showStock: false,
+});
 const loading = ref<FavoriteListDetailsState['loading']>(true);
 const favoriteList = ref<FavoriteListDetailsState['favoriteList']>(null);
 const allItems = ref<FavoriteListDetailsState['allItems']>([]);

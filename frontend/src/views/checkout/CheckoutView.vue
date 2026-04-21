@@ -295,14 +295,16 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Enums } from 'propeller-sdk-v2'
-import type { Cart, CartUpdateAddressInput, Contact, Customer, CartAddress } from 'propeller-sdk-v2'
+import type { Cart, Contact, Customer, CartAddress } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
 import { useCompanyStore } from '@/stores/company'
-import { graphqlClient, cartService, orderService } from '@/lib/api'
+import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
+import { useCheckout } from '@/composables/useCheckout'
+import type { AnyUser } from '@/shared/utils/userIdentity'
 
 import CartPaymethods from '@/components/propeller/CartPaymethods.vue'
 import CartCarriers from '@/components/propeller/CartCarriers.vue'
@@ -321,6 +323,22 @@ const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
 
+const {
+  loading,
+  error,
+  updateCartAddress,
+  updateCartSettings,
+  placeOrder,
+  getUserDefaultAddress,
+  buildAddressInput,
+} = useCheckout({
+  graphqlClient,
+  user: computed(() => authStore.user as AnyUser),
+  companyId: computed(() => companyStore.companyId ?? undefined),
+  language: computed(() => languageStore.language),
+  configuration,
+})
+
 const isQuoteMode = computed(() => route.query.mode === 'quote')
 const reviewStep = computed(() => isQuoteMode.value ? 3 : 4)
 const stepLabels = computed(() =>
@@ -334,8 +352,6 @@ const currentStep = ref(1)
 const selectedPayment = ref('')
 const selectedCarrier = ref('')
 const selectedDeliveryDate = ref('')
-const loading = ref(false)
-const error = ref<string | null>(null)
 const sameAsInvoice = ref(false)
 const step3Submitted = ref(false)
 const quoteReference = ref('')
@@ -351,41 +367,6 @@ const COUNTRIES = [
   { code: 'US', name: 'United States' },
 ]
 
-function isContact(u: Contact | Customer | null): u is Contact {
-  return u !== null && 'company' in u
-}
-
-function getActiveCompany(): any | null {
-  const user = authStore.user
-  if (!user || !isContact(user as Contact | Customer | null)) return null
-  const storedCompanyId = companyStore.companyId
-  if (storedCompanyId) {
-    const companiesRaw = (user as any).companies
-    const items = companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw
-    if (Array.isArray(items)) {
-      const found = items.find((c: any) => c.companyId === storedCompanyId)
-      if (found) return found
-    }
-  }
-  return (user as any).company ?? null
-}
-
-function getUserDefaultAddress(type: 'invoice' | 'delivery'): any | null {
-  const user = authStore.user
-  if (!user) return null
-  let addresses: any[] = []
-  if (isContact(user as Contact | Customer | null)) {
-    const company = getActiveCompany()
-    if (company) addresses = (company as any).addresses || []
-  } else {
-    addresses = (user as any).addresses || []
-  }
-  const addressType = type === 'invoice' ? Enums.AddressType.invoice : Enums.AddressType.delivery
-  return addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
-    || addresses.find((a: any) => a.type === addressType)
-    || null
-}
-
 let lastInitCart: any = null
 
 async function initializeCheckout() {
@@ -395,7 +376,6 @@ async function initializeCheckout() {
     return
   }
 
-  // Skip re-init if cart data hasn't changed (prevents overriding step set by handleAddressSubmit)
   if (
     lastInitCart &&
     lastInitCart.cartId === c.cartId &&
@@ -409,32 +389,21 @@ async function initializeCheckout() {
 
   if (authStore.isAuthenticated && (!hasInvoice || !hasDelivery)) {
     try {
-      await (cartService as any).initializeService?.()
       let updatedCart: Cart = c as Cart
 
       if (!hasInvoice) {
         const defaultInvoice = getUserDefaultAddress('invoice')
         if (defaultInvoice) {
-          updatedCart = await cartService.updateCartAddress({
-            id: updatedCart.cartId,
-            input: buildAddressInput('INVOICE', defaultInvoice),
-            imageSearchFilters: configuration.imageSearchFiltersGrid,
-            imageVariantFilters: configuration.imageVariantFiltersSmall,
-            language: languageStore.language,
-          })
+          const result = await updateCartAddress(updatedCart.cartId, 'INVOICE', defaultInvoice)
+          if (result) updatedCart = result
         }
       }
 
       if (!hasDelivery) {
         const defaultDelivery = getUserDefaultAddress('delivery')
         if (defaultDelivery) {
-          updatedCart = await cartService.updateCartAddress({
-            id: updatedCart.cartId,
-            input: buildAddressInput('DELIVERY', defaultDelivery),
-            imageSearchFilters: configuration.imageSearchFiltersGrid,
-            imageVariantFilters: configuration.imageVariantFiltersSmall,
-            language: languageStore.language,
-          })
+          const result = await updateCartAddress(updatedCart.cartId, 'DELIVERY', defaultDelivery)
+          if (result) updatedCart = result
         }
       }
 
@@ -452,86 +421,25 @@ async function initializeCheckout() {
   else currentStep.value = 1
 }
 
-function buildAddressInput(type: 'INVOICE' | 'DELIVERY', addr: any): CartUpdateAddressInput {
-  return {
-    type: type === 'INVOICE' ? Enums.CartAddressType.INVOICE : Enums.CartAddressType.DELIVERY,
-    firstName: addr.firstName || '',
-    lastName: addr.lastName || '',
-    street: addr.street || '',
-    postalCode: addr.postalCode || '',
-    city: addr.city || '',
-    company: addr.company,
-    gender: addr.gender,
-    middleName: addr.middleName,
-    number: addr.number,
-    numberExtension: addr.numberExtension,
-    country: addr.country,
-    email: addr.email,
-    mobile: addr.mobile,
-    phone: addr.phone,
-  }
-}
-
 async function handleAddressSubmit(addressData: any, type: 'INVOICE' | 'DELIVERY', advance = true) {
-  try {
-    loading.value = true
-    error.value = null
-    const input: CartUpdateAddressInput = {
-      type: type === 'INVOICE' ? Enums.CartAddressType.INVOICE : Enums.CartAddressType.DELIVERY,
-      firstName: addressData.firstName || '',
-      lastName: addressData.lastName || '',
-      street: addressData.street || '',
-      postalCode: addressData.postalCode || '',
-      city: addressData.city || '',
-      company: addressData.company,
-      gender: addressData.gender,
-      middleName: addressData.middleName,
-      number: addressData.number,
-      numberExtension: addressData.numberExtension,
-      country: addressData.country,
-      email: addressData.email,
-      mobile: addressData.mobile,
-      phone: addressData.phone,
-      notes: addressData.notes,
-      icp: addressData.icp,
-    }
+  const updatedCart = await updateCartAddress((cart.value as any).cartId, type, addressData)
+  if (!updatedCart) return
+  cartStore.setCart(updatedCart)
 
-    const updatedCart = await cartService.updateCartAddress({
-      id: (cart.value as any).cartId,
-      input,
-      imageSearchFilters: configuration.imageSearchFiltersGrid,
-      imageVariantFilters: configuration.imageVariantFiltersSmall,
-      language: languageStore.language,
-    })
-    cartStore.setCart(updatedCart)
+  if (advance && type === 'INVOICE' && !authStore.isAuthenticated && sameAsInvoice.value) {
+    const deliveryInput = buildAddressInput('DELIVERY', addressData)
+    const deliveryCart = await updateCartAddress(updatedCart.cartId, 'DELIVERY', deliveryInput)
+    if (deliveryCart) cartStore.setCart(deliveryCart)
+    currentStep.value = 3
+    return
+  }
 
-    // Anonymous "same as invoice" shortcut
-    if (advance && type === 'INVOICE' && !authStore.isAuthenticated && sameAsInvoice.value) {
-      const deliveryCart = await cartService.updateCartAddress({
-        id: updatedCart.cartId,
-        input: { ...input, type: Enums.CartAddressType.DELIVERY },
-        imageSearchFilters: configuration.imageSearchFiltersGrid,
-        imageVariantFilters: configuration.imageVariantFiltersSmall,
-        language: languageStore.language,
-      })
-      cartStore.setCart(deliveryCart)
-      currentStep.value = 3
-      loading.value = false
-      return
-    }
-
-    if (advance) {
-      const hasInvoice = !!(updatedCart as any).invoiceAddress?.street
-      const hasDelivery = !!(updatedCart as any).deliveryAddress?.street
-      if (hasInvoice && hasDelivery) currentStep.value = 3
-      else if (hasInvoice) currentStep.value = 2
-      else currentStep.value = currentStep.value + 1
-    }
-  } catch (e: any) {
-    error.value = 'Failed to save address'
-    console.error(e)
-  } finally {
-    loading.value = false
+  if (advance) {
+    const hasInvoice = !!(updatedCart as any).invoiceAddress?.street
+    const hasDelivery = !!(updatedCart as any).deliveryAddress?.street
+    if (hasInvoice && hasDelivery) currentStep.value = 3
+    else if (hasInvoice) currentStep.value = 2
+    else currentStep.value = currentStep.value + 1
   }
 }
 
@@ -540,86 +448,33 @@ async function handleStep3Continue() {
     step3Submitted.value = true
     return
   }
-  try {
-    loading.value = true
-    error.value = null
-    const updatedCart = await cartService.updateCart({
-      id: (cart.value as any).cartId,
-      input: {
-        paymentData: { method: selectedPayment.value },
-        postageData: { carrier: selectedCarrier.value, requestDate: selectedDeliveryDate.value },
-      },
-      imageSearchFilters: configuration.imageSearchFiltersGrid,
-      imageVariantFilters: configuration.imageVariantFiltersSmall,
-      language: languageStore.language,
-    })
+  const updatedCart = await updateCartSettings((cart.value as any).cartId, {
+    paymentMethod: selectedPayment.value,
+    carrier: selectedCarrier.value,
+    requestDate: selectedDeliveryDate.value,
+  })
+  if (updatedCart) {
     cartStore.setCart(updatedCart)
     currentStep.value = 4
-  } catch (e: any) {
-    error.value = 'Failed to update cart'
-    console.error(e)
-  } finally {
-    loading.value = false
   }
 }
 
 async function handlePlaceOrder(reference?: string, notes?: string) {
-  try {
-    loading.value = true
-    error.value = null
-    orderPlaced.value = true
+  orderPlaced.value = true
+  const result = await placeOrder((cart.value as any).cartId, {
+    isQuoteMode: isQuoteMode.value,
+    reference,
+    notes,
+  })
 
-    if (reference || notes) {
-      await cartService.updateCart({
-        id: (cart.value as any).cartId,
-        input: { reference: reference || undefined, notes: notes || undefined },
-        imageSearchFilters: configuration.imageSearchFiltersGrid,
-        imageVariantFilters: configuration.imageVariantFiltersSmall,
-        language: languageStore.language,
-      })
-    }
-
-    const orderStatus = isQuoteMode.value ? 'REQUEST' : 'NEW'
-    const response = await cartService.processCart({
-      id: (cart.value as any).cartId,
-      input: { orderStatus, language: languageStore.language },
-    })
-
-    if (response?.cartOrderId) {
-      const orderId = response.cartOrderId
-      const orderServiceResponse = await orderService.setOrderStatus({
-        orderId,
-        status: orderStatus,
-        payStatus: Enums.PaymentStatuses.OPEN,
-        sendOrderConfirmationEmail: !isQuoteMode.value,
-        addPDFAttachment: !isQuoteMode.value,
-        triggerOrderSendConfirmEvent: !isQuoteMode.value,
-        deleteCart: true,
-      })
-
-      if (orderServiceResponse?.id === orderId) {
-        if (isQuoteMode.value) {
-          await (orderService as any).triggerQuoteSendRequest?.({
-            orderId,
-            language: languageStore.language,
-          })
-        }
-        cartStore.setCart(null)
-      }
-
-      const thankYouUrl = isQuoteMode.value
-        ? localizeHref(`/checkout/thank-you/${orderId}`, languageStore.language) + '?mode=quote'
-        : localizeHref(`/checkout/thank-you/${orderId}`, languageStore.language)
-      router.push(thankYouUrl)
-    } else {
-      throw new Error('No Order ID returned')
-    }
-  } catch (e: any) {
+  if (result.success && result.orderId) {
+    cartStore.setCart(null)
+    const thankYouUrl = isQuoteMode.value
+      ? localizeHref(`/checkout/thank-you/${result.orderId}`, languageStore.language) + '?mode=quote'
+      : localizeHref(`/checkout/thank-you/${result.orderId}`, languageStore.language)
+    router.push(thankYouUrl)
+  } else {
     orderPlaced.value = false
-    error.value = isQuoteMode.value ? 'Failed to submit quote request' : 'Failed to place order'
-    console.error(e)
-  } finally {
-    loading.value = false
   }
 }
 
