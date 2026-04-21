@@ -91,7 +91,9 @@
             <SearchBar
               :graphqlClient="graphqlClient"
               :language="languageStore.language"
-              :onSearch="handleSearch"
+              :onSubmit="handleSearch"
+              :onViewAllClick="handleSearch"
+              :onResultClick="(result) => { if (result.url) router.push(result.url) }"
               :configuration="configuration"
             />
           </div>
@@ -192,7 +194,9 @@
         <SearchBar
           :graphqlClient="graphqlClient"
           :language="languageStore.language"
-          :onSearch="(term: string) => { showMobileMenu = false; handleSearch(term) }"
+          :onSubmit="(term: string) => { showMobileMenu = false; handleSearch(term) }"
+          :onViewAllClick="(term: string) => { showMobileMenu = false; handleSearch(term) }"
+          :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
           :configuration="configuration"
         />
       </div>

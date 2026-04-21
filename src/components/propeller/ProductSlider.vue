@@ -95,7 +95,7 @@
                 ></ClusterCard>
               </template>
 
-              <template v-if="!isCluster(item) && portalMode() === 'open'">
+              <template v-if="!isCluster(item)">
                 <ProductCard
                   :product="item as Product"
                   :graphqlClient="graphqlClient"
@@ -105,6 +105,7 @@
                   :configuration="configuration"
                   :includeTax="includeTax"
                   :columns="3"
+                  :allowAddToCart="portalMode() === 'open'"
                   :createCart="createCart"
                   :onCartCreated="onCartCreated"
                   :afterAddToCart="afterAddToCart"
@@ -120,39 +121,7 @@
                   :showAvailability="showAvailability"
                   :stockLabels="stockLabels"
                   :labels="labels"
-                  :onToggleFavorite="
-                    (product, isFav) => {
-                      if (onToggleFavorite) {
-                        onToggleFavorite(product, isFav);
-                      }
-                    }
-                  "
-                  :onProductClick="(product) => handleProductClick(product)"
-                ></ProductCard>
-              </template>
-
-              <template v-if="!isCluster(item) && portalMode() !== 'open'">
-                <ProductCard
-                  :product="item as Product"
-                  :graphqlClient="graphqlClient"
-                  :user="user || null"
-                  :companyId="companyId"
-                  :configuration="configuration"
-                  :includeTax="includeTax"
-                  :language="language"
-                  :columns="3"
-                  :enableAddFavorite="enableAddFavorite"
-                  :showStock="showStock"
-                  :showAvailability="showAvailability"
-                  :stockLabels="stockLabels"
-                  :labels="labels"
-                  :onToggleFavorite="
-                    (product, isFav) => {
-                      if (onToggleFavorite) {
-                        onToggleFavorite(product, isFav);
-                      }
-                    }
-                  "
+                  :onToggleFavorite="(product, isFav) => { if (onToggleFavorite) onToggleFavorite(product, isFav); }"
                   :onProductClick="(product) => handleProductClick(product)"
                 ></ProductCard>
               </template>
@@ -442,12 +411,6 @@ function sliderTitle(): string | undefined {
   if (props.title !== undefined) return props.title;
   if (isCrossUpsellMode()) return crossUpsellTitle();
   return undefined;
-}
-function mobileCount(): number {
-  return props.itemsPerView?.mobile || 1;
-}
-function tabletCount(): number {
-  return props.itemsPerView?.tablet || 2;
 }
 function desktopCount(): number {
   return props.itemsPerView?.desktop || 4;

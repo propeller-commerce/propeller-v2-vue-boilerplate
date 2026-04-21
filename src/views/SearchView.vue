@@ -6,57 +6,96 @@
         :language="languageStore.language"
       />
 
-      <div class="flex gap-6">
-        <aside class="hidden lg:block w-64 flex-shrink-0">
+      <div class="flex flex-col lg:flex-row gap-8 mt-4">
+        <!-- Filters Sidebar -->
+        <aside class="w-full lg:w-64 flex-shrink-0">
           <GridFilters
-            :filters="gridFilters"
-            :selectedFilters="filters"
-            :minPrice="minPrice"
-            :maxPrice="maxPrice"
-            :priceBoundsMin="priceBoundsMin"
-            :priceBoundsMax="priceBoundsMax"
+            :filters="gridFilters as AttributeFilter[]"
+            :priceMin="priceBoundsMin"
+            :priceMax="priceBoundsMax"
             :language="languageStore.language"
-            :clearSignal="clearSignal"
             :onFilterChange="handleFilterChange"
             :onPriceChange="handlePriceChange"
             :onClearFilters="handleClearFilters"
+            :clearSignal="clearSignal"
+            :activeTextFilters="filters"
+            :activePriceMin="minPrice"
+            :activePriceMax="maxPrice"
+            :isLoading="filtersLoading"
+            :isMobile="false"
+            portalMode="open"
+            :collapsed="true"
           />
         </aside>
 
-        <div class="flex-1 min-w-0">
-          <GridToolbar
-            :viewMode="viewMode"
-            :offset="offset"
-            :sortField="sortField"
-            :sortOrder="sortOrder"
-            :language="languageStore.language"
-            :onViewModeChange="(mode: string) => viewMode = mode as 'grid' | 'list'"
-            :onOffsetChange="(val: number) => { offset = val; currentPage = 1; updateURL() }"
-            :onSortChange="(field: any, order: any) => { sortField = field; sortOrder = order; currentPage = 1; updateURL() }"
-          />
+        <!-- Products Area -->
+        <div class="flex-1 w-full min-w-0">
+          <div class="sticky top-20 z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
+            <GridToolbar
+              :viewMode="viewMode"
+              :offset="[12, 24, 48]"
+              :itemsFound="itemsFound"
+              :defaultSort="[{ field: sortField, order: sortOrder }]"
+              :defaultOffset="offset"
+              :activeTextFilters="filters"
+              :priceFilterMin="minPrice"
+              :priceFilterMax="maxPrice"
+              :onViewChange="(mode: string) => (viewMode = mode as 'grid' | 'list')"
+              :onOffsetChange="handleOffsetChange"
+              :onSortChange="handleSortChange"
+              :onFilterRemove="handleFilterRemove"
+              :onPriceFilterRemove="handlePriceFilterRemove"
+              :onClearFilters="handleClearFilters"
+            />
+          </div>
 
           <ProductGrid
             :graphqlClient="graphqlClient"
-            :user="authStore.user"
-            :products="products"
-            :isLoading="loading"
+            :term="searchTerm"
+            :user="authStore.user as Contact | Customer"
+            :companyId="companyStore.selectedCompany?.companyId"
+            :configuration="configuration"
+            :language="languageStore.language"
+            :includeTax="priceStore.includeTax"
             :columns="viewMode === 'list' ? 1 : 3"
             :cartId="cartStore.cartId || undefined"
             :createCart="true"
-            :language="languageStore.language"
-            :includeTax="priceStore.includeTax"
-            :companyId="companyStore.companyId || undefined"
-            :configuration="configuration"
-            :onProductClick="(product: any) => router.push(configuration.urls.getProductUrl(product, languageStore.language))"
-            :onCartCreated="(cart: any) => cartStore.setCart(cart)"
+            :showModal="true"
+            :textFilters="activeTextFilters"
+            :showPrice="true"
+            :showStock="true"
+            :showAvailability="false"
+            :allowIncrDecr="true"
+            :allowAddToCart="true"
+            :priceFilterMin="minPrice"
+            :priceFilterMax="maxPrice"
+            :pageSize="offset"
+            :sortField="sortField"
+            :sortOrder="sortOrder"
+            :page="currentPage"
+            :onFiltersChange="handleFiltersChange"
+            :onPriceBoundsChange="handlePriceBoundsChange"
+            :onItemsFoundChange="handleItemsFoundChange"
+            :onLoadingChange="handleLoadingChange"
+            :onPageChange="handleProductGridPageChange"
+            :onProductsResponse="handleProductsResponse"
+            :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+            :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
+            :onProductClick="(product: Product) => router.push(configuration.urls.getProductUrl(product, languageStore.language))"
+            :onClusterClick="(cluster: Cluster) => router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))"
+            :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+            :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
           />
 
-          <GridPagination
-            v-if="productsResponse"
-            :products="productsResponse"
-            :language="languageStore.language"
-            :onPageChange="(page: number) => { currentPage = page; updateURL() }"
-          />
+          <div class="flex justify-center gap-2 mt-12">
+            <GridPagination
+              v-if="productsResponse"
+              :products="productsResponse as ProductsResponse"
+              :language="languageStore.language"
+              :onPageChange="handleGridPaginationPageChange"
+              variant="full"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -64,16 +103,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Enums, type AttributeFilter, type Product, type ProductsResponse } from 'propeller-sdk-v2'
+import {
+  Enums,
+  type AttributeFilter,
+  type ProductsResponse,
+  type ProductTextFilterInput,
+  Contact,
+  Customer,
+  Cart,
+  Product,
+  Cluster,
+} from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
-import { graphqlClient, productService } from '@/lib/api'
-import { configuration } from '@/lib/config'
+import { graphqlClient } from '@/lib/api'
+import { configuration, localizeHref } from '@/lib/config'
 
 import GridFilters from '@/components/propeller/GridFilters.vue'
 import GridTitle from '@/components/propeller/GridTitle.vue'
@@ -94,95 +143,129 @@ const searchTerm = computed(() => {
   return Array.isArray(term) ? term.join(' ') : (term || '')
 })
 
-const products = ref<Product[]>([])
+// Populated via ProductGrid callbacks
 const productsResponse = ref<ProductsResponse | null>(null)
-const loading = ref(false)
 const gridFilters = ref<AttributeFilter[]>([])
+const priceBoundsMin = ref<number | undefined>()
+const priceBoundsMax = ref<number | undefined>()
+const itemsFound = ref(0)
+const filtersLoading = ref(false)
+
+// Local filter / pagination state
 const filters = ref<Record<string, string[]>>({})
 const minPrice = ref<number | undefined>()
 const maxPrice = ref<number | undefined>()
-const priceBoundsMin = ref<number | undefined>()
-const priceBoundsMax = ref<number | undefined>()
 const clearSignal = ref(0)
 const currentPage = ref(1)
 const offset = ref(12)
-const sortField = ref<Enums.ProductSortField>(Enums.ProductSortField.RELEVANCE)
-const sortOrder = ref<Enums.SortOrder>(Enums.SortOrder.DESC)
+const sortField = ref<string>(Enums.ProductSortField.RELEVANCE)
+const sortOrder = ref<string>(Enums.SortOrder.DESC)
 const viewMode = ref<'grid' | 'list'>('grid')
 
-function readFromURL() {
-  const q = route.query
-  if (q.page) currentPage.value = parseInt(q.page as string) || 1
-  if (q.offset) offset.value = parseInt(q.offset as string) || 12
-  if (q.sortField) sortField.value = q.sortField as Enums.ProductSortField
-  if (q.sortOrder) sortOrder.value = q.sortOrder as Enums.SortOrder
-  if (q.minPrice) minPrice.value = parseFloat(q.minPrice as string)
-  if (q.maxPrice) maxPrice.value = parseFloat(q.maxPrice as string)
-  if (q.filters) {
-    try { filters.value = JSON.parse(q.filters as string) } catch {}
+const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
+  Object.entries(filters.value)
+    .filter(([, values]) => values.length > 0)
+    .map(([name, values]) => ({
+      name,
+      values,
+      exclude: false,
+      type: Enums.AttributeType.TEXT,
+    }))
+)
+
+// ── ProductGrid callbacks ─────────────────────────────────────────────────────
+
+function handleFiltersChange(f: AttributeFilter[]) { gridFilters.value = f }
+function handleItemsFoundChange(count: number) { itemsFound.value = count }
+function handleLoadingChange(loading: boolean) { filtersLoading.value = loading }
+function handleProductGridPageChange(p: number) { currentPage.value = p }
+function handleProductsResponse(r: ProductsResponse) { productsResponse.value = r }
+
+function handlePriceBoundsChange(min: number, max: number) {
+  if (priceBoundsMin.value === undefined) priceBoundsMin.value = min
+  if (priceBoundsMax.value === undefined) priceBoundsMax.value = max
+}
+
+// ── GridFilters callbacks ─────────────────────────────────────────────────────
+
+function handleFilterChange(filter: AttributeFilter, value: string | number) {
+  const name = filter.attributeDescription?.name || ''
+  const current = filters.value[name] || []
+  const valueStr = String(value)
+  const next = current.includes(valueStr)
+    ? current.filter(v => v !== valueStr)
+    : [...current, valueStr]
+  if (next.length === 0) {
+    const updated = { ...filters.value }
+    delete updated[name]
+    filters.value = updated
+  } else {
+    filters.value = { ...filters.value, [name]: next }
   }
+  currentPage.value = 1
 }
 
-function updateURL() {
-  const q: Record<string, string> = {}
-  if (currentPage.value > 1) q.page = String(currentPage.value)
-  if (offset.value !== 12) q.offset = String(offset.value)
-  if (sortField.value !== Enums.ProductSortField.RELEVANCE) q.sortField = sortField.value
-  if (sortOrder.value !== Enums.SortOrder.DESC) q.sortOrder = sortOrder.value
-  if (minPrice.value !== undefined) q.minPrice = String(minPrice.value)
-  if (maxPrice.value !== undefined) q.maxPrice = String(maxPrice.value)
-  if (Object.keys(filters.value).length > 0) q.filters = JSON.stringify(filters.value)
-  router.replace({ query: q })
-  search()
+function handleFilterRemove(filterName: string, value: string) {
+  const current = filters.value[filterName] || []
+  const next = current.filter(v => v !== value)
+  if (next.length === 0) {
+    const updated = { ...filters.value }
+    delete updated[filterName]
+    filters.value = updated
+  } else {
+    filters.value = { ...filters.value, [filterName]: next }
+  }
+  currentPage.value = 1
 }
 
-function handleFilterChange(key: string, values: string[]) {
-  if (values.length) filters.value = { ...filters.value, [key]: values }
-  else { const f = { ...filters.value }; delete f[key]; filters.value = f }
-  currentPage.value = 1; updateURL()
+function handlePriceFilterRemove() {
+  minPrice.value = undefined
+  maxPrice.value = undefined
+  currentPage.value = 1
 }
 
-function handlePriceChange(min?: number, max?: number) {
-  minPrice.value = min; maxPrice.value = max; currentPage.value = 1; updateURL()
+function handlePriceChange(min: number, max: number) {
+  minPrice.value = min
+  maxPrice.value = max
+  currentPage.value = 1
 }
 
 function handleClearFilters() {
-  filters.value = {}; minPrice.value = undefined; maxPrice.value = undefined
-  clearSignal.value++; currentPage.value = 1; updateURL()
+  filters.value = {}
+  minPrice.value = undefined
+  maxPrice.value = undefined
+  clearSignal.value++
+  currentPage.value = 1
 }
 
-async function search() {
-  if (!searchTerm.value) return
-  loading.value = true
-  try {
-    const attributeFilters: AttributeFilter[] = Object.entries(filters.value).map(([name, values]) => ({ name, values }))
-    const result = await productService.getProducts({
-      page: currentPage.value,
-      offset: offset.value,
-      searchWord: searchTerm.value,
-      language: languageStore.language,
-      sortField: sortField.value,
-      sortOrder: sortOrder.value,
-      attributeFilters,
-      minPrice: minPrice.value,
-      maxPrice: maxPrice.value,
-      imageSearchFilters: configuration.imageSearchFiltersGrid,
-      imageVariantFilters: configuration.imageVariantFiltersSmall,
-    })
-    productsResponse.value = result || null
-    products.value = result?.items || []
-    if ((result as any)?.attributeFilters?.items) {
-      gridFilters.value = (result as any).attributeFilters.items
-      if (priceBoundsMin.value === undefined) priceBoundsMin.value = (result as any).minPrice
-      if (priceBoundsMax.value === undefined) priceBoundsMax.value = (result as any).maxPrice
-    }
-  } catch (e) {
-    console.error('Search failed', e)
-  } finally {
-    loading.value = false
-  }
+// ── GridToolbar callbacks ─────────────────────────────────────────────────────
+
+function handleOffsetChange(val: number) {
+  offset.value = val
+  currentPage.value = 1
 }
 
-onMounted(() => { readFromURL(); search() })
-watch(searchTerm, () => { currentPage.value = 1; search() })
+function handleSortChange(field: string, order?: string) {
+  sortField.value = field
+  if (order) sortOrder.value = order
+  currentPage.value = 1
+}
+
+// ── GridPagination callback ───────────────────────────────────────────────────
+
+function handleGridPaginationPageChange(page: number) {
+  currentPage.value = page
+}
+
+// Reset filter/page state when search term changes
+watch(searchTerm, () => {
+  filters.value = {}
+  gridFilters.value = []
+  priceBoundsMin.value = undefined
+  priceBoundsMax.value = undefined
+  minPrice.value = undefined
+  maxPrice.value = undefined
+  currentPage.value = 1
+  clearSignal.value++
+})
 </script>
