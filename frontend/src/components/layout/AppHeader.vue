@@ -233,17 +233,16 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Menu as MenuIcon } from 'lucide-vue-next'
-import {
-  CartService,
-  Enums,
-} from 'propeller-sdk-v2'
-import type { Cart, CartSearchInput, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
+import { Enums } from 'propeller-sdk-v2'
+import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
+import { useCart } from '@/composables/useCart'
+import type { AnyUser } from '@/shared/utils/userIdentity'
 import { configuration, localizeHref } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/shared/utils/userUtils'
 
@@ -260,6 +259,14 @@ const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
+
+const { fetchActiveCart } = useCart({
+  graphqlClient,
+  user: computed(() => authStore.user as AnyUser),
+  companyId: computed(() => companyStore.selectedCompany?.companyId ?? undefined),
+  language: computed(() => languageStore.language),
+  configuration,
+})
 
 const headerRef = ref<HTMLElement | null>(null)
 const mainMenuRef = ref<HTMLDivElement | null>(null)
@@ -333,39 +340,6 @@ const accountMenuLinks = computed(() => {
   return links
 })
 
-async function fetchActiveCart(user: Contact | Customer, companyId?: number) {
-  const cartService = new CartService(graphqlClient)
-  try {
-    const searchInput: CartSearchInput = {
-      offset: 100,
-      statuses: [Enums.CartStatus.OPEN],
-    }
-    if ('contactId' in user && user.contactId) {
-      searchInput.contactIds = [user.contactId]
-      if (companyId) searchInput.companyIds = [companyId]
-    } else if ('customerId' in user && user.customerId) {
-      searchInput.customerIds = [user.customerId]
-    }
-    const carts = await cartService.getCarts(searchInput)
-    if (carts?.items?.length) {
-      const existingCartId = carts.items[carts.items.length - 1].cartId
-      const activeCart = await cartService.getCart({
-        cartId: existingCartId,
-        imageSearchFilters: configuration.imageSearchFiltersGrid,
-        imageVariantFilters: configuration.imageVariantFiltersSmall,
-        language: languageStore.language,
-      })
-      if (activeCart) {
-        cartStore.setCart(activeCart)
-        return
-      }
-    }
-    cartStore.setCart(null)
-  } catch (e) {
-    console.error('Failed to fetch active cart:', e)
-  }
-}
-
 async function handleAfterLogin(
   user: Contact | Customer,
   accessToken?: string,
@@ -393,14 +367,14 @@ async function handleAfterLogin(
     languageStore.setLanguage(userLang)
   }
 
-  await fetchActiveCart(cleanUser, contactCompany?.companyId)
+  await fetchActiveCart()
   router.push(localizeHref('/account', userLang || languageStore.language))
 }
 
 async function handleCompanyChange(company: Company) {
   companyStore.setSelectedCompany(company)
   if (authStore.user) {
-    await fetchActiveCart(authStore.user as Contact | Customer, company.companyId)
+    await fetchActiveCart()
   }
 }
 
