@@ -32,6 +32,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useProductInfo } from '../../composables/useProductInfo';
+import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
 
 export interface ClusterInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────
@@ -174,9 +175,7 @@ function getDisplayCluster(): Cluster | null {
 function getClusterName(): string {
   const c = getDisplayCluster();
   if (!c) return '';
-  const lang = (props.language as string) || 'NL';
-  const match = c.names?.find((n: LocalizedString) => n.language === lang);
-  return match?.value || c.names?.[0]?.value || '';
+  return getLanguageString(c.names, props.language || 'NL', '');
 }
 function getClusterSku(): string {
   return getDisplayCluster()?.sku || '';

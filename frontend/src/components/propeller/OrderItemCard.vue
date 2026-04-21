@@ -116,6 +116,7 @@
 <script setup lang="ts">
 import type { OrderItem } from 'propeller-sdk-v2';
 import { computed } from 'vue';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface OrderItemCardProps {
   /** The order item to display */
@@ -278,7 +279,7 @@ function formatItemPrice(price: number): ReturnType<OrderItemCardState['formatIt
     return props.formatPrice(price);
   }
   if (!price && price !== 0) return '-';
-  return '€' + Number(price).toFixed(2);
+  return _formatPrice(price, { symbol: '€' });
 }
 function formatDiscountDisplay(): ReturnType<OrderItemCardState['formatDiscountDisplay']> {
   const discountStr = formatItemPrice(discount.value);

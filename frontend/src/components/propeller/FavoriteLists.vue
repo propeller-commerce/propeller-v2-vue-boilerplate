@@ -415,6 +415,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '../../composables/useFavorites';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface FavoriteListFormData {
   name: string;
@@ -630,7 +631,6 @@ function getTotalCount(list: FavoriteList): ReturnType<FavoriteListsState['getTo
   return getProductCount(list) + getClusterCount(list);
 }
 function getLabel(key: string, fallback: string): ReturnType<FavoriteListsState['getLabel']> {
-  const labels = props.labels as Record<string, string> | undefined;
-  return labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

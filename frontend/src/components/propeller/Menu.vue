@@ -320,6 +320,7 @@
 import { ref, computed, watch } from 'vue';
 import type { Category, Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import { useMenu, type MenuCategory } from '../../composables/useMenu';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface MenuProps {
   /**
@@ -451,7 +452,7 @@ function setHoveredL2(id: number | null): void {
   hoveredL2Id.value = id;
 }
 function getLabel(key: string, fallback: string): string {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getMenuStyle(): string {
   return (props.menuStyle as string) || 'dropdown-vertical';

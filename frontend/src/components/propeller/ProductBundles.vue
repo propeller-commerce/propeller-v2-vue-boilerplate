@@ -384,6 +384,9 @@ import {
   Product,
 } from 'propeller-sdk-v2';
 import { useProductBundles } from '../../composables/useProductBundles';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl } from '../../shared/utils/productHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface ProductBundlesProps {
   // === Core ===
@@ -541,7 +544,7 @@ const userRef    = computed(() => props.user ?? null);
 const companyRef = computed(() => props.companyId);
 const langRef    = computed(() => props.language || 'NL');
 
-const { bundles, loading: bundlesLoading, adding, fetchBundles, addBundleToCart, calcDiscountPercent } = useProductBundles({
+const { bundles, loading: bundlesLoading, adding, cartId: composableCartId, fetchBundles, addBundleToCart } = useProductBundles({
   graphqlClient: props.graphqlClient,
   user: userRef,
   companyId: companyRef,
@@ -582,11 +585,10 @@ function getHidePrices(): ReturnType<ProductBundlesState['getHidePrices']> {
   return (props.portalMode as string) === 'semi-closed' && getIsAnonymous();
 }
 function getLabel(key: string, fallback: string): ReturnType<ProductBundlesState['getLabel']> {
-  const val = (props.labels as Record<string, string>)?.[key];
-  return val !== undefined ? val : fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatPrice(value: number): ReturnType<ProductBundlesState['formatPrice']> {
-  return '\u20AC' + Number(value).toFixed(2);
+  return _formatPrice(Number(value), { symbol: '€' });
 }
 function getBundlePrice(bundle: Bundle): ReturnType<ProductBundlesState['getBundlePrice']> {
   return getIncludeTax() ? bundle.price?.net || 0 : bundle.price?.gross || 0;
@@ -610,7 +612,7 @@ function getDiscountPercentage(
   return Math.round(((original - getBundlePrice(bundle)) / original) * 100);
 }
 function getProductImage(product: Product): ReturnType<ProductBundlesState['getProductImage']> {
-  return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  return _getProductImageUrl(product);
 }
 function getProductName(product: Product): ReturnType<ProductBundlesState['getProductName']> {
   return product?.names?.[0]?.value || '';
@@ -640,7 +642,8 @@ async function handleAddToCart(bundle: Bundle): ReturnType<ProductBundlesState['
       if (props.beforeBundleAddToCart) {
         props.beforeBundleAddToCart(bundle.id, 1);
       }
-      const result = await addBundleToCart(Number(bundle.id), props.cartId);
+      const existingCartId = props.cartId || composableCartId.value;
+      const result = await addBundleToCart(Number(bundle.id), existingCartId || undefined);
       if (!result.success) {
         showToast(result.error || getLabel('errorAdding', 'Failed to add bundle to cart'), 'error');
         return;

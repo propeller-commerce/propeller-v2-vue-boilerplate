@@ -122,6 +122,7 @@ import { ref } from 'vue';
 
 import { Contact, Customer, Address, Company, Enums } from 'propeller-sdk-v2';
 import AddressCard from './AddressCard.vue';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface AddressSelectorProps {
   /** Authenticated user — addresses are derived from their profile. */
@@ -171,7 +172,7 @@ const selectedAddress = ref<AddressSelectorState['selectedAddress']>(null);
 const isLoading = ref<AddressSelectorState['isLoading']>(false);
 
 function getLabel(key: string, fallback: string): ReturnType<AddressSelectorState['getLabel']> {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getActiveCompany(): ReturnType<AddressSelectorState['getActiveCompany']> {
   const user = props.user as Contact | Customer | null;

@@ -36,6 +36,8 @@
 
 <script setup lang="ts">
 import { Category, LocalizedString } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
 
 export interface BreadcrumbsProps {
   /**
@@ -115,14 +117,10 @@ function getDisplayItems(): ReturnType<BreadcrumbsState['getDisplayItems']> {
   return items;
 }
 function getCategoryName(cat: Category): ReturnType<BreadcrumbsState['getCategoryName']> {
-  const lang = (props.language as string) || 'NL';
-  const match = cat.name?.find((n: LocalizedString) => n.language === lang);
-  return match?.value || cat.name?.[0]?.value || '';
+  return getLanguageString(cat.name, props.language || 'NL', '');
 }
 function getCategorySlug(cat: Category): ReturnType<BreadcrumbsState['getCategorySlug']> {
-  const lang = (props.language as string) || 'NL';
-  const match = cat.slug?.find((s: LocalizedString) => s.language === lang);
-  return match?.value || cat.slug?.[0]?.value || '';
+  return getLanguageString(cat.slug, props.language || 'NL', '');
 }
 function getCategoryUrl(
   cat: Category,
@@ -142,6 +140,6 @@ function showSeparatorBefore(index: number): ReturnType<BreadcrumbsState['showSe
   return props.showHome !== false || index > 0;
 }
 function getLabel(key: string, fallback: string): ReturnType<BreadcrumbsState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

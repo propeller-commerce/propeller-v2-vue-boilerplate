@@ -280,6 +280,8 @@ import ProductSpecifications from './ProductSpecifications.vue';
 import ProductDownloads from './ProductDownloads.vue';
 import ProductVideos from './ProductVideos.vue';
 import { useProductSpecs } from '../../composables/useProductSpecs';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLanguageString } from '../../shared/utils/languageResolver';
 
 export interface ProductTabsProps {
   /** Product for which to display the information. */
@@ -421,11 +423,7 @@ onMounted(() => {
 });
 
 const hasDescription = computed(() => {
-  const lang = props.language || 'NL';
-  const descriptions = props.product?.descriptions;
-  if (!descriptions || descriptions.length === 0) return false;
-  const match = descriptions.find((d) => d.language === lang);
-  return !!(match?.value || descriptions[0]?.value);
+  return !!getLanguageString(props.product?.descriptions, props.language || 'NL', '');
 });
 
 watch(
@@ -466,6 +464,6 @@ function selectTab(tab: string): ReturnType<ProductTabsState['selectTab']> {
   activeTab.value = tab;
 }
 function getLabel(key: string, fallback: string): ReturnType<ProductTabsState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

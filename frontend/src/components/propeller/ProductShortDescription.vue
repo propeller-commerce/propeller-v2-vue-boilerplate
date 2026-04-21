@@ -13,6 +13,7 @@
 import { ref, watch } from 'vue';
 
 import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
+import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
 
 export interface ProductShortDescriptionProps {
   /**
@@ -49,8 +50,6 @@ watch(
 function getShortDescription(): ReturnType<ProductShortDescriptionState['getShortDescription']> {
   const product = props.product as Product;
   if (!product?.shortDescriptions) return '';
-  const lang = (props.language as string) || 'NL';
-  const match = product.shortDescriptions.find((d: LocalizedString) => d.language === lang);
-  return match?.value || product.shortDescriptions?.[0]?.value || '';
+  return getLanguageString(product.shortDescriptions, props.language || 'NL', '');
 }
 </script>

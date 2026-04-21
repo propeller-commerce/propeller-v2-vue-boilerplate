@@ -7,7 +7,7 @@
     <FavoriteListDetails
       v-if="authStore.user"
       :graphqlClient="graphqlClient"
-      :user="authStore.user"
+      :user="authStore.user as Contact | Customer"
       :favoriteListId="String(route.params.id)"
       :onListLoaded="(list: any) => { listName = list?.name || '' }"
       :onItemDelete="handleItemDelete"
@@ -37,6 +37,7 @@ import { configuration } from '@/lib/config'
 import { useFavorites } from '@/composables/useFavorites'
 import type { AnyUser } from '@/shared/utils/userIdentity'
 import FavoriteListDetails from '@/components/propeller/FavoriteListDetails.vue'
+import type { Contact, Customer } from 'propeller-sdk-v2'
 
 const route = useRoute()
 const router = useRouter()

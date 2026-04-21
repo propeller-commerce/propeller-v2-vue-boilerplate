@@ -175,6 +175,8 @@
 <script setup lang="ts">
 import type { Order } from 'propeller-sdk-v2';
 import { computed } from 'vue';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface OrderSummaryProps {
   /** The order object from propeller-sdk-v2 */
@@ -343,10 +345,10 @@ function formatItemPrice(price: number): ReturnType<OrderSummaryState['formatIte
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return '\u20AC' + Number(price || 0).toFixed(2);
+  return _formatPrice(price || 0, { symbol: '€' });
 }
 function getLabel(key: string, fallback: string): ReturnType<OrderSummaryState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getCountryName(code: string): ReturnType<OrderSummaryState['getCountryName']> {
   if (!code) return '';

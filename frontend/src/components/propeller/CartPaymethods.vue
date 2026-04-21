@@ -38,6 +38,8 @@
 import { computed, ref, watch } from 'vue';
 
 import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface CartPaymethodsProps {
   /** Shopping cart object from which the payment methods will be displayed */
@@ -118,13 +120,13 @@ function isOnAccountMethod(
   return code === 'on_account' || code === 'onaccount' || code === 'on-account';
 }
 function getLabel(key: string, fallback: string): ReturnType<CartPaymethodsState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatMethodPrice(price: number): ReturnType<CartPaymethodsState['formatMethodPrice']> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return '\u20AC' + Number(price || 0).toFixed(2);
+  return _formatPrice(price || 0, { symbol: '€' });
 }
 function handleSelect(method: CartPaymethod): ReturnType<CartPaymethodsState['handleSelect']> {
   selectedCode.value = method.code;

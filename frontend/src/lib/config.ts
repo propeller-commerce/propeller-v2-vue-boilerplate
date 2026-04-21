@@ -47,6 +47,7 @@ export const configuration = {
   imageVariantFiltersLarge,
   urlPattern: URL_PATTERN,
   taxZone: 'NL',
+  currency: '€',
   baseCategoryId,
   menuDepth,
   urls: {

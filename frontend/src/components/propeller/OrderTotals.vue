@@ -66,6 +66,8 @@
 import { computed } from 'vue';
 
 import { Order, Enums } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface OrderTotalsProps {
   /** The order/quote used to populate the summary data */
@@ -210,12 +212,12 @@ const totalVat = computed(() => {
 });
 
 function getLabel(key: string, fallback: string): ReturnType<OrderTotalsState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatItemPrice(price: number): ReturnType<OrderTotalsState['formatItemPrice']> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return '€' + Number(price || 0).toFixed(2);
+  return _formatPrice(price || 0, { symbol: '€' });
 }
 </script>

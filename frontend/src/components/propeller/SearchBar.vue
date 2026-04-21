@@ -95,6 +95,8 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useProductSearch } from '../../composables/useProductSearch';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface SearchBarResult {
   /** Unique identifier */
@@ -261,13 +263,13 @@ watch(searchResults, (rawItems) => {
 });
 
 function getLabel(key: string, fallback: string): ReturnType<SearchBarState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatItemPrice(price: number): ReturnType<SearchBarState['formatItemPrice']> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return '\u20AC' + Number(price || 0).toFixed(2);
+  return _formatPrice(price || 0, { symbol: '€' });
 }
 function mapProductToResult(
   item: Product | Cluster

@@ -147,6 +147,8 @@
 import { computed } from 'vue';
 
 import { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface ItemsOverviewProps {
   /** Shopping cart object from which the cart items overview will be displayed */
@@ -249,13 +251,13 @@ const items = computed(() => {
 });
 
 function getLabel(key: string, fallback: string): ReturnType<ItemsOverviewState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatItemPrice(price: number): ReturnType<ItemsOverviewState['formatItemPrice']> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return '\u20AC' + Number(price || 0).toFixed(2);
+  return _formatPrice(price || 0, { symbol: '€' });
 }
 function getItemName(item: any): ReturnType<ItemsOverviewState['getItemName']> {
   return item.product?.names?.[0]?.value || 'Product';
@@ -305,7 +307,7 @@ function getBundleName(item: any): ReturnType<ItemsOverviewState['getBundleName'
 function getBundlePrice(item: any): ReturnType<ItemsOverviewState['getBundlePrice']> {
   const price = item.bundle?.price?.net;
   if (price === undefined || price === null) return '';
-  return `\u20AC${Number(price).toFixed(2)}`;
+  return _formatPrice(Number(price), { symbol: '€' });
 }
 function getBundleLeaderName(item: any): ReturnType<ItemsOverviewState['getBundleLeaderName']> {
   const items = item.bundle?.items;
@@ -321,7 +323,7 @@ function getBundleLeaderPrice(item: any): ReturnType<ItemsOverviewState['getBund
   if (!leader) return '';
   const price = leader.price?.net;
   if (price === undefined || price === null) return '';
-  return `\u20AC${Number(price).toFixed(2)}`;
+  return _formatPrice(Number(price), { symbol: '€' });
 }
 function getBundleNonLeaders(item: any): ReturnType<ItemsOverviewState['getBundleNonLeaders']> {
   const items = item.bundle?.items;
@@ -334,6 +336,6 @@ function getBundleItemName(bundleItem: any): ReturnType<ItemsOverviewState['getB
 function getBundleItemPrice(bundleItem: any): ReturnType<ItemsOverviewState['getBundleItemPrice']> {
   const price = bundleItem.price?.net;
   if (price === undefined || price === null) return '';
-  return `\u20AC${Number(price).toFixed(2)}`;
+  return _formatPrice(Number(price), { symbol: '€' });
 }
 </script>

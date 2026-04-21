@@ -56,6 +56,8 @@
 </template>
 
 <script setup lang="ts">
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
 import {
   PaginatedMediaVideoResponse,
   MediaVideo,
@@ -111,10 +113,7 @@ function getVideoUri(video: MediaVideo): ReturnType<ProductVideosState['getVideo
   return match?.uri || vids?.[0]?.uri || '';
 }
 function getVideoTitle(video: MediaVideo): ReturnType<ProductVideosState['getVideoTitle']> {
-  const lang = (props.language as string) || 'NL';
-  const alts = video.alt || [];
-  const match = alts.find((a: LocalizedString) => a.language === lang);
-  return match?.value || alts?.[0]?.value || 'Video';
+  return getLanguageString(video.alt, props.language || 'NL', 'Video');
 }
 function isEmbeddable(uri: string): ReturnType<ProductVideosState['isEmbeddable']> {
   return uri.includes('youtube.com') || uri.includes('youtu.be') || uri.includes('vimeo.com');
@@ -147,6 +146,6 @@ function getEmbedUrl(uri: string): ReturnType<ProductVideosState['getEmbedUrl']>
   return uri;
 }
 function getLabel(key: string, fallback: string): ReturnType<ProductVideosState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

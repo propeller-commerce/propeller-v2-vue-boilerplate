@@ -193,6 +193,9 @@ import {
 } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart.vue';
 import ItemStock from './ItemStock.vue';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl, getClusterImageUrl as _getClusterImageUrl, getProductSku as _getProductSku, getClusterSku as _getClusterSku } from '../../shared/utils/productHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface FavoriteListItemProps {
   /** Product or Cluster to be listed as a favorite list item */
@@ -335,16 +338,12 @@ function getName(): ReturnType<FavoriteListItemState['getName']> {
   );
 }
 function getSku(): ReturnType<FavoriteListItemState['getSku']> {
-  if (isProduct()) {
-    return getProduct()?.sku || '';
-  }
-  return getCluster()?.sku || getCluster()?.defaultProduct?.sku || '';
+  if (isProduct()) return _getProductSku(getProduct());
+  return _getClusterSku(getCluster());
 }
 function getImageUrl(): ReturnType<FavoriteListItemState['getImageUrl']> {
-  if (isProduct()) {
-    return getProduct()?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-  }
-  return getCluster()?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  if (isProduct()) return _getProductImageUrl(getProduct());
+  return _getClusterImageUrl(getCluster());
 }
 function getItemUrl(): ReturnType<FavoriteListItemState['getItemUrl']> {
   if (isProduct()) {
@@ -369,10 +368,10 @@ function getItemPrice(): ReturnType<FavoriteListItemState['getItemPrice']> {
   if (!priceObj) return '';
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
   if (!value && value !== 0) return '';
-  return `\u20AC${Number(value).toFixed(2)}`;
+  return _formatPrice(Number(value), { symbol: '€' });
 }
 function getLabel(key: string, fallback: string): ReturnType<FavoriteListItemState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function handleItemClick(e: any): ReturnType<FavoriteListItemState['handleItemClick']> {
   if (props.onItemClick) {

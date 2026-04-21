@@ -438,6 +438,8 @@ import {
 } from 'propeller-sdk-v2';
 
 import { useOrders } from '../../composables/useOrders';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface OrderListProps {
   /** The authenticated user (Contact or Customer) */
@@ -584,7 +586,7 @@ function formatDate(dateString: string): ReturnType<OrderListState['formatDate']
 function formatPrice(price: number): ReturnType<OrderListState['formatPrice']> {
   if (props.formatPrice) return props.formatPrice(price);
   if (!price) return '-';
-  return `€${Number(price).toFixed(2)}`;
+  return _formatPrice(price, { symbol: '€' });
 }
 function getStatusColor(status: string): ReturnType<OrderListState['getStatusColor']> {
   if (props.getStatusColor) return props.getStatusColor(status);
@@ -607,6 +609,6 @@ function getColumnLabel(col: string): ReturnType<OrderListState['getColumnLabel'
   return col.charAt(0).toUpperCase() + col.slice(1);
 }
 function getLabel(key: string, fallback: string): ReturnType<OrderListState['getLabel']> {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

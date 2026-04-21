@@ -92,6 +92,7 @@ import {
   Enums,
 } from 'propeller-sdk-v2';
 import { useProductSpecs } from '../../composables/useProductSpecs';
+import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
 
 export interface ProductSpecificationsProps {
   /**
@@ -182,10 +183,8 @@ function getAttributesByGroup(group: string): AttributeResult[] {
   );
 }
 function getAttributeLabel(attr: AttributeResult): string {
-  const lang = (props.language as string) || 'NL';
   const descs = attr.attributeDescription?.descriptions || [];
-  const match = descs.find((d: LocalizedString) => d.language === lang);
-  return match?.value || attr.attributeDescription?.name || '';
+  return getLanguageString(descs, props.language || 'NL', attr.attributeDescription?.name || '');
 }
 function getAttributeValue(attr: AttributeResult): string {
   const v = attr.value;

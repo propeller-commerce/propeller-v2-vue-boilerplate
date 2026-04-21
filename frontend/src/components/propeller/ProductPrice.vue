@@ -26,6 +26,9 @@
 
 <script setup lang="ts">
 import { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { isContentHidden as _isContentHidden } from '../../shared/utils/visibilityHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface ProductPriceProps {
   /**
@@ -90,14 +93,12 @@ interface ProductPriceState {
 const props = defineProps<ProductPriceProps>();
 
 function isHidden(): ReturnType<ProductPriceState['isHidden']> {
-  return (props.portalMode as string) === 'semi-closed' && !props.user;
+  return _isContentHidden(props.portalMode, props.user);
 }
 function formatPrice(
   value: number | null | undefined
 ): ReturnType<ProductPriceState['formatPrice']> {
-  if (value === null || value === undefined) return '';
-  const currency = (props.currency as string) || '\u20AC';
-  return `${currency}${Number(value).toFixed(2)}`;
+  return _formatPrice(value, { symbol: props.currency || '\u20AC' });
 }
 function getOptionsTotal(useNet: boolean): ReturnType<ProductPriceState['getOptionsTotal']> {
   const options = (props.options as ClusterOption[]) || [];
@@ -149,6 +150,6 @@ function getSecondaryTaxLabel(): ReturnType<ProductPriceState['getSecondaryTaxLa
   return props.includeTax ? getLabel('exclTax', 'excl. VAT') : getLabel('inclTax', 'incl. VAT');
 }
 function getLabel(key: string, fallback: string): ReturnType<ProductPriceState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

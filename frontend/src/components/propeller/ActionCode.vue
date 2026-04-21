@@ -77,6 +77,7 @@ import { computed, onMounted, ref } from 'vue';
 
 import { GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { useCart } from '../../composables/useCart';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface ActionCodeProps {
   /** GraphQL client for the Propeller SDK */
@@ -161,7 +162,7 @@ const hasAppliedCode = computed(() => {
 });
 
 function getLabel(key: string, fallback: string): ReturnType<ActionCodeState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 async function handleApply(): ReturnType<ActionCodeState['handleApply']> {
   if (!code.value.trim() || loading.value) return;

@@ -184,6 +184,7 @@
 import { computed, ref } from 'vue';
 
 import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface CartOverviewProps {
   /** GraphQL client for the Propeller SDK */
@@ -298,7 +299,7 @@ const isPurchaseDisabled = computed(() => {
 });
 
 function getLabel(key: string, fallback: string): ReturnType<CartOverviewState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatAddress(addr: CartAddress): ReturnType<CartOverviewState['formatAddress']> {
   if (!addr || !addr.street) return '';

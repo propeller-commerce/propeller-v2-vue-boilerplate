@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { ProductInventory } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface ItemStockProps {
   /**
@@ -64,7 +65,7 @@ const props = withDefaults(defineProps<ItemStockProps>(), {
 });
 
 function getLabel(key: string, fallback: string): string {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getTotalQuantity(): number {
   const qty = (props.inventory as ProductInventory)?.totalQuantity;

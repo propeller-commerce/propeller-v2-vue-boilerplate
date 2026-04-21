@@ -199,6 +199,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '../../composables/useFavorites';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface AddToFavoriteProps {
   /** The initialized GraphQL Client instance */
@@ -360,8 +361,7 @@ async function handleRemoveFromList(
   }
 }
 function getLabel(key: string, fallback: string): ReturnType<AddToFavoriteState['getLabel']> {
-  const labels = props.labels as Record<string, string> | undefined;
-  return labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getMemberLists(): ReturnType<AddToFavoriteState['getMemberLists']> {
   const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;

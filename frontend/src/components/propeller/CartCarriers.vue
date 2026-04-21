@@ -48,6 +48,8 @@
 import { computed, ref, watch } from 'vue';
 
 import { Cart, CartCarrier } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface CartCarriersProps {
   /** Shopping cart object from which the carriers will be displayed */
@@ -112,13 +114,13 @@ watch(
   { immediate: true }
 );
 function getLabel(key: string, fallback: string): ReturnType<CartCarriersState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatCarrierPrice(price: number): ReturnType<CartCarriersState['formatCarrierPrice']> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return '\u20AC' + Number(price || 0).toFixed(2);
+  return _formatPrice(price || 0, { symbol: '€' });
 }
 function getLogoUrl(carrier: CartCarrier): ReturnType<CartCarriersState['getLogoUrl']> {
   return carrier.logo || '';

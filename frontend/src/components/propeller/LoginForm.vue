@@ -177,6 +177,7 @@
 import { computed, ref } from 'vue';
 import type { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import { useAuth } from '../../composables/useAuth';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 
 
@@ -354,7 +355,7 @@ const errorMessage = computed(() => {
 
 
 function getLabel(key: string, fallback: string): string {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 async function handleSubmit(e: any) {
   e.preventDefault();

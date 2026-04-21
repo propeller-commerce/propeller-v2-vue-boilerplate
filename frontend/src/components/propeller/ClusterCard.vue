@@ -221,6 +221,10 @@ import { ref } from 'vue';
 
 import { Cluster, AttributeResult } from 'propeller-sdk-v2';
 import ItemStock from './ItemStock.vue';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getClusterImageUrl as _getClusterImageUrl, getClusterSku as _getClusterSku } from '../../shared/utils/productHelpers';
+import { getLanguageString } from '../../shared/utils/languageResolver';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface ClusterCardProps {
   // === Core ===
@@ -380,33 +384,24 @@ function isRow(): ReturnType<ClusterCardState['isRow']> {
 }
 function getClusterName(): ReturnType<ClusterCardState['getClusterName']> {
   const lang = (props.language as string) || 'NL';
-  const names = (props.cluster as Cluster)?.names;
-  const match = names?.find((n: any) => n.language === lang);
-  if (match?.value) return match.value;
-  const dpNames = (props.cluster as Cluster)?.defaultProduct?.names;
-  const dpMatch = dpNames?.find((n: any) => n.language === lang);
-  return dpMatch?.value || names?.[0]?.value || dpNames?.[0]?.value || 'Cluster';
+  const clusterName = getLanguageString((props.cluster as Cluster)?.names, lang, '');
+  if (clusterName) return clusterName;
+  return getLanguageString((props.cluster as Cluster)?.defaultProduct?.names, lang, 'Cluster');
 }
 function getClusterSku(): ReturnType<ClusterCardState['getClusterSku']> {
-  return (props.cluster as Cluster)?.sku || (props.cluster as Cluster)?.defaultProduct?.sku || '';
+  return _getClusterSku(props.cluster as Cluster);
 }
 function getClusterImageUrl(): ReturnType<ClusterCardState['getClusterImageUrl']> {
-  return (
-    (props.cluster as Cluster)?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]
-      ?.url || ''
-  );
+  return _getClusterImageUrl(props.cluster as Cluster);
 }
 function getClusterUrl(): ReturnType<ClusterCardState['getClusterUrl']> {
   return props.configuration.urls.getClusterUrl(props.cluster, props.language);
 }
 function getClusterShortDescription(): ReturnType<ClusterCardState['getClusterShortDescription']> {
   const lang = (props.language as string) || 'NL';
-  const descs = (props.cluster as Cluster)?.shortDescriptions;
-  const match = descs?.find((d: any) => d.language === lang);
-  if (match?.value) return match.value;
-  const dpDescs = (props.cluster as Cluster)?.defaultProduct?.shortDescriptions;
-  const dpMatch = dpDescs?.find((d: any) => d.language === lang);
-  return dpMatch?.value || descs?.[0]?.value || dpDescs?.[0]?.value || '';
+  const desc = getLanguageString((props.cluster as Cluster)?.shortDescriptions, lang, '');
+  if (desc) return desc;
+  return getLanguageString((props.cluster as Cluster)?.defaultProduct?.shortDescriptions, lang, '');
 }
 function getClusterManufacturer(): ReturnType<ClusterCardState['getClusterManufacturer']> {
   return (props.cluster as Cluster)?.defaultProduct?.manufacturer || '';
@@ -435,10 +430,10 @@ function getClusterPrice(): ReturnType<ClusterCardState['getClusterPrice']> {
     props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
   if (!value && value !== 0) return '';
-  return `\u20AC${Number(value).toFixed(2)}`;
+  return _formatPrice(Number(value), { symbol: '€' });
 }
 function getLabel(key: string, fallback: string): ReturnType<ClusterCardState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function handleClusterClick(e: any): ReturnType<ClusterCardState['handleClusterClick']> {
   if (props.onClusterClick) {

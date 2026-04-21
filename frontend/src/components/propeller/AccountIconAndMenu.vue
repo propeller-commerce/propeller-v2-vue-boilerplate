@@ -178,6 +178,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import LoginForm from './LoginForm.vue';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface AccountMenuLink {
   /** Display label for the link */
@@ -409,7 +410,7 @@ function getUserName(): ReturnType<AccountIconAndMenuState['getUserName']> {
   return 'User';
 }
 function getLabel(key: string, fallback: string): ReturnType<AccountIconAndMenuState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getMenuTitle(): ReturnType<AccountIconAndMenuState['getMenuTitle']> {
   return (

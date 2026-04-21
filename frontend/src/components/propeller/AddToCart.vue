@@ -285,6 +285,9 @@
 
    import  { CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, TransformationsInput, MediaImageProductSearchInput, Enums, CartMainItem, CartBaseItem, Cluster, PurchaseAuthorizationConfig } from 'propeller-sdk-v2';
 import { useCart } from '../../composables/useCart';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl, getProductSku as _getProductSku } from '../../shared/utils/productHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 
 
@@ -535,15 +538,15 @@ function getProductUrl(): ReturnType<AddToCartState["getProductUrl"]>{
 return props.configuration?.urls?.getProductUrl(props.product, props.language) ?? '#';
 }
 function getProductImageUrl(): ReturnType<AddToCartState["getProductImageUrl"]>{
-return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+return _getProductImageUrl(props.product as Product);
 }
 function getProductSku(): ReturnType<AddToCartState["getProductSku"]>{
-return (props.product as Product)?.sku || '';
+return _getProductSku(props.product as Product);
 }
 function getProductPrice(): ReturnType<AddToCartState["getProductPrice"]>{
 const price = props.price !== undefined ? props.price : (props.product as Product)?.price?.gross;
 if (!price && price !== 0) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
+return _formatPrice(Number(price), { symbol: '€' });
 }
 async function handleAddToCart(): ReturnType<AddToCartState["handleAddToCart"]>{
 if (!props.graphqlClient) return;
@@ -593,7 +596,7 @@ function getModalPrice(): ReturnType<AddToCartState["getModalPrice"]>{
 if (addedCartItem.value) {
   const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax.value;
   const price = useTax ? addedCartItem.value.totalSumNet : addedCartItem.value.totalSum;
-  return '\u20AC' + Number(price).toFixed(2);
+  return _formatPrice(Number(price), { symbol: '€' });
 }
 return getProductPrice();
 }
@@ -612,6 +615,6 @@ success.value = false;
 addedCartItem.value = null;
 }
 function getLabel(key: string, fallback: string): ReturnType<AddToCartState["getLabel"]>{
-return (props.labels as any)?.[key] || fallback;
+return _getLabel(props.labels, key, fallback);
 }
 </script>

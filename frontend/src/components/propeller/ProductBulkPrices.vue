@@ -51,6 +51,8 @@
 <script setup lang="ts">
 import { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
 import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface ProductBulkPricesProps {
   /**
@@ -194,7 +196,7 @@ function getPrice(tier: ProductPrice): ReturnType<ProductBulkPricesState['getPri
   const useTax: boolean = getIncludeTax();
   const value: number | undefined = useTax ? tier.net : tier.gross;
   if (value === null || value === undefined) return '';
-  return `\u20AC${Number(value).toFixed(2)}`;
+  return _formatPrice(Number(value), { symbol: '€' });
 }
 function getQuantityLabel(
   tier: ProductPrice,
@@ -220,7 +222,6 @@ function getQuantityLabel(
   return `${qty}+`;
 }
 function getLabel(key: string, fallback: string): ReturnType<ProductBulkPricesState['getLabel']> {
-  const val = (props.labels as Record<string, string>)?.[key];
-  return val !== undefined ? val : fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

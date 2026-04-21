@@ -311,6 +311,9 @@
   import { onMounted, ref, watch, computed } from "vue"
   import  { GraphQLClient, CartMainItem, CartBaseItem, BundleItem, Cart, ProductInventory, type CrossupsellSearchInput, Crossupsell, Product, Cluster, Enums, type CrossupsellsQueryVariables, Contact, Customer, type MediaImageProductSearchInput, type TransformationsInput } from 'propeller-sdk-v2';
   import { useCart } from '../../composables/useCart';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl, getProductSku as _getProductSku } from '../../shared/utils/productHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
   export interface CartItemProps {
  /** GraphQL client for the Propeller SDK */
@@ -474,7 +477,7 @@ fetchCrossupsells() })
   watch(() => [props.cartItem], () => { quantity.value = props.cartItem.quantity || 1;
 notes.value = props.cartItem.notes || '' }, {immediate: true})
    function getLabel(key: string, fallback: string): ReturnType<CartItemState["getLabel"]>{
-return props.labels?.[key] || fallback;
+return _getLabel(props.labels, key, fallback);
 }
 function getProductName(): ReturnType<CartItemState["getProductName"]>{
 return props.cartItem.product?.names?.[0]?.value || 'Product';
@@ -486,10 +489,10 @@ if (props.configuration?.urls && props.cartItem.product) {
 return '#';
 }
 function getProductImageUrl(): ReturnType<CartItemState["getProductImageUrl"]>{
-return props.cartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+return _getProductImageUrl(props.cartItem.product as Product);
 }
 function getProductSku(): ReturnType<CartItemState["getProductSku"]>{
-return props.cartItem.product?.sku || '';
+return _getProductSku(props.cartItem.product as Product);
 }
 function getInventory(): ReturnType<CartItemState["getInventory"]>{
 const inv = props.cartItem.product?.inventory;
@@ -498,7 +501,7 @@ return inv || null;
 function getFormattedPrice(): ReturnType<CartItemState["getFormattedPrice"]>{
 const item = props.cartItem;
 const price = props.includeTax ? item?.totalSumNet || 0 : item?.totalSum || 0;
-return `\u20AC${Number(price).toFixed(2)}`;
+return _formatPrice(Number(price), { symbol: '€' });
 }
 function isBundleItem(): ReturnType<CartItemState["isBundleItem"]>{
 return !!props.cartItem.bundle;
@@ -509,7 +512,7 @@ return props.cartItem.bundle?.name || 'Bundle';
 function getBundlePrice(): ReturnType<CartItemState["getBundlePrice"]>{
 const price = props.cartItem.bundle?.price?.net;
 if (price === undefined || price === null) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
+return _formatPrice(Number(price), { symbol: '€' });
 }
 function getBundleLeaderName(): ReturnType<CartItemState["getBundleLeaderName"]>{
 const items = props.cartItem.bundle?.items;
@@ -525,7 +528,7 @@ const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
 if (!leader) return '';
 const price = leader.price?.net;
 if (price === undefined || price === null) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
+return _formatPrice(Number(price), { symbol: '€' });
 }
 function getBundleNonLeaders(): ReturnType<CartItemState["getBundleNonLeaders"]>{
 const items = props.cartItem.bundle?.items;
@@ -538,7 +541,7 @@ return bundleItem.product.names?.[0]?.value || 'Product';
 function getBundleItemPrice(bundleItem: BundleItem): ReturnType<CartItemState["getBundleItemPrice"]>{
 const price = bundleItem.price?.net;
 if (price === undefined || price === null) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
+return _formatPrice(Number(price), { symbol: '€' });
 }
 async function handleQuantityChange(newQuantity: number): ReturnType<CartItemState["handleQuantityChange"]>{
 if (newQuantity < 1 || loading.value) return;
@@ -625,7 +628,7 @@ const price = product?.price;
 if (!price) return '';
 const value = props.includeTax ? price.net : price.gross;
 if (value === undefined || value === null) return '';
-return `\u20AC${Number(value).toFixed(2)}`;
+return _formatPrice(Number(value), { symbol: '€' });
 }
 async function handleAddCrossupsellToCart(item: Crossupsell): ReturnType<CartItemState["handleAddCrossupsellToCart"]>{
 if (!props.cartId || addingCrossupsellId.value) return;

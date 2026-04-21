@@ -86,6 +86,7 @@
 import { computed, ref, watch } from 'vue';
 
 import { Cart } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface DeliveryDateProps {
   /** The cart to use for the delivery date */
@@ -199,7 +200,7 @@ watch(
   { immediate: true }
 );
 function getLabel(key: string, fallback: string): ReturnType<DeliveryDateState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function toApiDate(date: Date): ReturnType<DeliveryDateState['toApiDate']> {
   const y = date.getFullYear();

@@ -29,7 +29,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import type { Category, LocalizedString } from 'propeller-sdk-v2';
+import type { Category } from 'propeller-sdk-v2';
+import { getLanguageString } from '../../shared/utils/languageResolver';
 
 export interface CategoryDescriptionProps {
   // ── Required ────────────────────────────────────────────────────────────
@@ -88,11 +89,7 @@ watch(
   { immediate: true }
 );
 function getDescription(): ReturnType<CategoryDescriptionState['getDescription']> {
-  if (!props.category?.description) return '';
-  const match = props.category.description.find(
-    (d: LocalizedString) => d.language === props.language
-  );
-  return match?.value || '';
+  return getLanguageString(props.category?.description, props.language || 'NL', '');
 }
 function getMaxLen(): ReturnType<CategoryDescriptionState['getMaxLen']> {
   return props.maxLength || 200;

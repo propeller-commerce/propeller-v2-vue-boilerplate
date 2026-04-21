@@ -93,6 +93,8 @@ import { computed, ref } from 'vue';
 
 import { Cart, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
 import { useCart } from '../../composables/useCart';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface CartSummaryProps {
   /** The shopping cart used to populate the cart summary data */
@@ -266,13 +268,13 @@ const totalInclVat = computed(() => {
 const showRequestAuthorizationButton = computed(() => !checkoutAllowed.value);
 
 function getLabel(key: string, fallback: string): ReturnType<CartSummaryState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatItemPrice(price: number): ReturnType<CartSummaryState['formatItemPrice']> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return '\u20AC' + Number(price || 0).toFixed(2);
+  return _formatPrice(price || 0, { symbol: '€' });
 }
 function handleCheckoutClick(): ReturnType<CartSummaryState['handleCheckoutClick']> {
   if (props.onCheckoutButtonClick) {

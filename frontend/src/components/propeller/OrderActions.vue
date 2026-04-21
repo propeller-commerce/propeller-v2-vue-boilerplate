@@ -101,6 +101,7 @@ import {
 } from 'propeller-sdk-v2';
 
 import { useOrders } from '../../composables/useOrders';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface OrderActionsProps {
   /** GraphQL client for the Propeller SDK */
@@ -170,7 +171,7 @@ function dismissToast(): ReturnType<OrderActionsState['dismissToast']> {
   toastVisible.value = false;
 }
 function getLabel(key: string, fallback: string): ReturnType<OrderActionsState['getLabel']> {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 async function handleDownloadPDF(): ReturnType<OrderActionsState['handleDownloadPDF']> {
   if (!props.order?.id) return;

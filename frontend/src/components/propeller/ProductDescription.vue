@@ -31,6 +31,7 @@
 import { ref, watch } from 'vue';
 
 import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
+import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
 
 export interface ProductDescriptionProps {
   /**
@@ -87,9 +88,7 @@ watch(
 function getDescription(): ReturnType<ProductDescriptionState['getDescription']> {
   const product = props.product as Product;
   if (!product?.descriptions) return '';
-  const lang = (props.language as string) || 'NL';
-  const match = product.descriptions.find((d: LocalizedString) => d.language === lang);
-  return match?.value || product.descriptions?.[0]?.value || '';
+  return getLanguageString(product.descriptions, props.language || 'NL', '');
 }
 function getMaxLen(): ReturnType<ProductDescriptionState['getMaxLen']> {
   const max = props.maxLength;

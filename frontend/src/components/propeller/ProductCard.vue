@@ -271,6 +271,10 @@ import type { CartChildItemInput } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart.vue';
 import ItemStock from './ItemStock.vue';
 import ProductPriceDisplay from './ProductPrice.vue';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl, getProductSku as _getProductSku } from '../../shared/utils/productHelpers';
+import { getLanguageString } from '../../shared/utils/languageResolver';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface ProductCardProps {
   // === Core ===
@@ -539,16 +543,13 @@ function isRow(): ReturnType<ProductCardState['isRow']> {
   return (props.columns as number) === 1;
 }
 function getProductName(): ReturnType<ProductCardState['getProductName']> {
-  const lang = (props.language as string) || 'NL';
-  const names = (props.product as Product)?.names;
-  const match = names?.find((n: any) => n.language === lang);
-  return match?.value || names?.[0]?.value || 'Product';
+  return getLanguageString((props.product as Product)?.names, props.language || 'NL', 'Product');
 }
 function getProductSku(): ReturnType<ProductCardState['getProductSku']> {
-  return (props.product as Product)?.sku || '';
+  return _getProductSku(props.product as Product);
 }
 function getProductImageUrl(): ReturnType<ProductCardState['getProductImageUrl']> {
-  return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  return _getProductImageUrl(props.product as Product);
 }
 function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
   if (!props.showPrice) return '';
@@ -557,22 +558,19 @@ function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
     props.includeTax !== undefined ? !!props.includeTax : includeTax.value;
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
   if (!value && value !== 0) return '';
-  return `\u20AC${Number(value).toFixed(2)}`;
+  return _formatPrice(Number(value), { symbol: '€' });
 }
 function getProductUrl(): ReturnType<ProductCardState['getProductUrl']> {
   return props.configuration.urls.getProductUrl(props.product, props.language);
 }
 function getProductShortDescription(): ReturnType<ProductCardState['getProductShortDescription']> {
-  const lang = (props.language as string) || 'NL';
-  const descs = (props.product as Product)?.shortDescriptions;
-  const match = descs?.find((d: any) => d.language === lang);
-  return match?.value || descs?.[0]?.value || '';
+  return getLanguageString((props.product as Product)?.shortDescriptions, props.language || 'NL', '');
 }
 function getProductManufacturer(): ReturnType<ProductCardState['getProductManufacturer']> {
   return (props.product as Product)?.manufacturer || '';
 }
 function getLabel(key: string, fallback: string): ReturnType<ProductCardState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getAttributeValue(code: string): ReturnType<ProductCardState['getAttributeValue']> {
   const attrs = (props.product as Product)?.attributes?.items || [];

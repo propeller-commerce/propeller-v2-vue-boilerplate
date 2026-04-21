@@ -12,7 +12,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import type { Category, LocalizedString } from 'propeller-sdk-v2';
+import type { Category } from 'propeller-sdk-v2';
+import { getLanguageString } from '../../shared/utils/languageResolver';
 
 export interface CategoryShortDescriptionProps {
   // ── Required ────────────────────────────────────────────────────────────
@@ -42,10 +43,6 @@ interface CategoryShortDescriptionState {
 const props = defineProps<CategoryShortDescriptionProps>();
 
 const html = computed(() => {
-  if (!props.category?.shortDescription) return '';
-  const match = props.category.shortDescription.find(
-    (d: LocalizedString) => d.language === props.language
-  );
-  return match?.value || '';
+  return getLanguageString(props.category?.shortDescription, props.language || 'NL', '');
 });
 </script>

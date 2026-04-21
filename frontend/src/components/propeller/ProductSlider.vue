@@ -155,6 +155,7 @@ import {
 import ProductCard from './ProductCard.vue';
 import ClusterCard from './ClusterCard.vue';
 import { useProductSlider } from '../../composables/useProductSlider';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface ProductSliderProps {
   // === Data source ===
@@ -424,8 +425,7 @@ function portalMode(): string {
   return (props.portalMode as string) || 'open';
 }
 function getLabel(key: string, fallback: string): string {
-  const val = (props.labels as Record<string, string>)?.[key];
-  return val !== undefined ? val : fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function isCluster(item: any): boolean {
   return 'clusterId' in item && !('productId' in item);

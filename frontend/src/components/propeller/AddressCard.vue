@@ -694,6 +694,7 @@ import {
   OrderAddress,
   Enums,
 } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface AddressCardProps {
   /** GraphQL client for the Propeller SDK (only needed when editing) */
@@ -895,7 +896,7 @@ watch(
   { immediate: true }
 );
 function getLabel(key: string, fallback: string): ReturnType<AddressCardState['getLabel']> {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getCountryName(code: string): ReturnType<AddressCardState['getCountryName']> {
   if (!code) return '';

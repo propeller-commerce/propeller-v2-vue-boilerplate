@@ -350,6 +350,8 @@ import {
   GraphQLClient,
 } from 'propeller-sdk-v2';
 import { useCart } from '../../composables/useCart';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 export interface CartIconAndSidebarProps {
   /**
@@ -526,8 +528,7 @@ function getTotalItems(): ReturnType<CartIconAndSidebarState['getTotalItems']> {
 }
 function getTotalPrice(): ReturnType<CartIconAndSidebarState['getTotalPrice']> {
   const total = props.cart?.total?.totalNet;
-  if (total === undefined || total === null) return '\u20AC0.00';
-  return `\u20AC${Number(total).toFixed(2)}`;
+  return _formatPrice(total ?? 0, { symbol: '€' });
 }
 function getItems(): ReturnType<CartIconAndSidebarState['getItems']> {
   return getCartItems().filter((item: CartMainItem) => item && item.product);
@@ -577,7 +578,7 @@ function handleCartPageClick(): ReturnType<CartIconAndSidebarState['handleCartPa
   if (props.onCartPageButtonClick) props.onCartPageButtonClick(props.cart as Cart);
 }
 function getLabel(key: string, fallback: string): ReturnType<CartIconAndSidebarState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getSidebarTitle(): ReturnType<CartIconAndSidebarState['getSidebarTitle']> {
   return props.cartSidebarTitle || props.labels?.['cartSidebarTitle'] || 'Shopping cart';
@@ -598,7 +599,7 @@ function getBundleName(item: CartMainItem): ReturnType<CartIconAndSidebarState['
 function getBundlePrice(item: CartMainItem): ReturnType<CartIconAndSidebarState['getBundlePrice']> {
   const price = item.bundle?.price?.net;
   if (price === undefined || price === null) return '';
-  return `\u20AC${Number(price).toFixed(2)}`;
+  return _formatPrice(Number(price), { symbol: '€' });
 }
 function getBundleLeaderName(
   item: CartMainItem
@@ -618,7 +619,7 @@ function getBundleLeaderPrice(
   if (!leader) return '';
   const price = leader.price?.net;
   if (price === undefined || price === null) return '';
-  return `\u20AC${Number(price).toFixed(2)}`;
+  return _formatPrice(Number(price), { symbol: '€' });
 }
 function getBundleNonLeaders(
   item: CartMainItem
@@ -637,7 +638,7 @@ function getBundleItemPrice(
 ): ReturnType<CartIconAndSidebarState['getBundleItemPrice']> {
   const price = bundleItem.price?.net;
   if (price === undefined || price === null) return '';
-  return `\u20AC${Number(price).toFixed(2)}`;
+  return _formatPrice(Number(price), { symbol: '€' });
 }
 function showCheckoutButton(): ReturnType<CartIconAndSidebarState['showCheckoutButton']> {
   if (props.cartCheckoutButton === false) return false;

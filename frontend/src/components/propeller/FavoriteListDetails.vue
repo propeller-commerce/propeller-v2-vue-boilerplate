@@ -127,6 +127,7 @@ import {
 } from 'propeller-sdk-v2';
 import FavoriteListItem from './FavoriteListItem.vue';
 import GridPagination from './GridPagination.vue';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */
@@ -295,7 +296,7 @@ watch(
   { immediate: true }
 );
 function getLabel(key: string, fallback: string): ReturnType<FavoriteListDetailsState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getItemsPerPage(): ReturnType<FavoriteListDetailsState['getItemsPerPage']> {
   return props.itemsPerPage || 12;

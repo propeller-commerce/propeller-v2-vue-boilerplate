@@ -100,6 +100,9 @@
 import { ref } from 'vue';
 
 import { Product, ClusterOption, Enums } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl } from '../../shared/utils/productHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 /**
  * Flattened render model for one product inside an option dropdown.
@@ -199,10 +202,10 @@ const props = defineProps<ClusterOptionsProps>();
 const selectedProductIds = ref<ClusterOptionsState['selectedProductIds']>({});
 
 function getLabel(key: string, fallback: string): ReturnType<ClusterOptionsState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function formatPrice(price: number): ReturnType<ClusterOptionsState['formatPrice']> {
-  return `\u20AC${Number(price).toFixed(2)}`;
+  return _formatPrice(price, { symbol: '\u20AC' });
 }
 function getProductName(product: Product): ReturnType<ClusterOptionsState['getProductName']> {
   return (product as Product).names?.[0]?.value || `Product ${(product as Product).productId}`;
@@ -210,17 +213,7 @@ function getProductName(product: Product): ReturnType<ClusterOptionsState['getPr
 function getProductImageUrl(
   product: Product
 ): ReturnType<ClusterOptionsState['getProductImageUrl']> {
-  const media = (product as Product).media;
-  if (media?.images?.items && Array.isArray(media.images.items) && media.images.items.length > 0) {
-    const firstImage = media.images.items[0];
-    if (firstImage?.imageVariants?.[0]?.url) {
-      return firstImage.imageVariants[0].url;
-    }
-    if ((firstImage as any)?.variants?.[0]?.url) {
-      return (firstImage as any).variants[0].url;
-    }
-  }
-  return '';
+  return _getProductImageUrl(product);
 }
 function getOptionsForRender(): ReturnType<ClusterOptionsState['getOptionsForRender']> {
   const options = (props.options as ClusterOption[]) || [];

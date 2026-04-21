@@ -106,20 +106,21 @@
 
         <!-- Bundles -->
         <ProductBundles
-          v-if="(product as Product).bundles?.length"
-          :product="product as Product"
-          :companyId="companyStore.companyId || undefined"
           :graphqlClient="graphqlClient"
+          :productId="product.productId"
+          :companyId="companyStore.companyId || undefined"
           :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
           :language="languageStore.language"
+          taxZone="NL"
+          :includeTax="priceStore.includeTax"
           :configuration="configuration"
           :createCart="true"
+          :showIndividualItems="true"
           :showModal="true"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+          :afterBundleAddToCart="(cart: Cart) => cartStore.setCart(cart)"
           :onProceedToCheckout="() => router.push('/checkout')"
-          :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
-          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
         />
 
         <!-- Accessories -->

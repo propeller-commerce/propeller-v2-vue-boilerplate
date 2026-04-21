@@ -12,7 +12,7 @@
                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
                 :value="setting.selectedValue"
                 :disabled="setting.disabled"
-                @change="async (e) => handleAttributeSelect(setting.name, e.target.value)"
+                @change="async (e) => handleAttributeSelect(setting.name, (e.target as HTMLSelectElement).value)"
               >
                 <option value="">
                   {{ getLabel('selectOption', '— Select —') }}
@@ -141,7 +141,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 import {
   Product,
   AttributeResult,
@@ -319,7 +319,7 @@ onMounted(() => {
 });
 
 function getLabel(key: string, fallback: string): ReturnType<ClusterConfiguratorState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function getSortedSettings(): ReturnType<ClusterConfiguratorState['getSortedSettings']> {
   const settings = (props.config as ClusterConfig)?.settings;

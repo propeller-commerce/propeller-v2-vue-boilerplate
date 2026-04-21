@@ -386,6 +386,7 @@ import {
   Enums,
   PurchaseAuthorizationConfigCreateInput,
 } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface PurchaseAuthorizationConfiguratorProps {
   /** GraphQL client for the Propeller SDK */
@@ -484,6 +485,6 @@ function getTotalPages(): number {
 }
 
 function getLabel(key: string, fallback: string): string {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

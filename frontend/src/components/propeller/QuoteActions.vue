@@ -48,6 +48,7 @@ import { computed, ref } from 'vue';
 
 import { Order, GraphQLClient, Enums } from 'propeller-sdk-v2';
 import { useOrders } from '../../composables/useOrders';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface QuoteActionsProps {
   /** GraphQL client for the Propeller SDK */
@@ -107,7 +108,7 @@ const isAcceptDisabled = computed(() => {
 });
 
 function getLabel(key: string, fallback: string): ReturnType<QuoteActionsState['getLabel']> {
-  return props.labels?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function handleTermsChange(checked: boolean): ReturnType<QuoteActionsState['handleTermsChange']> {
   termsAccepted.value = checked;

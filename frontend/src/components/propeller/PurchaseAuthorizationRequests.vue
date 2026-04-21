@@ -235,6 +235,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { usePurchaseAuthorizationRequests } from '../../composables/usePurchaseAuthorization';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
 
 import {
   Contact,
@@ -308,7 +310,7 @@ const {
 });
 
 function getLabel(key: string, fallback: string): string {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 
 function formatDate(dateStr: string): string {
@@ -321,9 +323,6 @@ function formatDate(dateStr: string): string {
 function formatPrice(price: number): string {
   if (props.formatPrice) return props.formatPrice(price);
   if (!price) return '-';
-  return `€${Number(price).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return _formatPrice(price, { symbol: '€' });
 }
 </script>

@@ -57,6 +57,8 @@
 </template>
 
 <script setup lang="ts">
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
 import {
   PaginatedMediaDocumentResponse,
   MediaDocument,
@@ -111,10 +113,7 @@ function getDocumentUrl(doc: MediaDocument): ReturnType<ProductDownloadsState['g
   return match?.originalUrl || docs?.[0]?.originalUrl || '';
 }
 function getDocumentName(doc: MediaDocument): ReturnType<ProductDownloadsState['getDocumentName']> {
-  const lang = (props.language as string) || 'NL';
-  const alts = doc.alt || [];
-  const match = alts.find((a: LocalizedString) => a.language === lang);
-  return match?.value || alts?.[0]?.value || 'Download';
+  return getLanguageString(doc.alt, props.language || 'NL', 'Download');
 }
 function getDocumentMime(doc: MediaDocument): ReturnType<ProductDownloadsState['getDocumentMime']> {
   const lang = (props.language as string) || 'NL';
@@ -123,6 +122,6 @@ function getDocumentMime(doc: MediaDocument): ReturnType<ProductDownloadsState['
   return match?.mimeType || docs?.[0]?.mimeType || '';
 }
 function getLabel(key: string, fallback: string): ReturnType<ProductDownloadsState['getLabel']> {
-  return (props.labels as Record<string, string>)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 </script>

@@ -272,6 +272,7 @@
 import { computed, ref } from 'vue';
 
 import { Order, Shipment, ShipmentItem, TrackAndTrace, OrderItem } from 'propeller-sdk-v2';
+import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
 
 export interface OrderShipmentsProps {
   /** The current order the user is viewing */
@@ -298,7 +299,7 @@ const activeShipment = ref<OrderShipmentsState['activeShipment']>(null);
 const shipments = computed(() => props.order.shipments || []);
 
 function getLabel(key: string, fallback: string): ReturnType<OrderShipmentsState['getLabel']> {
-  return (props.labels as any)?.[key] || fallback;
+  return _getLabel(props.labels, key, fallback);
 }
 function openModal(shipment: Shipment): ReturnType<OrderShipmentsState['openModal']> {
   activeShipment.value = shipment;
