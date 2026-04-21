@@ -99,13 +99,14 @@
         <ProductTabs
           :graphqlClient="graphqlClient"
           :product="product as Product"
+          :productId="product.productId"
           :language="languageStore.language"
           :includeTax="priceStore.includeTax"
         />
 
         <!-- Bundles -->
         <ProductBundles
-          v-if="(product as any).bundles?.length"
+          v-if="(product as Product).bundles?.length"
           :product="product as Product"
           :companyId="companyStore.companyId || undefined"
           :graphqlClient="graphqlClient"
@@ -117,6 +118,8 @@
           :showModal="true"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :onProceedToCheckout="() => router.push('/checkout')"
+          :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
         />
 
         <!-- Accessories -->
@@ -134,18 +137,18 @@
           :showModal="true"
           :createCart="true"
           :companyId="companyStore.companyId || undefined"
-          :onCartCreated="(cart: any) => cartStore.setCart(cart)"
-          :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
+          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
           :onProceedToCheckout="() => router.push('/checkout')"
           :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
-          :onProductClick="(p: any) => router.push(configuration.urls.getProductUrl(p, languageStore.language))"
-          :onClusterClick="(c: any) => router.push(configuration.urls.getClusterUrl(c, languageStore.language))"
+          :onProductClick="(p: Product) => router.push(configuration.urls.getProductUrl(p, languageStore.language))"
+          :onClusterClick="(c: Cluster) => router.push(configuration.urls.getClusterUrl(c, languageStore.language))"
         />
 
         <!-- Related Products -->
         <ProductSlider
           :graphqlClient="graphqlClient"
-          :user="authStore.user"
+          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
           :language="languageStore.language"
           :includeTax="priceStore.includeTax"
@@ -157,12 +160,12 @@
           :showModal="true"
           :createCart="true"
           :companyId="companyStore.companyId || undefined"
-          :onCartCreated="(cart: any) => cartStore.setCart(cart)"
-          :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
+          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
           :onProceedToCheckout="() => router.push('/checkout')"
           :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
-          :onProductClick="(p: any) => router.push(configuration.urls.getProductUrl(p, languageStore.language))"
-          :onClusterClick="(c: any) => router.push(configuration.urls.getClusterUrl(c, languageStore.language))"
+          :onProductClick="(p: Product) => router.push(configuration.urls.getProductUrl(p, languageStore.language))"
+          :onClusterClick="(c: Cluster) => router.push(configuration.urls.getClusterUrl(c, languageStore.language))"
         />
       </template>
     </div>

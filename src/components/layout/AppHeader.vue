@@ -121,6 +121,7 @@
               :language="languageStore.language"
               :includeTax="priceStore.includeTax"
               :companyId="companyStore.companyId || undefined"
+              :cartCheckoutButton="true"
               :onCheckoutButtonClick="() => router.push(localizeHref('/checkout', languageStore.language))"
               :onCartPageButtonClick="() => router.push(localizeHref('/cart', languageStore.language))"
               :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"

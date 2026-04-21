@@ -102,7 +102,7 @@ watch(
     if (!selectedCode.value && props.cart?.paymentData?.method) {
       selectedCode.value = props.cart.paymentData.method as string;
       if (props.onPaymethodSelect) {
-        const match = payMethods.find((m: CartPaymethod) => m.code === selectedCode.value);
+        const match = payMethods.value.find((m: CartPaymethod) => m.code === selectedCode.value);
         if (match) props.onPaymethodSelect(match);
       }
     }

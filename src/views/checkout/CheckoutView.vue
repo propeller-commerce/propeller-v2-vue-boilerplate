@@ -41,8 +41,14 @@
             <div v-if="currentStep === 1" class="px-6 pb-6 space-y-4">
               <AddressCard
                 v-if="cart?.invoiceAddress?.street"
-                :address="cart.invoiceAddress"
+                :address="cart.invoiceAddress as CartAddress"
                 :showEmail="true"
+                :showFullName="true"
+                :showStreet="true"
+                :showPostalCode="true"
+                :showCity="true"
+                :showCountry="true"
+                :showNumberExtension="true"
                 :enableDelete="false"
                 :enableSetDefault="false"
                 :onEdit="(addr) => handleAddressSubmit(addr, 'INVOICE', false)"
@@ -94,10 +100,17 @@
             <div v-if="currentStep === 2" class="px-6 pb-6 space-y-4">
               <template v-if="cart?.deliveryAddress?.street">
                 <AddressCard
-                  :address="cart.deliveryAddress"
+                  :address="cart.deliveryAddress as CartAddress"
                   :showEmail="true"
+                  :showFullName="true"
+                  :showStreet="true"
+                  :showPostalCode="true"
+                  :showCity="true"
+                  :showCountry="true"
+                  :showNumberExtension="true"
                   :enableDelete="false"
                   :enableSetDefault="false"
+                  :enableEdit="true"
                   :onEdit="(addr) => handleAddressSubmit(addr, 'DELIVERY', false)"
                   :countries="COUNTRIES"
                 />
@@ -106,9 +119,9 @@
                   <button @click="currentStep = 3" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition">Confirm Delivery Address</button>
                   <AddressSelector
                     v-if="authStore.isAuthenticated"
-                    :user="authStore.user"
+                    :user="authStore.user as Contact | Customer | null"
                     :companyId="companyStore.companyId ?? undefined"
-                    addressType="delivery"
+                    :addressType="Enums.AddressType.delivery"
                     :onAddressSelected="(addr) => handleAddressSubmit(addr, 'DELIVERY', true)"
                     :countries="COUNTRIES"
                     class="ml-auto"
@@ -148,8 +161,8 @@
                 <p v-if="step3Submitted && !selectedPayment" class="text-sm text-destructive">Please select a payment method</p>
                 <CartPaymethods
                   v-if="cart"
-                  :cart="(cart as any)"
-                  :user="authStore.user"
+                  :cart="(cart as Cart)"
+                  :user="authStore.user as Contact | Customer"
                   :onPaymethodSelect="(pm) => selectedPayment = pm.code"
                 />
               </div>
@@ -159,7 +172,7 @@
                 <p v-if="step3Submitted && !selectedCarrier" class="text-sm text-destructive">Please select a carrier</p>
                 <CartCarriers
                   v-if="cart"
-                  :cart="(cart as any)"
+                  :cart="(cart as Cart)"
                   :showPrice="false"
                   :onCarrierSelect="(c) => selectedCarrier = c.name"
                 />
@@ -170,9 +183,12 @@
                 <p v-if="step3Submitted && !selectedDeliveryDate" class="text-sm text-destructive">Please select a delivery date</p>
                 <DeliveryDate
                   v-if="cart"
-                  :cart="(cart as any)"
-                  :initialDate="(cart as any)?.postageData?.requestDate"
+                  :cart="(cart as Cart)"
+                  :initialDate="(cart as Cart)?.postageData?.requestDate"
                   :onDateSelect="(d) => selectedDeliveryDate = d"
+                  :showUpcomingDays="3"
+                  :skipWeekends="true"
+                  :showDatePicker="true"
                 />
               </div>
               <div class="flex gap-4 pt-4">
@@ -224,8 +240,12 @@
                 <CartOverview
                   v-if="cart"
                   :graphqlClient="graphqlClient"
-                  :cart="(cart as any)"
-                  :onTermsAndConditionsClick="() => window.open('/terms-conditions', '_blank')"
+                  :cart="(cart as Cart)"
+                  :showTermsAndConditions="true"
+                  :showReference="true"
+                  :showNotes="true"
+                  :showPurchaseButton="true"
+                  :onTermsAndConditionsClick="() => openTermsAndConditions()"
                   :onPurchaseButtonClick="(_cart, reference, notes) => handlePlaceOrder(reference, notes)"
                 />
               </template>
@@ -240,19 +260,25 @@
               <h3 class="text-lg font-semibold mb-4">Cart Items</h3>
               <ItemsOverview
                 v-if="cart"
-                :cart="(cart as any)"
+                :cart="(cart as Cart)"
                 :showAvailability="false"
                 :itemNameClickable="false"
+                :showImage="true"
+                :showSku="true"
+                :showQuantity="true"
+                :showPrice="true"
+                :showStockComponent="true"
+                :isChildItem="true"
               />
             </div>
             <div class="bg-white rounded-lg shadow border p-6">
               <CartSummary
                 v-if="cart"
-                :cart="(cart as any)"
+                :cart="(cart as Cart)"
                 title="Order Summary"
                 :showCheckoutButton="false"
                 :graphqlClient="graphqlClient"
-                :user="authStore.user ?? undefined"
+                :user="authStore.user as Contact | Customer | undefined"
                 :companyId="companyStore.companyId ?? undefined"
                 :afterRequestAuthorization="handleAfterRequestAuthorization"
                 :onError="(err) => console.error('Authorization request failed:', err)"
@@ -268,12 +294,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import {
-  Enums,
-  CartService,
-  OrderService,
-} from 'propeller-sdk-v2'
-import type { Cart, CartUpdateAddressInput, Contact, Customer, Company } from 'propeller-sdk-v2'
+import { Enums } from 'propeller-sdk-v2'
+import type { Cart, CartUpdateAddressInput, Contact, Customer, CartAddress } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { usePriceStore } from '@/stores/price'
@@ -333,26 +355,26 @@ function isContact(u: Contact | Customer | null): u is Contact {
   return u !== null && 'company' in u
 }
 
-function getActiveCompany(): Company | null {
+function getActiveCompany(): any | null {
   const user = authStore.user
-  if (!user || !isContact(user)) return null
-  const storedId = companyStore.companyId
-  if (storedId) {
+  if (!user || !isContact(user as Contact | Customer | null)) return null
+  const storedCompanyId = companyStore.companyId
+  if (storedCompanyId) {
     const companiesRaw = (user as any).companies
-    const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined
+    const items = companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw
     if (Array.isArray(items)) {
-      const found = items.find((c: Company) => c.companyId === storedId)
+      const found = items.find((c: any) => c.companyId === storedCompanyId)
       if (found) return found
     }
   }
-  return ((user as Contact).company as Company | undefined) ?? null
+  return (user as any).company ?? null
 }
 
 function getUserDefaultAddress(type: 'invoice' | 'delivery'): any | null {
   const user = authStore.user
   if (!user) return null
   let addresses: any[] = []
-  if (isContact(user)) {
+  if (isContact(user as Contact | Customer | null)) {
     const company = getActiveCompany()
     if (company) addresses = (company as any).addresses || []
   } else {
@@ -364,15 +386,26 @@ function getUserDefaultAddress(type: 'invoice' | 'delivery'): any | null {
     || null
 }
 
+let lastInitCart: any = null
+
 async function initializeCheckout() {
-  const c = cart.value
-  if (!c || !(c as any).items || (c as any).items.length === 0) {
+  const c = cart.value as any
+  if (!c || !c.items || c.items.length === 0) {
     if (!orderPlaced.value) router.replace(localizeHref('/cart', languageStore.language))
     return
   }
 
-  const hasInvoice = !!(c as any).invoiceAddress?.street
-  const hasDelivery = !!(c as any).deliveryAddress?.street
+  // Skip re-init if cart data hasn't changed (prevents overriding step set by handleAddressSubmit)
+  if (
+    lastInitCart &&
+    lastInitCart.cartId === c.cartId &&
+    lastInitCart.invoiceAddress?.street === c.invoiceAddress?.street &&
+    lastInitCart.deliveryAddress?.street === c.deliveryAddress?.street
+  ) return
+  lastInitCart = c
+
+  const hasInvoice = !!c.invoiceAddress?.street
+  const hasDelivery = !!c.deliveryAddress?.street
 
   if (authStore.isAuthenticated && (!hasInvoice || !hasDelivery)) {
     try {
@@ -411,9 +444,9 @@ async function initializeCheckout() {
     }
   }
 
-  const updatedCart = cart.value as any
-  const updatedHasInvoice = !!updatedCart?.invoiceAddress?.street
-  const updatedHasDelivery = !!updatedCart?.deliveryAddress?.street
+  const finalCart = cart.value as any
+  const updatedHasInvoice = !!finalCart?.invoiceAddress?.street
+  const updatedHasDelivery = !!finalCart?.deliveryAddress?.street
   if (updatedHasInvoice && updatedHasDelivery) currentStep.value = 3
   else if (updatedHasInvoice) currentStep.value = 2
   else currentStep.value = 1
@@ -554,7 +587,7 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
 
     if (response?.cartOrderId) {
       const orderId = response.cartOrderId
-      await orderService.setOrderStatus({
+      const orderServiceResponse = await orderService.setOrderStatus({
         orderId,
         status: orderStatus,
         payStatus: Enums.PaymentStatuses.OPEN,
@@ -564,14 +597,16 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
         deleteCart: true,
       })
 
-      if (isQuoteMode.value) {
-        await (orderService as any).triggerQuoteSendRequest?.({
-          orderId,
-          language: languageStore.language,
-        })
+      if (orderServiceResponse?.id === orderId) {
+        if (isQuoteMode.value) {
+          await (orderService as any).triggerQuoteSendRequest?.({
+            orderId,
+            language: languageStore.language,
+          })
+        }
+        cartStore.setCart(null)
       }
 
-      cartStore.setCart(null)
       const thankYouUrl = isQuoteMode.value
         ? localizeHref(`/checkout/thank-you/${orderId}`, languageStore.language) + '?mode=quote'
         : localizeHref(`/checkout/thank-you/${orderId}`, languageStore.language)
@@ -588,10 +623,20 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
   }
 }
 
+function openTermsAndConditions() {
+  window.open('/terms-conditions', '_blank')
+}
+
 function handleAfterRequestAuthorization(updatedCart: Cart) {
   cartStore.setCart(null)
   router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, languageStore.language))
 }
+
+watch(
+  [() => cartStore.cart, () => authStore.isAuthenticated],
+  () => { initializeCheckout() },
+  { immediate: false }
+)
 
 onMounted(() => initializeCheckout())
 </script>

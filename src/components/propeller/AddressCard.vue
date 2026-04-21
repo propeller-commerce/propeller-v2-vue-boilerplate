@@ -7,16 +7,22 @@
             <div class="font-bold text-lg mb-1">{{ addr?.company }}</div>
           </template>
 
-          <template v-if="showFullName !== false && fullName">
-            <div class="font-medium mb-1">{{ fullName }}</div>
+          <template v-if="showFullName !== false && (addr?.firstName || addr?.lastName)">
+            <div class="font-medium mb-1">
+              {{ [props.showSalutation !== false ? (addr?.gender === 'M' ? 'Mr.' : addr?.gender === 'F' ? 'Mrs.' : null) : null, addr?.firstName, addr?.middleName, addr?.lastName].filter(Boolean).join(' ') }}
+            </div>
           </template>
 
-          <template v-if="showStreet !== false && streetLine">
-            <div class="text-gray-600">{{ streetLine }}</div>
+          <template v-if="showStreet !== false && addr?.street">
+            <div class="text-gray-600">
+              {{ [addr?.street, showNumberExtension !== false ? addr?.number : null, showNumberExtension !== false ? addr?.numberExtension : null].filter(Boolean).join(' ') }}
+            </div>
           </template>
 
-          <template v-if="cityLine">
-            <div class="text-gray-600">{{ cityLine }}</div>
+          <template v-if="(showPostalCode !== false && addr?.postalCode) || (showCity !== false && addr?.city)">
+            <div class="text-gray-600">
+              {{ [showPostalCode !== false ? addr?.postalCode : null, showCity !== false ? addr?.city : null].filter(Boolean).join(' ') }}
+            </div>
           </template>
 
           <template v-if="showCountry !== false && addr?.country">
@@ -94,7 +100,7 @@
                   :value="editGender"
                   @change="
                     async (e) => {
-                      editGender = e.target.value;
+                      editGender = (e.target as HTMLInputElement | HTMLSelectElement).value as Enums.Gender;
                     }
                   "
                 >
@@ -119,7 +125,7 @@
                   :value="editCompany"
                   @change="
                     async (e) => {
-                      editCompany = e.target.value;
+                      editCompany = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                 />
@@ -135,7 +141,7 @@
                   :value="editFirstName"
                   @change="
                     async (e) => {
-                      editFirstName = e.target.value;
+                      editFirstName = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -151,7 +157,7 @@
                   :value="editMiddleName"
                   @change="
                     async (e) => {
-                      editMiddleName = e.target.value;
+                      editMiddleName = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                 />
@@ -165,7 +171,7 @@
                   :value="editLastName"
                   @change="
                     async (e) => {
-                      editLastName = e.target.value;
+                      editLastName = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -182,7 +188,7 @@
                   :value="editStreet"
                   @change="
                     async (e) => {
-                      editStreet = e.target.value;
+                      editStreet = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -197,7 +203,7 @@
                   :value="editNumber"
                   @change="
                     async (e) => {
-                      editNumber = e.target.value;
+                      editNumber = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -213,7 +219,7 @@
                   :value="editNumberExtension"
                   @change="
                     async (e) => {
-                      editNumberExtension = e.target.value;
+                      editNumberExtension = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                 />
@@ -229,7 +235,7 @@
                   :value="editPostalCode"
                   @change="
                     async (e) => {
-                      editPostalCode = e.target.value;
+                      editPostalCode = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -244,7 +250,7 @@
                   :value="editCity"
                   @change="
                     async (e) => {
-                      editCity = e.target.value;
+                      editCity = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -259,7 +265,7 @@
                 :value="editCountry"
                 @change="
                   async (e) => {
-                    editCountry = e.target.value;
+                    editCountry = (e.target as HTMLInputElement | HTMLSelectElement).value;
                   }
                 "
                 :required="true"
@@ -282,7 +288,7 @@
                   :value="editEmail"
                   @change="
                     async (e) => {
-                      editEmail = e.target.value;
+                      editEmail = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -298,7 +304,7 @@
                   :value="editPhone"
                   @change="
                     async (e) => {
-                      editPhone = e.target.value;
+                      editPhone = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                 />
@@ -313,7 +319,7 @@
                   :checked="editIcp === Enums.YesNo.Y"
                   @change="
                     async (e) => {
-                      editIcp = e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N;
+                      editIcp = (e.target as HTMLInputElement).checked ? Enums.YesNo.Y : Enums.YesNo.N;
                     }
                   "
                 /><label for="icp-inline" class="text-sm font-medium">{{
@@ -390,7 +396,7 @@
                     :value="editGender"
                     @change="
                       async (e) => {
-                        editGender = e.target.value;
+                        editGender = (e.target as HTMLInputElement | HTMLSelectElement).value as Enums.Gender;
                       }
                     "
                   >
@@ -415,7 +421,7 @@
                     :value="editCompany"
                     @change="
                       async (e) => {
-                        editCompany = e.target.value;
+                        editCompany = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                   />
@@ -431,7 +437,7 @@
                     :value="editFirstName"
                     @change="
                       async (e) => {
-                        editFirstName = e.target.value;
+                        editFirstName = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                     :required="true"
@@ -447,7 +453,7 @@
                     :value="editMiddleName"
                     @change="
                       async (e) => {
-                        editMiddleName = e.target.value;
+                        editMiddleName = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                   />
@@ -461,7 +467,7 @@
                     :value="editLastName"
                     @change="
                       async (e) => {
-                        editLastName = e.target.value;
+                        editLastName = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                     :required="true"
@@ -478,7 +484,7 @@
                     :value="editStreet"
                     @change="
                       async (e) => {
-                        editStreet = e.target.value;
+                        editStreet = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                     :required="true"
@@ -493,7 +499,7 @@
                     :value="editNumber"
                     @change="
                       async (e) => {
-                        editNumber = e.target.value;
+                        editNumber = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                     :required="true"
@@ -509,7 +515,7 @@
                     :value="editNumberExtension"
                     @change="
                       async (e) => {
-                        editNumberExtension = e.target.value;
+                        editNumberExtension = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                   />
@@ -525,7 +531,7 @@
                     :value="editPostalCode"
                     @change="
                       async (e) => {
-                        editPostalCode = e.target.value;
+                        editPostalCode = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                     :required="true"
@@ -540,7 +546,7 @@
                     :value="editCity"
                     @change="
                       async (e) => {
-                        editCity = e.target.value;
+                        editCity = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                     :required="true"
@@ -555,7 +561,7 @@
                   :value="editCountry"
                   @change="
                     async (e) => {
-                      editCountry = e.target.value;
+                      editCountry = (e.target as HTMLInputElement | HTMLSelectElement).value;
                     }
                   "
                   :required="true"
@@ -578,7 +584,7 @@
                     :value="editEmail"
                     @change="
                       async (e) => {
-                        editEmail = e.target.value;
+                        editEmail = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                     :required="true"
@@ -594,7 +600,7 @@
                     :value="editPhone"
                     @change="
                       async (e) => {
-                        editPhone = e.target.value;
+                        editPhone = (e.target as HTMLInputElement | HTMLSelectElement).value;
                       }
                     "
                   />
@@ -609,7 +615,7 @@
                     :checked="editIcp === Enums.YesNo.Y"
                     @change="
                       async (e) => {
-                        editIcp = e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N;
+                        editIcp = (e.target as HTMLInputElement).checked ? Enums.YesNo.Y : Enums.YesNo.N;
                       }
                     "
                   /><label for="icp-modal" class="text-sm font-medium">{{
@@ -813,10 +819,6 @@ interface AddressCardState {
   getCountryName: (code: string) => string;
   addr: any;
   showCard: boolean;
-  salutation: string;
-  fullName: string;
-  streetLine: string;
-  cityLine: string;
   formTitle: string;
   openEditModal: () => void;
   handleSaveEdit: (e: any) => Promise<void>;
@@ -860,41 +862,6 @@ const showCard = computed(() => {
   if (props.inline && !props.address) return false;
   return true;
 });
-const salutation = computed(() => {
-  const g = addr?.gender;
-  if (g === 'M') return 'Mr.';
-  if (g === 'F') return 'Mrs.';
-  return '';
-});
-const fullName = computed(() => {
-  const parts: string[] = [];
-  if (props.showSalutation !== false && salutation) {
-    parts.push(salutation);
-  }
-  if (addr?.firstName) parts.push(addr.firstName);
-  if (addr?.middleName) parts.push(addr.middleName);
-  if (addr?.lastName) parts.push(addr.lastName);
-  return parts.join(' ');
-});
-const streetLine = computed(() => {
-  const parts: string[] = [];
-  if (addr?.street) parts.push(addr.street);
-  if (props.showNumberExtension !== false) {
-    if (addr?.number) parts.push(addr.number);
-    if (addr?.numberExtension) parts.push(addr.numberExtension);
-  }
-  return parts.join(' ');
-});
-const cityLine = computed(() => {
-  const parts: string[] = [];
-  if (props.showPostalCode !== false && addr?.postalCode) {
-    parts.push(addr.postalCode);
-  }
-  if (props.showCity !== false && addr?.city) {
-    parts.push(addr.city);
-  }
-  return parts.join(' ');
-});
 const formTitle = computed(() => {
   if (props.title) return props.title;
   if (props.isNew) return getLabel('newTitle', 'New Address');
@@ -920,7 +887,7 @@ function getCountryName(code: string): ReturnType<AddressCardState['getCountryNa
   return code;
 }
 function openEditModal(): ReturnType<AddressCardState['openEditModal']> {
-  const a = addr;
+  const a = addr.value;
   editCompany.value = a?.company || '';
   editGender.value = a?.gender || 'M';
   editFirstName.value = a?.firstName || '';
@@ -946,9 +913,9 @@ async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEd
     props.beforeSave();
   }
   const editedAddress = {
-    id: addr?.id,
-    type: addr?.type || props.addressType || '',
-    isDefault: addr?.isDefault,
+    id: addr.value?.id,
+    type: addr.value?.type || props.addressType || '',
+    isDefault: addr.value?.isDefault,
     company: editCompany.value,
     gender: editGender.value,
     firstName: editFirstName.value,
@@ -979,14 +946,14 @@ async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEd
   }
 }
 function confirmDelete(): ReturnType<AddressCardState['confirmDelete']> {
-  const id = addr?.id;
+  const id = addr.value?.id;
   if (id != null) {
     if (props.onDelete) {
-      props.onDelete(addr);
+      props.onDelete(addr.value);
     }
     showDeleteConfirm.value = false;
     if (props.afterDelete) {
-      props.afterDelete(addr);
+      props.afterDelete(addr.value);
     }
   } else {
     showDeleteConfirm.value = false;
@@ -994,10 +961,10 @@ function confirmDelete(): ReturnType<AddressCardState['confirmDelete']> {
 }
 function handleSetDefault(): ReturnType<AddressCardState['handleSetDefault']> {
   if (props.onSetDefault) {
-    props.onSetDefault(addr);
+    props.onSetDefault(addr.value);
   }
   if (props.afterSetDefault) {
-    props.afterSetDefault(addr);
+    props.afterSetDefault(addr.value);
   }
 }
 function closeEditModal(): ReturnType<AddressCardState['closeEditModal']> {

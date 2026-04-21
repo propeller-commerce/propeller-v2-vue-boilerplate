@@ -66,6 +66,12 @@
                     :address="address"
                     :enableActions="false"
                     :countries="countries"
+                    :showFullName="true"
+                    :showStreet="true"
+                    :showPostalCode="true"
+                    :showCity="true"
+                    :showCountry="true"
+                    :showNumberExtension="true"
                   ></AddressCard>
                 </div>
               </template>

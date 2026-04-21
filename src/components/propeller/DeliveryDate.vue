@@ -151,7 +151,7 @@ const showDatePicker = computed(() => {
   return props.showDatePicker !== undefined ? props.showDatePicker : true;
 });
 const isCustomDateSelected = computed(() => {
-  return selectedDate.value !== '' && upcomingDates.indexOf(selectedDate.value) === -1;
+  return selectedDate.value !== '' && upcomingDates.value.indexOf(selectedDate.value) === -1;
 });
 const containerClass = computed(() => {
   return props.containerClass || 'delivery-date';
@@ -161,9 +161,9 @@ const upcomingDates = computed(() => {
   const today = new Date();
   const current = new Date(today);
   current.setDate(current.getDate() + 1);
-  while (days.length < upcomingDays) {
+  while (days.length < upcomingDays.value) {
     const dayOfWeek = current.getDay();
-    if (!skipWeekends || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
+    if (!skipWeekends.value || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
       days.push(toApiDate(current));
     }
     current.setDate(current.getDate() + 1);

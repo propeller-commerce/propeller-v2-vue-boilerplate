@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Company } from 'propeller-sdk-v2'
+import { stripLeadingUnderscores } from '@/shared/utils/userUtils'
 
 const STORAGE_KEY = 'selected_company'
 
 function loadCompanyFromStorage(): Company | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? (JSON.parse(stored) as Company) : null
+    return stored ? (stripLeadingUnderscores(JSON.parse(stored)) as Company) : null
   } catch {
     return null
   }

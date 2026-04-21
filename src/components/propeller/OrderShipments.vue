@@ -165,11 +165,11 @@
                             </template>
 
                             <template v-if="!shipmentItem.name">
-                              <template v-if="!!getOrderItemForShipmentItem(shipmentItem)">
-                                {{ getOrderItemForShipmentItem(shipmentItem)?.name || '-' }}
+                              <template v-if="!!getOrderItemForShipmentItem(shipmentItem as ShipmentItem)">
+                                {{ getOrderItemForShipmentItem(shipmentItem as ShipmentItem)?.name || '-' }}
                               </template>
 
-                              <template v-if="!getOrderItemForShipmentItem(shipmentItem)">
+                              <template v-if="!getOrderItemForShipmentItem(shipmentItem as ShipmentItem)">
                                 -
                               </template>
                             </template>
@@ -180,11 +180,11 @@
                             </template>
 
                             <template v-if="!shipmentItem.sku">
-                              <template v-if="!!getOrderItemForShipmentItem(shipmentItem)">
-                                {{ getOrderItemForShipmentItem(shipmentItem)?.product?.sku || '-' }}
+                              <template v-if="!!getOrderItemForShipmentItem(shipmentItem as ShipmentItem)">
+                                {{ getOrderItemForShipmentItem(shipmentItem as ShipmentItem)?.product?.sku || '-' }}
                               </template>
 
-                              <template v-if="!getOrderItemForShipmentItem(shipmentItem)">
+                              <template v-if="!getOrderItemForShipmentItem(shipmentItem as ShipmentItem)">
                                 -
                               </template>
                             </template>
@@ -220,7 +220,7 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-primary text-primary text-sm font-medium hover:bg-primary/5 transition-colors"
-                        :href="buildTrackAndTraceUrl(tat)"
+                        :href="buildTrackAndTraceUrl(tat as TrackAndTrace)"
                         ><svg
                           fill="none"
                           viewBox="0 0 24 24"
@@ -269,7 +269,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { Order, Shipment, ShipmentItem, TrackAndTrace, OrderItem } from 'propeller-sdk-v2';
 
@@ -295,6 +295,7 @@ interface OrderShipmentsState {
 
 const props = defineProps<OrderShipmentsProps>();
 const activeShipment = ref<OrderShipmentsState['activeShipment']>(null);
+const shipments = computed(() => props.order.shipments || []);
 
 function getLabel(key: string, fallback: string): ReturnType<OrderShipmentsState['getLabel']> {
   return (props.labels as any)?.[key] || fallback;

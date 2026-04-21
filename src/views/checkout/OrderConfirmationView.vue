@@ -39,6 +39,16 @@
             <OrderSummary
               :order="order"
               title="Order Summary"
+              :showReference="true"
+              :showNotes="true"
+              :showDeliveryAddress="true"
+              :showInvoiceAddress="true"
+              :showOrderNumber="true"
+              :showOrderDate="true"
+              :showOrderStatus="true"
+              :showOrderTotal="true"
+              :showDeliveryInfo="true"
+              :showRemarks="true"
             />
           </div>
 
@@ -62,6 +72,11 @@
                     :key="item.id"
                     :orderItem="item"
                     :childItems="childMap.get(item.id) || []"
+                    :titleLinkable="true"
+                    :showImage="true"
+                    :showSku="true"
+                    :showQuantity="true"
+                    :showPrice="true"
                   />
                 </tbody>
               </table>
@@ -85,6 +100,10 @@
                       :key="item.id"
                       :orderItem="item"
                       :titleLinkable="false"
+                      :showImage="true"
+                      :showSku="true"
+                      :showQuantity="true"
+                      :showPrice="true"
                     />
                   </tbody>
                 </table>

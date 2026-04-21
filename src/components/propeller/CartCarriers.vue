@@ -101,7 +101,7 @@ watch(
     if (!selectedName.value && props.cart?.postageData?.carrier) {
       selectedName.value = props.cart.postageData.carrier as string;
       if (props.onCarrierSelect) {
-        const match = carriers.find((c: CartCarrier) => c.name === selectedName.value);
+        const match = carriers.value.find((c: CartCarrier) => c.name === selectedName.value);
         if (match) props.onCarrierSelect(match);
       }
     }

@@ -20,16 +20,31 @@
     <div v-else-if="order" class="space-y-8">
       <!-- Order Summary + Actions -->
       <div class="border rounded-lg p-6 space-y-4">
-        <OrderSummary :order="order" :includeTax="priceStore.includeTax" :language="languageStore.language" />
+        <OrderSummary 
+          :order="order as Order" 
+          :countries="COUNTRIES" 
+          :includeTax="priceStore.includeTax" 
+          :language="languageStore.language" 
+          :showReference="true"
+          :showNotes="true"
+          :showDeliveryAddress="true"
+          :showInvoiceAddress="true"
+          :showOrderNumber="true"
+          :showOrderDate="true"
+          :showOrderStatus="true"
+          :showOrderTotal="true"
+          :showDeliveryInfo="true"
+          :showRemarks="true"
+        />
         <OrderActions
           :graphqlClient="graphqlClient"
-          :order="order"
-          :user="authStore.user"
+          :order="order as Order"
+          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
           :companyId="companyStore.companyId ?? undefined"
           :configuration="configuration"
-          :onCartCreated="(cart: any) => cartStore.setCart(cart)"
-          :afterReorder="(cart: any) => cartStore.setCart(cart)"
+          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+          :afterReorder="(cart: Cart) => cartStore.setCart(cart)"
         />
       </div>
 
@@ -56,6 +71,11 @@
                 :key="item.id"
                 :orderItem="item"
                 :childItems="childMap.get(item.id) || []"
+                :titleLinkable="true"
+                :showImage="true"
+                :showSku="true"
+                :showQuantity="true"
+                :showPrice="true"
               />
             </tbody>
           </table>
@@ -74,7 +94,16 @@
                 </tr>
               </thead>
               <tbody>
-                <OrderItemCard v-for="item in bonusItems" :key="item.id" :orderItem="item" :titleLinkable="false" />
+                <OrderItemCard 
+                  v-for="item in bonusItems" 
+                  :key="item.id" 
+                  :orderItem="item" 
+                  :titleLinkable="false" 
+                  :showImage="true"
+                  :showSku="true"
+                  :showQuantity="true"
+                  :showPrice="true"
+                />
               </tbody>
             </table>
           </div>
@@ -86,7 +115,16 @@
           <div class="bg-white rounded-lg shadow overflow-hidden">
             <table class="w-full">
               <tbody>
-                <OrderItemCard v-for="item in surchargeItems" :key="item.id" :orderItem="item" :titleLinkable="false" :showImage="false" :showSku="false" />
+                <OrderItemCard 
+                  v-for="item in surchargeItems" 
+                  :key="item.id" 
+                  :orderItem="item" 
+                  :titleLinkable="false" 
+                  :showImage="false" 
+                  :showSku="false" 
+                  :showQuantity="true"
+                  :showPrice="true"
+                />
               </tbody>
             </table>
           </div>
@@ -98,34 +136,53 @@
         <OrderActions
           :graphqlClient="graphqlClient"
           :order="order"
-          :user="authStore.user"
+          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
           :companyId="companyStore.companyId ?? undefined"
           :configuration="configuration"
           :onCartCreated="(cart: any) => cartStore.setCart(cart)"
           :afterReorder="(cart: any) => cartStore.setCart(cart)"
         />
-        <OrderTotals :order="order" />
+        <OrderTotals 
+          :order="order as Order" 
+          :includeTax="priceStore.includeTax"
+          :showSubtotal="true"
+          :showDiscount="true"
+          :showShippingCosts="true"
+          :showVATs="true"
+          :showTotalExclVat="true"
+          :showTotalVat="true"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
-import { graphqlClient, orderService } from '@/lib/api'
+import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
+import { Cart, Contact, Customer, Order, OrderService } from 'propeller-sdk-v2'
 import OrderSummary from '@/components/propeller/OrderSummary.vue'
 import OrderItemCard from '@/components/propeller/OrderItemCard.vue'
 import OrderActions from '@/components/propeller/OrderActions.vue'
 import OrderShipments from '@/components/propeller/OrderShipments.vue'
 import OrderTotals from '@/components/propeller/OrderTotals.vue'
+
+const COUNTRIES = [
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'UK', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -165,13 +222,15 @@ const surchargeItems = computed(() =>
 
 onMounted(async () => {
   try {
-    order.value = await (orderService as any).getOrder({
+    const service = new OrderService(graphqlClient)
+    const result = await service.getOrder({
       orderId: parseInt(route.params.id as string),
       language: languageStore.language,
       imageSearchFilters: configuration.imageSearchFiltersGrid,
       imageVariantFilters: configuration.imageVariantFiltersSmall,
     })
-    if (!order.value) error.value = 'Order not found'
+    if (!result) { error.value = 'Order not found'; return }
+    order.value = markRaw(result)
   } catch (e) {
     console.error('Failed to load order', e)
     error.value = 'Failed to load order details'

@@ -265,9 +265,9 @@ import {
   Customer,
   Cart,
   CartMainItem,
-  CartChildItemInput,
   AttributeResult,
 } from 'propeller-sdk-v2';
+import type { CartChildItemInput } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart.vue';
 import ItemStock from './ItemStock.vue';
 import ProductPriceDisplay from './ProductPrice.vue';
@@ -554,7 +554,7 @@ function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
   if (!props.showPrice) return '';
   const priceObj = (props.product as Product)?.price;
   const useTax: boolean =
-    props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;
+    props.includeTax !== undefined ? !!props.includeTax : includeTax.value;
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
   if (!value && value !== 0) return '';
   return `\u20AC${Number(value).toFixed(2)}`;

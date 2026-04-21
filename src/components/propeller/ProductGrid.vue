@@ -89,81 +89,34 @@
 
               <template v-if="!isClusterItem(item)">
                 <template v-if="!renderProductCard">
-                  <template v-if="showAddToCart()">
-                    <ProductCard
-                      :columns="props.columns || 3"
-                      :product="item"
-                      :showPrice="props.showPrice"
-                      :allowAddToCart="props.allowAddToCart"
-                      :graphqlClient="props.graphqlClient"
-                      :user="props.user || null"
-                      :configuration="props.configuration"
-                      :includeTax="props.includeTax"
-                      :cartId="props.cartId"
-                      :createCart="props.createCart"
-                      :onCartCreated="props.onCartCreated"
-                      :afterAddToCart="props.afterAddToCart"
-                      :showModal="props.showModal"
-                      :allowIncrDecr="props.allowIncrDecr"
-                      :enableStockValidation="props.stockValidation"
-                      :language="props.language || 'NL'"
-                      :onProceedToCheckout="props.onProceedToCheckout"
-                      :onRequestQuoteClick="props.onRequestQuoteClick"
-                      :addToCartLabels="props.addToCartLabels"
-                      :enableAddFavorite="props.enableAddFavorite"
-                      :showStock="props.showStock"
-                      :showAvailability="props.showAvailability"
-                      :stockLabels="props.stockLabels"
-                      :companyId="props.companyId"
-                      :onToggleFavorite="
-                        (product, isFav) => {
-                          if (props.onToggleFavorite) {
-                            props.onToggleFavorite(product, isFav);
-                          }
-                        }
-                      "
-                      :onProductClick="
-                        (product) => {
-                          if (props.onProductClick) {
-                            props.onProductClick(product);
-                          }
-                        }
-                      "
-                    ></ProductCard>
-                  </template>
-
-                  <template v-if="!showAddToCart()">
-                    <ProductCard
-                      :columns="props.columns || 3"
-                      :product="item"
-                      :showPrice="props.showPrice"
-                      :allowAddToCart="props.allowAddToCart"
-                      :graphqlClient="props.graphqlClient"
-                      :user="props.user || null"
-                      :configuration="props.configuration"
-                      :language="props.language || 'NL'"
-                      :cartId="props.cartId"
-                      :enableAddFavorite="props.enableAddFavorite"
-                      :showStock="props.showStock"
-                      :showAvailability="props.showAvailability"
-                      :stockLabels="props.stockLabels"
-                      :companyId="props.companyId"
-                      :onToggleFavorite="
-                        (product, isFav) => {
-                          if (props.onToggleFavorite) {
-                            props.onToggleFavorite(product, isFav);
-                          }
-                        }
-                      "
-                      :onProductClick="
-                        (product) => {
-                          if (props.onProductClick) {
-                            props.onProductClick(product);
-                          }
-                        }
-                      "
-                    ></ProductCard>
-                  </template>
+                  <ProductCard
+                    :columns="props.columns || 3"
+                    :product="item"
+                    :showPrice="props.showPrice"
+                    :allowAddToCart="showAddToCart() ? props.allowAddToCart : false"
+                    :graphqlClient="props.graphqlClient"
+                    :user="props.user || null"
+                    :configuration="props.configuration"
+                    :includeTax="props.includeTax"
+                    :cartId="props.cartId"
+                    :createCart="props.createCart"
+                    :onCartCreated="props.onCartCreated"
+                    :afterAddToCart="props.afterAddToCart"
+                    :showModal="props.showModal"
+                    :allowIncrDecr="props.allowIncrDecr"
+                    :enableStockValidation="props.stockValidation"
+                    :language="props.language || 'NL'"
+                    :onProceedToCheckout="props.onProceedToCheckout"
+                    :onRequestQuoteClick="props.onRequestQuoteClick"
+                    :addToCartLabels="props.addToCartLabels"
+                    :enableAddFavorite="props.enableAddFavorite"
+                    :showStock="props.showStock"
+                    :showAvailability="props.showAvailability"
+                    :stockLabels="props.stockLabels"
+                    :companyId="props.companyId"
+                    :onToggleFavorite="(product, isFav) => { if (props.onToggleFavorite) props.onToggleFavorite(product, isFav); }"
+                    :onProductClick="(product) => { if (props.onProductClick) props.onProductClick(product); }"
+                  />
                 </template>
               </template>
             </div>

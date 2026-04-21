@@ -112,7 +112,7 @@
             type="text"
             class="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary"
             :value="reference"
-            @change="async (event) => handleReferenceChange(event.target.value)"
+            @change="async (event) => handleReferenceChange((event.target as HTMLInputElement | HTMLTextAreaElement).value)"
             :placeholder="getLabel('referencePlaceholder', 'Your reference number')"
             :maxLength="255"
           />
@@ -127,7 +127,7 @@
           ><textarea
             class="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
             :value="notes"
-            @change="async (event) => handleNotesChange(event.target.value)"
+            @change="async (event) => handleNotesChange((event.target as HTMLInputElement | HTMLTextAreaElement).value)"
             :placeholder="getLabel('notesPlaceholder', 'Special instructions or comments')"
             :maxLength="255"
           ></textarea>
@@ -141,7 +141,7 @@
             id="cart-overview-terms"
             class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             :checked="termsAccepted"
-            @change="async (event) => handleTermsChange(event.target.checked)"
+            @change="async (event) => handleTermsChange((event.target as HTMLInputElement).checked)"
           /><label for="cart-overview-terms" class="text-sm leading-none"
             >{{ getLabel('termsPrefix', 'I agree to the')
             }}<a
@@ -287,7 +287,7 @@ const requestDate = computed(() => {
   }
 });
 const isPurchaseDisabled = computed(() => {
-  if (showTermsAndConditions && !termsAccepted.value) return true;
+  if (showTermsAndConditions.value && !termsAccepted.value) return true;
   if (loading.value) return true;
   return false;
 });
@@ -329,7 +329,7 @@ function handleTermsLinkClick(event: Event): ReturnType<CartOverviewState['handl
   }
 }
 function handlePurchaseClick(): ReturnType<CartOverviewState['handlePurchaseClick']> {
-  if (isPurchaseDisabled) return;
+  if (isPurchaseDisabled.value) return;
   loading.value = true;
   if (props.onPurchaseButtonClick) {
     props.onPurchaseButtonClick(props.cart, reference.value, notes.value);

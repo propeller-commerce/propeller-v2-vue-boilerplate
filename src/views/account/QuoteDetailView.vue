@@ -22,14 +22,25 @@
       <div class="border rounded-lg p-6 space-y-4">
         <OrderSummary
           :order="quote"
-          :includeTax="priceStore.includeTax"
-          :language="languageStore.language"
+          :countries="COUNTRIES"
           :labels="{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
+          :includeTax="priceStore.includeTax" 
+          :language="languageStore.language" 
+          :showReference="true"
+          :showNotes="true"
+          :showDeliveryAddress="true"
+          :showInvoiceAddress="true"
+          :showOrderNumber="true"
+          :showOrderDate="true"
+          :showOrderStatus="true"
+          :showOrderTotal="true"
+          :showDeliveryInfo="true"
+          :showRemarks="true"
         />
         <div class="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
           <QuoteActions
             :graphqlClient="graphqlClient"
-            :quote="quote"
+            :quote="quote as Order"
             :afterAccept="handleAfterAccept"
             :showTermsAndConditions="true"
             :onTermsAndConditionsClick="() => window.open('/terms-conditions', '_blank')"
@@ -60,8 +71,12 @@
                 v-for="item in parentItems"
                 :key="item.id"
                 :orderItem="item"
-                :showDiscount="true"
                 :childItems="childMap.get(item.id) || []"
+                :titleLinkable="true"
+                :showImage="true"
+                :showSku="true"
+                :showQuantity="true"
+                :showPrice="true"
               />
             </tbody>
           </table>
@@ -80,7 +95,16 @@
                 </tr>
               </thead>
               <tbody>
-                <OrderItemCard v-for="item in bonusItems" :key="item.id" :orderItem="item" :titleLinkable="false" />
+                <OrderItemCard 
+                  v-for="item in bonusItems" 
+                  :key="item.id" 
+                  :orderItem="item" 
+                  :titleLinkable="false" 
+                  :showImage="true"
+                  :showSku="true"
+                  :showQuantity="true"
+                  :showPrice="true"
+                />
               </tbody>
             </table>
           </div>
@@ -108,18 +132,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
-import { graphqlClient, orderService } from '@/lib/api'
+import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import { Base64File, OrderService } from 'propeller-sdk-v2'
+import { Base64File, Order, OrderService } from 'propeller-sdk-v2'
 import OrderSummary from '@/components/propeller/OrderSummary.vue'
 import OrderItemCard from '@/components/propeller/OrderItemCard.vue'
 import QuoteActions from '@/components/propeller/QuoteActions.vue'
 import OrderTotals from '@/components/propeller/OrderTotals.vue'
+
+const COUNTRIES = [
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'UK', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -203,13 +236,15 @@ async function handleDownloadPDF() {
 
 onMounted(async () => {
   try {
-    quote.value = await (orderService as any).getOrder({
+    const service = new OrderService(graphqlClient)
+    const result = await service.getOrder({
       orderId: parseInt(quoteId),
       language: languageStore.language,
       imageSearchFilters: configuration.imageSearchFiltersGrid,
       imageVariantFilters: configuration.imageVariantFiltersSmall,
     })
-    if (!quote.value) error.value = 'Quote not found'
+    if (!result) { error.value = 'Quote not found'; return }
+    quote.value = markRaw(result)
   } catch (e) {
     console.error('Failed to load quote', e)
     error.value = 'Failed to load quote details'

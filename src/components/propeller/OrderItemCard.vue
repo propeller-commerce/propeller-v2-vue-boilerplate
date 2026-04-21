@@ -114,14 +114,15 @@
 </template>
 
 <script setup lang="ts">
+import type { OrderItem } from 'propeller-sdk-v2';
 import { computed } from 'vue';
 
 export interface OrderItemCardProps {
   /** The order item to display */
-  orderItem: any;
+  orderItem: OrderItem;
 
   /** Child order items (rendered as indented sub-rows beneath the parent) */
-  childItems?: any[];
+  childItems?: OrderItem[];
 
   /** Should the item title be a link to the PDP */
   titleLinkable?: boolean;
@@ -250,8 +251,8 @@ const originalPrice = computed(() => {
   return props.orderItem?.originalPrice || 0;
 });
 const discountPercentage = computed(() => {
-  if (originalPrice > 0 && discount > 0) {
-    return (discount / originalPrice) * 100;
+  if (originalPrice.value > 0 && discount.value > 0) {
+    return (discount.value / originalPrice.value) * 100;
   }
   return 0;
 });
@@ -270,9 +271,9 @@ function formatItemPrice(price: number): ReturnType<OrderItemCardState['formatIt
   return '€' + Number(price).toFixed(2);
 }
 function formatDiscountDisplay(): ReturnType<OrderItemCardState['formatDiscountDisplay']> {
-  const discountStr = formatItemPrice(discount);
-  if (discountPercentage > 0) {
-    return discountStr + ' (' + discountPercentage.toFixed(2).replace('.', ',') + '%)';
+  const discountStr = formatItemPrice(discount.value);
+  if (discountPercentage.value > 0) {
+    return discountStr + ' (' + discountPercentage.value.toFixed(2).replace('.', ',') + '%)';
   }
   return discountStr;
 }

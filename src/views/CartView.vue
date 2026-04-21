@@ -20,8 +20,8 @@
             :key="item.itemId"
             :cartItem="item"
             :graphqlClient="graphqlClient"
-            :user="authStore.user"
-            :cartId="cartStore.cartId || undefined"
+            :user="authStore.user as Contact | Customer"
+            :cartId="cartStore.cartId as string"
             :includeTax="priceStore.includeTax"
             :language="languageStore.language"
             :configuration="configuration"
@@ -33,32 +33,28 @@
           />
         </div>
 
-        <div class="space-y-4">
-          <ActionCode
-            v-if="cartStore.cartId"
-            :graphqlClient="graphqlClient"
-            :cartId="cartStore.cartId"
-            :language="languageStore.language"
-            :onCartUpdated="(cart: any) => cartStore.setCart(cart)"
-          />
-
+        <div class="h-fit space-y-4">
           <CartSummary
             v-if="cartStore.cart"
-            :cart="cartStore.cart"
-            :includeTax="priceStore.includeTax"
-            :language="languageStore.language"
+            :cart="cartStore.cart as Cart"
+            :graphqlClient="graphqlClient"
+            :user="authStore.user as Contact | Customer"
+            :companyId="companyStore.companyId || undefined"
+            :onCheckoutButtonClick="() => router.push(localizeHref('/checkout', languageStore.language))"
             :afterRequestAuthorization="(cart: any) => {
               cartStore.setCart(null)
               router.push(localizeHref('/authorization-request-sent/' + cart.cartId, languageStore.language))
             }"
+            :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
           />
-
-          <router-link
-            to="/checkout"
-            class="block w-full text-center bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition"
-          >
-            Proceed to Checkout
-          </router-link>
+          <ActionCode
+            v-if="cartStore.cart"
+            :graphqlClient="graphqlClient"
+            :cart="cartStore.cart as Cart"
+            :configuration="configuration"
+            :afterActionCodeApply="(cart: any) => cartStore.setCart(cart)"
+            :afterActionCodeRemove="(cart: any) => cartStore.setCart(cart)"
+          />
         </div>
       </div>
     </div>
@@ -68,7 +64,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Enums } from 'propeller-sdk-v2'
+import { Cart, Contact, Customer, Enums } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
@@ -87,5 +83,5 @@ const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 
-const cartItems = computed(() => cartStore.cart?.mainItems?.items || [])
+const cartItems = computed(() => cartStore.cart?.items || [])
 </script>

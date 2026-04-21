@@ -173,11 +173,12 @@
 </template>
 
 <script setup lang="ts">
+import type { Order } from 'propeller-sdk-v2';
 import { computed } from 'vue';
 
 export interface OrderSummaryProps {
   /** The order object from propeller-sdk-v2 */
-  order: any;
+  order: Order;
 
   /** The CSS class for the order summary container */
   orderSummaryContainerClass?: string;

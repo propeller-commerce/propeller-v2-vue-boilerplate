@@ -308,16 +308,11 @@
 </template>
 
 <script setup lang="ts">
-     import { onMounted, ref, watch, computed } from "vue"
+  import { onMounted, ref, watch, computed } from "vue"
+  import  { GraphQLClient, CartMainItem, CartBaseItem, BundleItem, Cart, ProductInventory, type CrossupsellSearchInput, Crossupsell, Product, Cluster, Enums, type CrossupsellsQueryVariables, Contact, Customer, type MediaImageProductSearchInput, type TransformationsInput } from 'propeller-sdk-v2';
+  import { useCart } from '../../composables/useCart';
 
-
-   import  { GraphQLClient, CartMainItem, CartBaseItem, BundleItem, Cart, ProductInventory, CrossupsellSearchInput, Crossupsell, Product, Cluster, Enums, CrossupsellsQueryVariables, Contact, Customer, MediaImageProductSearchInput, TransformationsInput } from 'propeller-sdk-v2';
-import { useCart } from '../../composables/useCart';
-
-
-
-
-     export interface CartItemProps {
+  export interface CartItemProps {
  /** GraphQL client for the Propeller SDK */
  graphqlClient: GraphQLClient;
 

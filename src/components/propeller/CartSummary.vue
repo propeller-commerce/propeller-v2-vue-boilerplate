@@ -191,7 +191,7 @@ const props = withDefaults(defineProps<CartSummaryProps>(), {
   showTotalExclVat: true,
   showVATs: true,
   showTotalVat: true,
-  showCheckoutButton: false,
+  showCheckoutButton: true,
 });
 const requestLoading = ref<CartSummaryState['requestLoading']>(false);
 
