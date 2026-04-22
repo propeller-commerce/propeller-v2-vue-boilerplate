@@ -19,6 +19,14 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: '127.0.0.1',
+      allowedHosts: [
+        'vue-boilerplate.dev.wp-propel.com',
+        'vue-boilerplate.prod.wp-propel.com',
+      ],
+      hmr: {
+        clientPort: 80,
+      },
       proxy: {
         '/api/graphql': {
           target: 'https://api.staging.helice.cloud',
