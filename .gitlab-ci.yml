@@ -1,0 +1,77 @@
+stages:
+  - source
+  - build
+  - deploy
+
+getSource:
+  stage: source
+  script:
+    - devbox run get-source
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "master"
+
+syncDevboxConfig:
+  stage: build
+  script:
+    - devbox run sync-config
+
+# DEV (develop branch)
+
+buildFrontend:dev:
+  stage: build
+  needs: ["getSource"]
+  script:
+    - devbox run build-frontend-dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# buildCMS:dev:
+#   stage: build
+#   needs: ["getSource"]
+#   script:
+#     - devbox run build-cms-dev
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "develop"
+
+deploy:dev:
+  stage: deploy
+  #needs: ["buildFrontend:dev", "buildCMS:dev"]
+  needs: ["buildFrontend:dev"]
+  variables:
+    USER_DEV: "vueboilerplatedev"
+  script:
+    #- sudo -u ${USER_DEV} bash -c "cd /home/${USER_DEV}/public_html; devbox run deploy-dev"
+    - sudo -u ${USER_DEV} bash -c "cd /home/${USER_DEV}/public_html; devbox run deploy-frontend-dev"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# PROD (master branch)
+
+buildFrontend:prod:
+  stage: build
+  needs: ["getSource"]
+  script:
+    - devbox run build-frontend-prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+# buildCMS:prod:
+#   stage: build
+#   needs: ["getSource"]
+#   script:
+#     - devbox run build-cms-prod
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "master"
+
+deploy:prod:
+  stage: deploy
+  #needs: ["buildFrontend:prod", "buildCMS:prod"]
+  needs: ["buildFrontend:prod"]
+  variables:
+    USER_PROD: "vueboilerplate"
+  script:
+    #- sudo -u ${USER_PROD} bash -c "cd /home/${USER_PROD}/public_html; devbox run deploy-prod"
+    - sudo -u ${USER_PROD} bash -c "cd /home/${USER_PROD}/public_html; devbox run deploy-frontend-prod"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"

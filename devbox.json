@@ -1,0 +1,52 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": [
+    "nodejs@22",
+    "rsync@latest",
+    "nodePackages.pm2@latest",
+    "go-task@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'VueBoilerplate devbox shell!'"
+    ],
+    "scripts": {
+      "get-source": [
+        "task get-source"
+      ],
+      "sync-config": [
+        "task sync-config"
+      ],
+      "build-frontend-prod": [
+        "task build-frontend-prod"
+      ],
+      "build-cms-prod": [
+        "task build-cms-prod"
+      ],
+      "deploy-prod": [
+        "task deploy-prod"
+      ],
+      "start-prod": [
+        "task start-prod"
+      ],
+      "stop-prod": [
+        "task stop-prod"
+      ],
+      "build-frontend-dev": [
+        "task build-frontend-dev"
+      ],
+      "build-cms-dev": [
+        "task build-cms-dev"
+      ],
+      "deploy-dev": [
+        "task deploy-dev"
+      ],
+      "start-dev": [
+        "task start-dev"
+      ],
+      "stop-dev": [
+        "task stop-dev"
+      ]
+    }
+  }
+}
