@@ -15,7 +15,7 @@ import type { GraphQLClient, AttributeResult, AttributeResultSearchInput } from 
 import {
   extractAttributeValues,
   getAttributeDisplayName,
-} from '../shared/utils/attributeExtractor';
+} from './shared/utils/attributeExtractor';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

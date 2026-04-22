@@ -32,7 +32,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useProductInfo } from '../../composables/useProductInfo';
-import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
+import { getLanguageString, getLanguageUri } from '../../composables/shared/utils/languageResolver';
 
 export interface ProductInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────

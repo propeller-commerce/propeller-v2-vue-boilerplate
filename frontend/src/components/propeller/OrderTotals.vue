@@ -66,8 +66,8 @@
 import { computed } from 'vue';
 
 import { Order, Enums } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface OrderTotalsProps {
   /** The order/quote used to populate the summary data */

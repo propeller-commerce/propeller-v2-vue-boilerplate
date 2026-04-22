@@ -165,7 +165,7 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { useOrders } from '@/composables/useOrders'
-import type { AnyUser } from '@/shared/utils/userIdentity'
+import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import OrderSummary from '@/components/propeller/OrderSummary.vue'
 import OrderItemCard from '@/components/propeller/OrderItemCard.vue'
 

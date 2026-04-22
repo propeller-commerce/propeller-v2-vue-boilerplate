@@ -271,10 +271,10 @@ import type { CartChildItemInput } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart.vue';
 import ItemStock from './ItemStock.vue';
 import ProductPriceDisplay from './ProductPrice.vue';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { getProductImageUrl as _getProductImageUrl, getProductSku as _getProductSku } from '../../shared/utils/productHelpers';
-import { getLanguageString } from '../../shared/utils/languageResolver';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl, getProductSku as _getProductSku } from '../../composables/shared/utils/productHelpers';
+import { getLanguageString } from '../../composables/shared/utils/languageResolver';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface ProductCardProps {
   // === Core ===

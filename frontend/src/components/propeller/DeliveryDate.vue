@@ -86,7 +86,7 @@
 import { computed, ref, watch } from 'vue';
 
 import { Cart } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface DeliveryDateProps {
   /** The cart to use for the delivery date */

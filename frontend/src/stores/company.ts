@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Company } from 'propeller-sdk-v2'
-import { stripLeadingUnderscores } from '@/shared/utils/userUtils'
+import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 
 const STORAGE_KEY = 'selected_company'
 

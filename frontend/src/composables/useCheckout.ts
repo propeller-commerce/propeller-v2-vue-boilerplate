@@ -21,8 +21,8 @@ import type {
   TransformationsInput,
   Address,
 } from 'propeller-sdk-v2';
-import type { AnyUser } from '../shared/utils/userIdentity';
-import { getDefaultInvoiceAddress, getDefaultDeliveryAddress } from '../shared/utils/userIdentity';
+import type { AnyUser } from './shared/utils/userIdentity';
+import { getDefaultInvoiceAddress, getDefaultDeliveryAddress } from './shared/utils/userIdentity';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

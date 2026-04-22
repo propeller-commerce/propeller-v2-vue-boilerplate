@@ -101,7 +101,7 @@ import {
 } from 'propeller-sdk-v2';
 
 import { useOrders } from '../../composables/useOrders';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface OrderActionsProps {
   /** GraphQL client for the Propeller SDK */

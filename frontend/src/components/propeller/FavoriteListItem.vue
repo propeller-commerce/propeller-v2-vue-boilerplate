@@ -193,9 +193,9 @@ import {
 } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart.vue';
 import ItemStock from './ItemStock.vue';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { getProductImageUrl as _getProductImageUrl, getClusterImageUrl as _getClusterImageUrl, getProductSku as _getProductSku, getClusterSku as _getClusterSku } from '../../shared/utils/productHelpers';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl, getClusterImageUrl as _getClusterImageUrl, getProductSku as _getProductSku, getClusterSku as _getClusterSku } from '../../composables/shared/utils/productHelpers';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface FavoriteListItemProps {
   /** Product or Cluster to be listed as a favorite list item */

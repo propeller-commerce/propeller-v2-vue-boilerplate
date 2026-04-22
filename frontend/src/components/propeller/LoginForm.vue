@@ -177,7 +177,7 @@
 import { computed, ref } from 'vue';
 import type { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import { useAuth } from '../../composables/useAuth';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 
 

@@ -38,8 +38,8 @@
 import { computed, ref, watch } from 'vue';
 
 import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface CartPaymethodsProps {
   /** Shopping cart object from which the payment methods will be displayed */

@@ -23,9 +23,9 @@ import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import { stripLeadingUnderscores } from '@/shared/utils/userUtils'
+import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 import { useCart } from '@/composables/useCart'
-import type { AnyUser } from '@/shared/utils/userIdentity'
+import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import LoginForm from '@/components/propeller/LoginForm.vue'
 
 const router = useRouter()

@@ -116,7 +116,7 @@
 <script setup lang="ts">
 import type { OrderItem } from 'propeller-sdk-v2';
 import { computed } from 'vue';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface OrderItemCardProps {
   /** The order item to display */

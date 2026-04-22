@@ -27,9 +27,9 @@ import type {
   CrossupsellSearchInput,
   CartProcessResponse,
 } from 'propeller-sdk-v2';
-import { initCart, type CartInitConfig } from '../shared/utils/cartInit';
-import type { AnyUser } from '../shared/utils/userIdentity';
-import { isContact, isCustomer } from '../shared/utils/userIdentity';
+import { initCart, type CartInitConfig } from './shared/utils/cartInit';
+import type { AnyUser } from './shared/utils/userIdentity';
+import { isContact, isCustomer } from './shared/utils/userIdentity';
 
 export interface UseCartOptions {
   graphqlClient: GraphQLClient;

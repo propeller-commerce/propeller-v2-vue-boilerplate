@@ -694,7 +694,7 @@ import {
   OrderAddress,
   Enums,
 } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface AddressCardProps {
   /** GraphQL client for the Propeller SDK (only needed when editing) */

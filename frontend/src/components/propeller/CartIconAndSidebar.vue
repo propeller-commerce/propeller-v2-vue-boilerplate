@@ -350,8 +350,8 @@ import {
   GraphQLClient,
 } from 'propeller-sdk-v2';
 import { useCart } from '../../composables/useCart';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface CartIconAndSidebarProps {
   /**

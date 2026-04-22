@@ -118,7 +118,7 @@ import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
 import { useAddress } from '@/composables/useAddress'
 import type { AddressInput } from '@/composables/useAddress'
-import type { AnyUser } from '@/shared/utils/userIdentity'
+import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import AddressCard from '@/components/propeller/AddressCard.vue'
 
 const authStore = useAuthStore()

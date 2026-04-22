@@ -13,7 +13,7 @@
 import { computed } from 'vue';
 
 import type { Category } from 'propeller-sdk-v2';
-import { getLanguageString } from '../../shared/utils/languageResolver';
+import { getLanguageString } from '../../composables/shared/utils/languageResolver';
 
 export interface CategoryShortDescriptionProps {
   // ── Required ────────────────────────────────────────────────────────────

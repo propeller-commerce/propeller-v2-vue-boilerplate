@@ -20,8 +20,8 @@ import type {
   MediaImageProductSearchInput,
   TransformationsInput,
 } from 'propeller-sdk-v2';
-import { initCart } from '../shared/utils/cartInit';
-import type { AnyUser } from '../shared/utils/userIdentity';
+import { initCart } from './shared/utils/cartInit';
+import type { AnyUser } from './shared/utils/userIdentity';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

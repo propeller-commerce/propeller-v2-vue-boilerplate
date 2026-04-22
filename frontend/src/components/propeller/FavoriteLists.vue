@@ -415,7 +415,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '../../composables/useFavorites';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface FavoriteListFormData {
   name: string;

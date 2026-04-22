@@ -77,7 +77,7 @@ import { computed, onMounted, ref } from 'vue';
 
 import { GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { useCart } from '../../composables/useCart';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface ActionCodeProps {
   /** GraphQL client for the Propeller SDK */

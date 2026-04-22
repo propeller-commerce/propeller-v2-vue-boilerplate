@@ -127,7 +127,7 @@ import {
 } from 'propeller-sdk-v2';
 import FavoriteListItem from './FavoriteListItem.vue';
 import GridPagination from './GridPagination.vue';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */

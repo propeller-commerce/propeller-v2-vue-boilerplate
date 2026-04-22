@@ -320,7 +320,7 @@
 import { ref, computed, watch } from 'vue';
 import type { Category, Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import { useMenu, type MenuCategory } from '../../composables/useMenu';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface MenuProps {
   /**

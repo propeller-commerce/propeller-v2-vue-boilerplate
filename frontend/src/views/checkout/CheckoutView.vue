@@ -304,7 +304,7 @@ import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { useCheckout } from '@/composables/useCheckout'
-import type { AnyUser } from '@/shared/utils/userIdentity'
+import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 
 import CartPaymethods from '@/components/propeller/CartPaymethods.vue'
 import CartCarriers from '@/components/propeller/CartCarriers.vue'

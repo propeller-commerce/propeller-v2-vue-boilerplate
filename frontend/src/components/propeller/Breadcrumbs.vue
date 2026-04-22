@@ -36,8 +36,8 @@
 
 <script setup lang="ts">
 import { Category, LocalizedString } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { getLanguageString, getLanguageUri } from '../../composables/shared/utils/languageResolver';
 
 export interface BreadcrumbsProps {
   /**

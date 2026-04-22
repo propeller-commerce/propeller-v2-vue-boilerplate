@@ -95,8 +95,8 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useProductSearch } from '../../composables/useProductSearch';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface SearchBarResult {
   /** Unique identifier */

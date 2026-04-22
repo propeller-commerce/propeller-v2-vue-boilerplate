@@ -34,7 +34,7 @@ import type {
   CustomerRegisterInput,
   PasswordResetInput,
 } from 'propeller-sdk-v2';
-import { isCustomer } from '../shared/utils/userIdentity';
+import { isCustomer } from './shared/utils/userIdentity';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

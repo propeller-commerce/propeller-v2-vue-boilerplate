@@ -122,7 +122,7 @@ import { ref } from 'vue';
 
 import { Contact, Customer, Address, Company, Enums } from 'propeller-sdk-v2';
 import AddressCard from './AddressCard.vue';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface AddressSelectorProps {
   /** Authenticated user — addresses are derived from their profile. */

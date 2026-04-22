@@ -16,8 +16,8 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue';
 import { FavoriteListService } from 'propeller-sdk-v2';
 import type { GraphQLClient, FavoriteList, FavoriteListsCreateInput, Product } from 'propeller-sdk-v2';
-import type { AnyUser } from '../shared/utils/userIdentity';
-import { isContact, isCustomer } from '../shared/utils/userIdentity';
+import type { AnyUser } from './shared/utils/userIdentity';
+import { isContact, isCustomer } from './shared/utils/userIdentity';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

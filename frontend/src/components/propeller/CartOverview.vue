@@ -184,7 +184,7 @@
 import { computed, ref } from 'vue';
 
 import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface CartOverviewProps {
   /** GraphQL client for the Propeller SDK */

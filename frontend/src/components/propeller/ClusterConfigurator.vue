@@ -141,7 +141,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 import {
   Product,
   AttributeResult,

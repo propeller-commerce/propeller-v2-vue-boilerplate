@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Cart } from 'propeller-sdk-v2'
-import { stripLeadingUnderscores } from '@/shared/utils/userUtils'
+import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 
 function normalizeCart(c: Cart): Cart {
   return stripLeadingUnderscores(JSON.parse(JSON.stringify(c))) as Cart

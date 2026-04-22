@@ -155,7 +155,7 @@ import {
 import ProductCard from './ProductCard.vue';
 import ClusterCard from './ClusterCard.vue';
 import { useProductSlider } from '../../composables/useProductSlider';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface ProductSliderProps {
   // === Data source ===

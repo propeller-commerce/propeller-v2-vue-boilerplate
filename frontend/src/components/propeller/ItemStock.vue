@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { ProductInventory } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface ItemStockProps {
   /**

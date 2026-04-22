@@ -280,8 +280,8 @@ import ProductSpecifications from './ProductSpecifications.vue';
 import ProductDownloads from './ProductDownloads.vue';
 import ProductVideos from './ProductVideos.vue';
 import { useProductSpecs } from '../../composables/useProductSpecs';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { getLanguageString } from '../../shared/utils/languageResolver';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { getLanguageString } from '../../composables/shared/utils/languageResolver';
 
 export interface ProductTabsProps {
   /** Product for which to display the information. */

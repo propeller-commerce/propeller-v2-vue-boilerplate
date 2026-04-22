@@ -31,9 +31,9 @@ import type {
   TransformationsInput,
 } from 'propeller-sdk-v2';
 import { usePagination } from './shared/usePagination';
-import { initCart } from '../shared/utils/cartInit';
-import type { AnyUser } from '../shared/utils/userIdentity';
-import { isContact, isCustomer } from '../shared/utils/userIdentity';
+import { initCart } from './shared/utils/cartInit';
+import type { AnyUser } from './shared/utils/userIdentity';
+import { isContact, isCustomer } from './shared/utils/userIdentity';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

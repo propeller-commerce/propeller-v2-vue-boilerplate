@@ -13,7 +13,7 @@
 import { ref, watch } from 'vue';
 
 import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
-import { getLanguageString, getLanguageUri } from '../../shared/utils/languageResolver';
+import { getLanguageString, getLanguageUri } from '../../composables/shared/utils/languageResolver';
 
 export interface ProductShortDescriptionProps {
   /**

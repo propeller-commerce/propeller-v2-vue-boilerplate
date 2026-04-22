@@ -26,9 +26,9 @@
 
 <script setup lang="ts">
 import { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { isContentHidden as _isContentHidden } from '../../shared/utils/visibilityHelpers';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { isContentHidden as _isContentHidden } from '../../composables/shared/utils/visibilityHelpers';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface ProductPriceProps {
   /**

@@ -24,8 +24,8 @@ import {
   extractAttributeValues,
   filterProductsBySelections,
   collectAttributeValues,
-} from '../shared/utils/attributeExtractor';
-import { getAttributeDisplayName } from '../shared/utils/attributeExtractor';
+} from './shared/utils/attributeExtractor';
+import { getAttributeDisplayName } from './shared/utils/attributeExtractor';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

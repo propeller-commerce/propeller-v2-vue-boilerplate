@@ -178,7 +178,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import LoginForm from './LoginForm.vue';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface AccountMenuLink {
   /** Display label for the link */

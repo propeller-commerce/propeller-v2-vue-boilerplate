@@ -100,9 +100,9 @@
 import { ref } from 'vue';
 
 import { Product, ClusterOption, Enums } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { getProductImageUrl as _getProductImageUrl } from '../../shared/utils/productHelpers';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { getProductImageUrl as _getProductImageUrl } from '../../composables/shared/utils/productHelpers';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 /**
  * Flattened render model for one product inside an option dropdown.

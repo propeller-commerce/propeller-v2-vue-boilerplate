@@ -272,7 +272,7 @@
 import { computed, ref } from 'vue';
 
 import { Order, Shipment, ShipmentItem, TrackAndTrace, OrderItem } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
 export interface OrderShipmentsProps {
   /** The current order the user is viewing */

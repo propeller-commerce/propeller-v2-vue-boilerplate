@@ -221,10 +221,10 @@ import { ref } from 'vue';
 
 import { Cluster, AttributeResult } from 'propeller-sdk-v2';
 import ItemStock from './ItemStock.vue';
-import { getLabel as _getLabel } from '../../shared/utils/labelHelpers';
-import { getClusterImageUrl as _getClusterImageUrl, getClusterSku as _getClusterSku } from '../../shared/utils/productHelpers';
-import { getLanguageString } from '../../shared/utils/languageResolver';
-import { formatPrice as _formatPrice } from '../../shared/utils/formatting';
+import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { getClusterImageUrl as _getClusterImageUrl, getClusterSku as _getClusterSku } from '../../composables/shared/utils/productHelpers';
+import { getLanguageString } from '../../composables/shared/utils/languageResolver';
+import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
 export interface ClusterCardProps {
   // === Core ===
