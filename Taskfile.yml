@@ -114,7 +114,7 @@ tasks:
     dir: "{{.DEPLOY_PATH}}/frontend"
     cmds:
       - pm2 delete {{.PM2_NAME}} || true
-      - unset name; PORT={{.APP_PORT}} NODE_ENV=production pm2 start npm --name {{.PM2_NAME}} -- run start -- --hostname 127.0.0.1
+      - unset name; NODE_ENV=production pm2 start npm --name {{.PM2_NAME}} -- run start -- --port={{.APP_PORT}} --host=127.0.0.1
       - pm2 save
 
   deploy-frontend-prod:
