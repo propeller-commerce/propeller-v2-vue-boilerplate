@@ -23,6 +23,9 @@
       "build-cms-prod": [
         "task build-cms-prod"
       ],
+      "deploy-frontend-prod": [
+        "task deploy-frontend-prod"
+      ],
       "deploy-prod": [
         "task deploy-prod"
       ],
@@ -37,6 +40,9 @@
       ],
       "build-cms-dev": [
         "task build-cms-dev"
+      ],
+      "deploy-frontend-dev": [
+        "task deploy-frontend-dev"
       ],
       "deploy-dev": [
         "task deploy-dev"
