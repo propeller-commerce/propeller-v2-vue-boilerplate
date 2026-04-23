@@ -39,8 +39,13 @@ tasks:
           echo "Syncing config files to DEV ({{.DEPLOY_PATH_DEV}})..."
           sudo rsync -a devbox.json devbox.lock Taskfile.yml rsync-exclude.txt {{.DEPLOY_PATH_DEV}}/
           sudo chown {{.OWNER_DEV}}:{{.OWNER_DEV}} {{.DEPLOY_PATH_DEV}}/devbox.json {{.DEPLOY_PATH_DEV}}/devbox.lock {{.DEPLOY_PATH_DEV}}/Taskfile.yml {{.DEPLOY_PATH_DEV}}/rsync-exclude.txt
+        elif [ "{{.CI_COMMIT_BRANCH}}" = "staging" ]; then
+          [ ! -d "{{.DEPLOY_PATH_STAGING}}" ] && sudo mkdir -p {{.DEPLOY_PATH_STAGING}}
+          echo "Syncing config files to STAGING ({{.DEPLOY_PATH_STAGING}})..."
+          sudo rsync -a devbox.json devbox.lock Taskfile.yml rsync-exclude.txt {{.DEPLOY_PATH_STAGING}}/
+          sudo chown {{.OWNER_STAGING}}:{{.OWNER_STAGING}} {{.DEPLOY_PATH_STAGING}}/devbox.json {{.DEPLOY_PATH_STAGING}}/devbox.lock {{.DEPLOY_PATH_STAGING}}/Taskfile.yml {{.DEPLOY_PATH_STAGING}}/rsync-exclude.txt
         else
-          echo "Branch '{{.CI_COMMIT_BRANCH}}' is neither 'master' nor 'develop'. Skipping config sync."
+          echo "Branch '{{.CI_COMMIT_BRANCH}}' is NOT 'master', 'develop' or 'staging'. Skipping config sync."
           exit 1
         fi
 
