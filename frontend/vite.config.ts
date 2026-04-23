@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
       host: '127.0.0.1',
       allowedHosts: [
         'vue-boilerplate.dev.wp-propel.com',
+        'vue-boilerplate.stage.wp-propel.com',
         'vue-boilerplate.prod.wp-propel.com',
       ],
       hmr: {
