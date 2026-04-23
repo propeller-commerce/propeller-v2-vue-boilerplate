@@ -1,16 +1,19 @@
 <template>
   <template v-if="!(isCrossUpsellMode() && !isLoading && items().length === 0)">
-    <div :class="containerClassName || 'mb-12'">
+    <div
+      :class="`propeller-product-slider ${containerClassName || 'mb-12'}`"
+      :data-loading="isLoading ? 'true' : 'false'"
+    >
       <template v-if="sliderTitle() || items().length > 0">
-        <div class="flex items-center justify-between mb-6">
+        <div class="propeller-product-slider__header flex items-center justify-between mb-6">
           <template v-if="sliderTitle()">
-            <h2 class="text-2xl font-bold">{{ sliderTitle() }}</h2>
+            <h2 class="propeller-product-slider__title text-2xl font-bold">{{ sliderTitle() }}</h2>
           </template>
 
           <template v-if="items().length > desktopCount()">
-            <div class="flex gap-2">
+            <div class="propeller-product-slider__nav flex gap-2">
               <button
-                class="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                class="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--prev p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
                 @click="() => { if (sliderRef) sliderScrollLeft(sliderRef as HTMLElement) }"
                 :disabled="!canScrollLeft"
                 :aria-label="getLabel('scrollLeft', 'Scroll left')"
@@ -27,7 +30,7 @@
                   <path d="M15 19l-7-7 7-7"></path>
                 </svg></button
               ><button
-                class="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                class="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--next p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
                 @click="() => { if (sliderRef) sliderScrollRight(sliderRef as HTMLElement) }"
                 :disabled="!canScrollRight"
                 :aria-label="getLabel('scrollRight', 'Scroll right')"
@@ -50,18 +53,18 @@
       </template>
 
       <template v-if="isLoading">
-        <div class="flex gap-6 overflow-hidden">
-          <div class="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"></div>
-          <div class="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"></div>
-          <div class="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"></div>
-          <div class="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"></div>
+        <div class="propeller-product-slider__skeleton flex gap-6 overflow-hidden">
+          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
+          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
+          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
+          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
         </div>
       </template>
 
       <template v-if="!isLoading && items().length > 0">
         <div
           ref="sliderRef"
-          class="flex gap-6 overflow-x-auto scroll-smooth pb-4"
+          class="propeller-product-slider__track flex gap-6 overflow-x-auto scroll-smooth pb-4"
           @scroll="(e) => sliderOnScroll(e.target as HTMLElement)"
           :style="{
             scrollbarWidth: 'none',
@@ -70,7 +73,7 @@
         >
           <template :key="getItemId(item) + '-' + index" v-for="(item, index) in items()">
             <div
-              class="flex-shrink-0 w-[calc((100%_-_1.5rem)_/_1.5)] md:w-[calc((100%_-_3rem)_/_2.5)] lg:w-[calc((100%_-_4.5rem)_/_4)]"
+              class="propeller-product-slider__slide flex-shrink-0 w-[calc((100%_-_1.5rem)_/_1.5)] md:w-[calc((100%_-_3rem)_/_2.5)] lg:w-[calc((100%_-_4.5rem)_/_4)]"
             >
               <template v-if="isCluster(item)">
                 <ClusterCard
@@ -131,7 +134,7 @@
       </template>
 
       <template v-if="!isLoading && items().length === 0 && !products && !isCrossUpsellMode()">
-        <div class="text-center text-gray-500 py-8">
+        <div class="propeller-product-slider__empty text-center text-muted-foreground py-8">
           {{ getLabel('noProducts', 'No products found') }}
         </div>
       </template>

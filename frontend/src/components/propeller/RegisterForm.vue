@@ -1,10 +1,14 @@
 <template>
-  <div class="register-form">
+  <div
+    class="propeller-register-form"
+    :data-loading="loading ? 'true' : 'false'"
+    :data-user-type="selectedUserType"
+  >
     <template v-if="resolvedTitle">
-      <div class="space-y-1 text-center mb-6">
-        <h2 class="text-2xl font-bold">{{ resolvedTitle }}</h2>
+      <div class="propeller-register-form__header space-y-1 text-center mb-6">
+        <h2 class="propeller-register-form__title text-2xl font-bold">{{ resolvedTitle }}</h2>
         <template v-if="subtitle">
-          <p class="text-sm text-gray-500">{{ subtitle }}</p>
+          <p class="propeller-register-form__subtitle text-sm text-gray-500">{{ subtitle }}</p>
         </template>
       </div>
     </template>
@@ -62,7 +66,7 @@
                   type="radio"
                   name="gender"
                   value="M"
-                  class="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                  class="propeller-register-form__radio h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                   :checked="gender === Enums.Gender.M"
                   @change="
                     async (event) => {
@@ -77,7 +81,7 @@
                   type="radio"
                   name="gender"
                   value="F"
-                  class="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                  class="propeller-register-form__radio h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                   :checked="gender === Enums.Gender.F"
                   @change="
                     async (event) => {
@@ -92,7 +96,7 @@
                   type="radio"
                   name="gender"
                   value="U"
-                  class="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                  class="propeller-register-form__radio h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                   :checked="gender === Enums.Gender.U"
                   @change="
                     async (event) => {
@@ -107,12 +111,12 @@
           </div>
           <div class="space-y-2">
             <label for="register-email" class="text-sm font-medium leading-none"
-              >{{ emailLabel }}<span class="text-red-500 ml-1">*</span></label
+              >{{ emailLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
             ><input
               type="email"
               id="register-email"
               name="email"
-              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+              class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
               :value="email"
               @change="
                 async (e) => {
@@ -131,13 +135,13 @@
                   <label for="register-vatNumber" class="text-sm font-medium leading-none"
                     >{{ vatNumberLabel }}
                     <template v-if="isFieldRequired('vatNumber')">
-                      <span class="text-red-500 ml-1">*</span>
+                      <span class="propeller-register-form__required text-red-500 ml-1">*</span>
                     </template> </label
                   ><input
                     type="text"
                     id="register-vatNumber"
                     name="vatNumber"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="vatNumber"
                     @change="
                       async (e) => {
@@ -152,13 +156,13 @@
                   <label for="register-cocNumber" class="text-sm font-medium leading-none"
                     >{{ cocNumberLabel }}
                     <template v-if="isFieldRequired('cocNumber')">
-                      <span class="text-red-500 ml-1">*</span>
+                      <span class="propeller-register-form__required text-red-500 ml-1">*</span>
                     </template> </label
                   ><input
                     type="text"
                     id="register-cocNumber"
                     name="cocNumber"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="cocNumber"
                     @change="
                       async (e) => {
@@ -174,13 +178,13 @@
                 <label for="register-companyName" class="text-sm font-medium leading-none"
                   >{{ companyNameLabel }}
                   <template v-if="isFieldRequired('companyName')">
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="propeller-register-form__required text-red-500 ml-1">*</span>
                   </template> </label
                 ><input
                   type="text"
                   id="register-companyName"
                   name="companyName"
-                  class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   :value="companyName"
                   @change="
                     async (e) => {
@@ -197,12 +201,12 @@
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-2">
               <label for="register-firstName" class="text-sm font-medium leading-none"
-                >{{ firstNameLabel }}<span class="text-red-500 ml-1">*</span></label
+                >{{ firstNameLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
               ><input
                 type="text"
                 id="register-firstName"
                 name="firstName"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="firstName"
                 @change="
                   async (e) => {
@@ -221,7 +225,7 @@
                 type="text"
                 id="register-middleName"
                 name="middleName"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="middleName"
                 @change="
                   async (e) => {
@@ -235,12 +239,12 @@
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-2">
               <label for="register-lastName" class="text-sm font-medium leading-none"
-                >{{ lastNameLabel }}<span class="text-red-500 ml-1">*</span></label
+                >{{ lastNameLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
               ><input
                 type="text"
                 id="register-lastName"
                 name="lastName"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="lastName"
                 @change="
                   async (e) => {
@@ -255,13 +259,13 @@
               <label for="register-phone" class="text-sm font-medium leading-none"
                 >{{ phoneLabel }}
                 <template v-if="isFieldRequired('phone')">
-                  <span class="text-red-500 ml-1">*</span>
+                  <span class="propeller-register-form__required text-red-500 ml-1">*</span>
                 </template> </label
               ><input
                 type="tel"
                 id="register-phone"
                 name="phone"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="phone"
                 @change="
                   async (e) => {
@@ -281,12 +285,12 @@
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-2">
               <label for="register-billingPostalCode" class="text-sm font-medium leading-none"
-                >{{ postalCodeLabel }}<span class="text-red-500 ml-1">*</span></label
+                >{{ postalCodeLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
               ><input
                 type="text"
                 id="register-billingPostalCode"
                 name="billingPostalCode"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="billingPostalCode"
                 @change="
                   async (e) => {
@@ -299,12 +303,12 @@
             </div>
             <div class="space-y-2">
               <label for="register-billingStreet" class="text-sm font-medium leading-none"
-                >{{ streetLabel }}<span class="text-red-500 ml-1">*</span></label
+                >{{ streetLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
               ><input
                 type="text"
                 id="register-billingStreet"
                 name="billingStreet"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="billingStreet"
                 @change="
                   async (e) => {
@@ -319,12 +323,12 @@
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-2">
               <label for="register-billingNumber" class="text-sm font-medium leading-none"
-                >{{ numberLabel }}<span class="text-red-500 ml-1">*</span></label
+                >{{ numberLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
               ><input
                 type="text"
                 id="register-billingNumber"
                 name="billingNumber"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="billingNumber"
                 @change="
                   async (e) => {
@@ -344,7 +348,7 @@
                 type="text"
                 id="register-billingNumberExtension"
                 name="billingNumberExtension"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="billingNumberExtension"
                 @change="
                   async (e) => {
@@ -358,12 +362,12 @@
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-2">
               <label for="register-billingCity" class="text-sm font-medium leading-none"
-                >{{ cityLabel }}<span class="text-red-500 ml-1">*</span></label
+                >{{ cityLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
               ><input
                 type="text"
                 id="register-billingCity"
                 name="billingCity"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="billingCity"
                 @change="
                   async (e) => {
@@ -376,11 +380,11 @@
             </div>
             <div class="space-y-2">
               <label for="register-billingCountry" class="text-sm font-medium leading-none"
-                >{{ countryLabel }}<span class="text-red-500 ml-1">*</span></label
+                >{{ countryLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
               ><select
                 id="register-billingCountry"
                 name="billingCountry"
-                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 :value="billingCountry"
                 @change="
                   async (e) => {
@@ -407,7 +411,7 @@
               type="checkbox"
               id="register-sameAsDelivery"
               name="sameAsDelivery"
-              class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              class="propeller-register-form__checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               :checked="sameAsDelivery"
               @change="
                 async (e) => {
@@ -424,12 +428,12 @@
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-2">
                   <label for="register-deliveryPostalCode" class="text-sm font-medium leading-none"
-                    >{{ postalCodeLabel }}<span class="text-red-500 ml-1">*</span></label
+                    >{{ postalCodeLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
                   ><input
                     type="text"
                     id="register-deliveryPostalCode"
                     name="deliveryPostalCode"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="deliveryPostalCode"
                     @change="
                       async (e) => {
@@ -442,12 +446,12 @@
                 </div>
                 <div class="space-y-2">
                   <label for="register-deliveryStreet" class="text-sm font-medium leading-none"
-                    >{{ streetLabel }}<span class="text-red-500 ml-1">*</span></label
+                    >{{ streetLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
                   ><input
                     type="text"
                     id="register-deliveryStreet"
                     name="deliveryStreet"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="deliveryStreet"
                     @change="
                       async (e) => {
@@ -462,12 +466,12 @@
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-2">
                   <label for="register-deliveryNumber" class="text-sm font-medium leading-none"
-                    >{{ numberLabel }}<span class="text-red-500 ml-1">*</span></label
+                    >{{ numberLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
                   ><input
                     type="text"
                     id="register-deliveryNumber"
                     name="deliveryNumber"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="deliveryNumber"
                     @change="
                       async (e) => {
@@ -487,7 +491,7 @@
                     type="text"
                     id="register-deliveryNumberExtension"
                     name="deliveryNumberExtension"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="deliveryNumberExtension"
                     @change="
                       async (e) => {
@@ -501,12 +505,12 @@
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-2">
                   <label for="register-deliveryCity" class="text-sm font-medium leading-none"
-                    >{{ cityLabel }}<span class="text-red-500 ml-1">*</span></label
+                    >{{ cityLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
                   ><input
                     type="text"
                     id="register-deliveryCity"
                     name="deliveryCity"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="deliveryCity"
                     @change="
                       async (e) => {
@@ -519,11 +523,11 @@
                 </div>
                 <div class="space-y-2">
                   <label for="register-deliveryCountry" class="text-sm font-medium leading-none"
-                    >{{ countryLabel }}<span class="text-red-500 ml-1">*</span></label
+                    >{{ countryLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
                   ><select
                     id="register-deliveryCountry"
                     name="deliveryCountry"
-                    class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     :value="deliveryCountry"
                     @change="
                       async (e) => {
@@ -552,12 +556,12 @@
           </h3>
           <div class="space-y-2">
             <label for="register-password" class="text-sm font-medium leading-none"
-              >{{ passwordLabel }}<span class="text-red-500 ml-1">*</span></label
+              >{{ passwordLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
             ><input
               type="password"
               id="register-password"
               name="password"
-              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+              class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
               :value="password"
               @change="
                 async (e) => {
@@ -571,12 +575,12 @@
           </div>
           <div class="space-y-2">
             <label for="register-confirmPassword" class="text-sm font-medium leading-none"
-              >{{ confirmPasswordLabel }}<span class="text-red-500 ml-1">*</span></label
+              >{{ confirmPasswordLabel }}<span class="propeller-register-form__required text-red-500 ml-1">*</span></label
             ><input
               type="password"
               id="register-confirmPassword"
               name="confirmPassword"
-              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+              class="propeller-register-form__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
               :value="confirmPassword"
               @change="
                 async (e) => {
@@ -590,14 +594,14 @@
           </div>
         </div>
         <template v-if="error">
-          <div class="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+          <div class="propeller-register-form__error text-sm text-red-600 bg-red-50 p-3 rounded-md">
             {{ error }}
           </div>
         </template>
 
         <button
           type="submit"
-          class="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="propeller-register-form__submit inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="loading"
         >
           <template v-if="loading">
@@ -605,7 +609,7 @@
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
-              class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              class="propeller-register-form__spinner animate-spin -ml-1 mr-2 h-4 w-4 text-white"
             >
               <circle
                 cx="12"
@@ -641,7 +645,7 @@
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth="2"
-            class="h-12 w-12 text-green-500"
+            class="propeller-register-form__success-icon h-12 w-12 text-green-500"
           >
             <path
               strokeLinecap="round"
@@ -650,14 +654,14 @@
             ></path>
           </svg>
         </div>
-        <p class="text-sm text-gray-600">Your account has been created successfully.</p>
+        <p class="propeller-register-form__success-message text-sm text-gray-600">Your account has been created successfully.</p>
       </div>
     </template>
 
     <template v-if="showLoginLink && !submitted">
       <div class="mt-6 border-t pt-6">
         <div class="text-center">
-          <p class="text-sm text-gray-500 mb-2">{{ loginText }}</p>
+          <p class="propeller-register-form__login-prompt text-sm text-gray-500 mb-2">{{ loginText }}</p>
           <button
             type="button"
             class="text-sm text-primary hover:underline"

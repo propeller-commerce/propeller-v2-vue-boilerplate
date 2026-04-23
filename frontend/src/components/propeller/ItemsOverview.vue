@@ -1,19 +1,19 @@
 <template>
-  <div :class="containerClass">
+  <div :class="`propeller-items-overview ${containerClass}`">
     <template v-if="title">
-      <h2 class="text-lg font-bold mb-4">{{ title }}</h2>
+      <h2 class="propeller-items-overview__title text-lg font-bold mb-4">{{ title }}</h2>
     </template>
 
-    <div class="space-y-4">
+    <div class="propeller-items-overview__list space-y-4">
       <template :key="item.itemId || index" v-for="(item, index) in items">
-        <div class="flex gap-3 pb-3 border-b border-gray-200 last:border-b-0 last:pb-0">
+        <div class="propeller-items-overview__item flex gap-3 pb-3 border-b border-border last:border-b-0 last:pb-0" :data-bundle="isBundleItem(item) ? 'true' : 'false'">
           <template v-if="showImage">
             <div
-              class="w-16 h-16 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center"
+              class="propeller-items-overview__item-media w-16 h-16 flex-shrink-0 bg-muted rounded-[var(--radius-control)] overflow-hidden border border-border-subtle flex items-center justify-center"
             >
               <template v-if="getItemImageUrl(item)">
                 <img
-                  class="w-full h-full object-contain p-1.5"
+                  class="propeller-items-overview__item-image w-full h-full object-contain p-1.5"
                   :src="getItemImageUrl(item)"
                   :alt="getItemName(item)"
                 />
@@ -25,7 +25,7 @@
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                   strokeWidth="1.5"
-                  class="w-6 h-6 text-gray-300"
+                  class="propeller-items-overview__item-image-placeholder w-6 h-6 text-foreground-subtle"
                 >
                   <path
                     strokeLinecap="round"
@@ -37,25 +37,25 @@
             </div>
           </template>
 
-          <div class="flex-1 min-w-0">
+          <div class="propeller-items-overview__item-body flex-1 min-w-0">
             <template v-if="isBundleItem(item)">
               <div>
                 <div class="flex justify-between items-start gap-2">
-                  <span class="text-sm font-medium leading-tight text-gray-900 line-clamp-2">{{
+                  <span class="propeller-items-overview__item-title text-sm font-medium leading-tight text-foreground line-clamp-2">{{
                     getBundleName(item)
                   }}</span>
                   <template v-if="showPrice && !!getBundlePrice(item)">
-                    <span class="font-semibold text-sm text-gray-900 whitespace-nowrap">{{
+                    <span class="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap">{{
                       getBundlePrice(item)
                     }}</span>
                   </template>
                 </div>
-                <div class="mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
+                <div class="propeller-items-overview__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
                   <template v-if="!!getBundleLeaderName(item)">
-                    <div class="flex justify-between items-center text-xs">
-                      <span class="font-medium text-gray-800">{{ getBundleLeaderName(item) }}</span>
+                    <div class="propeller-items-overview__item-bundle-leader flex justify-between items-center text-xs">
+                      <span class="font-medium text-muted-foreground">{{ getBundleLeaderName(item) }}</span>
                       <template v-if="!!getBundleLeaderPrice(item)">
-                        <span class="text-gray-500 whitespace-nowrap ml-2">{{
+                        <span class="text-muted-foreground whitespace-nowrap ml-2">{{
                           getBundleLeaderPrice(item)
                         }}</span>
                       </template>
@@ -63,10 +63,10 @@
                   </template>
 
                   <template :key="idx" v-for="(bundleItem, idx) in getBundleNonLeaders(item)">
-                    <div class="flex justify-between items-center text-xs text-gray-600">
+                    <div class="propeller-items-overview__item-bundle-item flex justify-between items-center text-xs text-muted-foreground">
                       <span class="line-clamp-1">{{ getBundleItemName(bundleItem) }}</span>
                       <template v-if="!!getBundleItemPrice(bundleItem)">
-                        <span class="text-gray-400 whitespace-nowrap ml-2">{{
+                        <span class="text-foreground-subtle whitespace-nowrap ml-2">{{
                           getBundleItemPrice(bundleItem)
                         }}</span>
                       </template>
@@ -74,7 +74,7 @@
                   </template>
                 </div>
               </div>
-              <div class="flex items-center text-xs text-gray-400 mt-1">
+              <div class="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                 <span>{{ getLabel('quantity', 'Qty:') }}{{ item.quantity }}</span>
               </div>
             </template>
@@ -84,7 +84,7 @@
                 <div class="flex justify-between items-start gap-2">
                   <template v-if="itemNameClickable">
                     <p
-                      class="font-medium text-sm leading-tight cursor-pointer hover:text-secondary transition-colors line-clamp-2"
+                      class="propeller-items-overview__item-title font-medium text-sm leading-tight cursor-pointer hover:text-secondary transition-colors line-clamp-2"
                       @click="async (event) => handleItemNameClick(item)"
                     >
                       {{ getItemName(item) }}
@@ -92,29 +92,29 @@
                   </template>
 
                   <template v-if="!itemNameClickable">
-                    <p class="font-medium text-sm leading-tight line-clamp-2">
+                    <p class="propeller-items-overview__item-title font-medium text-sm leading-tight line-clamp-2">
                       {{ getItemName(item) }}
                     </p>
                   </template>
 
                   <template v-if="showPrice">
-                    <span class="font-semibold text-sm text-gray-900 whitespace-nowrap">{{
+                    <span class="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap">{{
                       formatItemPrice(getItemTotalPrice(item))
                     }}</span>
                   </template>
                 </div>
                 <template v-if="showSku && getItemSku(item)">
-                  <p class="text-xs text-gray-500 mt-0.5">SKU: {{ getItemSku(item) }}</p>
+                  <p class="propeller-items-overview__item-sku text-xs text-muted-foreground mt-0.5">SKU: {{ getItemSku(item) }}</p>
                 </template>
 
                 <template v-if="getItemChildItems(item).length > 0">
-                  <div class="mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
+                  <div class="propeller-items-overview__item-options mt-1.5 space-y-1 border-l-2 border-border-subtle pl-2">
                     <template :key="idx" v-for="(child, idx) in getItemChildItems(item)">
-                      <div class="flex justify-between items-center text-xs text-gray-600">
+                      <div class="propeller-items-overview__item-option flex justify-between items-center text-xs text-muted-foreground">
                         <span class="line-clamp-1">{{
                           child.product?.names?.[0]?.value || 'Option'
                         }}</span
-                        ><span class="text-gray-400 whitespace-nowrap ml-2">{{
+                        ><span class="text-foreground-subtle whitespace-nowrap ml-2">{{
                           formatItemPrice(child.totalSum || 0)
                         }}</span>
                       </div>
@@ -122,10 +122,10 @@
                   </div>
                 </template>
               </div>
-              <div class="flex items-center text-xs text-gray-400 mt-1">
+              <div class="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                 <span>{{ getLabel('quantity', 'Qty:') }}{{ item.quantity }}</span>
                 <template v-if="showAvailability && getItemAvailability(item)">
-                  <span :class="`ml-2 ${isInStock(item) ? 'text-green-600' : 'text-red-500'}`">{{
+                  <span :class="`propeller-items-overview__item-availability ml-2 ${isInStock(item) ? 'text-success' : 'text-destructive'}`" :data-in-stock="isInStock(item) ? 'true' : 'false'">{{
                     getItemAvailability(item)
                   }}</span>
                 </template>
@@ -136,7 +136,7 @@
       </template>
     </div>
     <template v-if="items.length === 0">
-      <p class="text-gray-500 italic text-sm">
+      <p class="propeller-items-overview__empty text-muted-foreground italic text-sm">
         {{ getLabel('noItems', 'No items in cart.') }}
       </p>
     </template>

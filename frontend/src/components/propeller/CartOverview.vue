@@ -1,12 +1,12 @@
 <template>
-  <div :class="containerClass">
+  <div :class="`propeller-cart-overview ${containerClass}`">
     <template v-if="title">
-      <h2 class="text-xl font-bold mb-4">{{ title }}</h2>
+      <h2 class="propeller-cart-overview__title text-xl font-bold mb-4">{{ title }}</h2>
     </template>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
-      <div class="space-y-2">
-        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+    <div class="propeller-cart-overview__addresses grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
+      <div class="propeller-cart-overview__address space-y-2" data-address="invoice">
+        <h3 class="propeller-cart-overview__address-title text-sm font-semibold text-gray-500 uppercase tracking-wide">
           {{ getLabel('invoiceAddress', 'Invoice Address') }}
         </h3>
         <template v-if="invoiceAddress && invoiceAddress.street">
@@ -37,13 +37,13 @@
             </template>
 
             <template v-if="invoiceAddress.email">
-              <p class="text-gray-500">{{ invoiceAddress.email }}</p>
+              <p class="propeller-cart-overview__address-email text-gray-500">{{ invoiceAddress.email }}</p>
             </template>
           </div>
         </template>
       </div>
-      <div class="space-y-2">
-        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+      <div class="propeller-cart-overview__address space-y-2" data-address="delivery">
+        <h3 class="propeller-cart-overview__address-title text-sm font-semibold text-gray-500 uppercase tracking-wide">
           {{ getLabel('deliveryAddress', 'Delivery Address') }}
         </h3>
         <template v-if="deliveryAddress && deliveryAddress.street">
@@ -74,13 +74,13 @@
             </template>
 
             <template v-if="deliveryAddress.email">
-              <p class="text-gray-500">{{ deliveryAddress.email }}</p>
+              <p class="propeller-cart-overview__address-email text-gray-500">{{ deliveryAddress.email }}</p>
             </template>
           </div>
         </template>
       </div>
     </div>
-    <div class="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm">
+    <div class="propeller-cart-overview__info-panel bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm">
       <template v-if="paymentMethod">
         <div class="flex justify-between">
           <span class="font-medium">{{ getLabel('payment', 'Payment:') }}</span
@@ -110,7 +110,7 @@
           }}</label
           ><input
             type="text"
-            class="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary"
+            class="propeller-cart-overview__input flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary"
             :value="reference"
             @change="async (event) => handleReferenceChange((event.target as HTMLInputElement | HTMLTextAreaElement).value)"
             :placeholder="getLabel('referencePlaceholder', 'Your reference number')"
@@ -125,7 +125,7 @@
             getLabel('notesLabel', 'Order Notes (Optional)')
           }}</label
           ><textarea
-            class="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
+            class="propeller-cart-overview__textarea flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
             :value="notes"
             @change="async (event) => handleNotesChange((event.target as HTMLInputElement | HTMLTextAreaElement).value)"
             :placeholder="getLabel('notesPlaceholder', 'Special instructions or comments')"
@@ -139,7 +139,7 @@
           <input
             type="checkbox"
             id="cart-overview-terms"
-            class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            class="propeller-cart-overview__checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             :checked="termsAccepted"
             @change="async (event) => handleTermsChange((event.target as HTMLInputElement).checked)"
           /><label for="cart-overview-terms" class="text-sm leading-none"
@@ -157,13 +157,13 @@
       <template v-if="showPurchaseButton">
         <button
           type="button"
-          class="flex items-center justify-center gap-2 w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+          class="propeller-cart-overview__submit flex items-center justify-center gap-2 w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           @click="async (event) => handlePurchaseClick()"
           :disabled="isPurchaseDisabled"
         >
           <template v-if="loading">
             <div
-              class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
+              class="propeller-cart-overview__spinner w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
             ></div>
           </template>
 

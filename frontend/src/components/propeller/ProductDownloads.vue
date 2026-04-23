@@ -1,19 +1,19 @@
 <template>
-  <div :class="`product-downloads ${className || ''}`">
+  <div :class="`propeller-product-downloads ${className || ''}`">
     <template v-if="hasItems()">
-      <h3 class="text-base font-semibold text-foreground mb-3">
+      <h3 class="propeller-product-downloads__title text-base font-semibold text-foreground mb-3">
         {{ getLabel('title', 'Downloads') }}
       </h3>
     </template>
 
     <template v-if="hasItems()">
-      <ul class="space-y-2">
+      <ul class="propeller-product-downloads__list space-y-2">
         <template :key="index" v-for="(doc, index) in getDownloadItems()">
-          <li>
+          <li class="propeller-product-downloads__item">
             <template v-if="!!getDocumentUrl(doc)">
               <a
                 target="_blank"
-                class="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground hover:bg-muted/30 hover:border-primary/40 transition-colors group"
+                class="propeller-product-downloads__link flex items-center gap-3 rounded-[var(--radius-container)] border border-border bg-card px-4 py-3 text-sm text-foreground hover:bg-muted/30 hover:border-primary/40 transition-colors group"
                 :href="getDocumentUrl(doc)"
                 :download="true"
                 ><svg
@@ -49,7 +49,7 @@
     </template>
 
     <template v-if="!hasItems()">
-      <p class="text-sm text-muted-foreground">
+      <p class="propeller-product-downloads__empty text-sm text-muted-foreground">
         {{ getLabel('empty', 'No downloads') }}
       </p>
     </template>

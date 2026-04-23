@@ -1,32 +1,33 @@
 <template>
-  <div :class="containerClass">
+  <div :class="`propeller-cart-carriers ${containerClass}`">
     <template v-if="carriers.length > 0">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="propeller-cart-carriers__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <template :key="`${carrier.name}-${index}`" v-for="(carrier, index) in carriers">
           <div
             @click="async (event) => handleSelect(carrier)"
-            :class="`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
+            :data-selected="selectedName === carrier.name ? 'true' : 'false'"
+            :class="`propeller-cart-carriers__carrier cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
               selectedName === carrier.name
                 ? 'border-secondary bg-secondary/5 shadow-sm'
                 : 'hover:border-secondary/30'
             }`"
           >
-            <div class="flex justify-between items-center">
+            <div class="propeller-cart-carriers__carrier-row flex justify-between items-center">
               <div class="flex items-center gap-2">
                 <template v-if="showLogo && getLogoUrl(carrier)">
-                  <img class="h-6 w-auto" :src="getLogoUrl(carrier)" :alt="carrier.name" />
+                  <img class="propeller-cart-carriers__carrier-logo h-6 w-auto" :src="getLogoUrl(carrier)" :alt="carrier.name" />
                 </template>
 
-                <span class="font-medium">{{ carrier.name }}</span>
+                <span class="propeller-cart-carriers__carrier-name font-medium">{{ carrier.name }}</span>
               </div>
               <template v-if="showPrice !== false">
-                <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{{
+                <span class="propeller-cart-carriers__carrier-price text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{{
                   formatCarrierPrice(carrier.price)
                 }}</span>
               </template>
             </div>
             <template v-if="carrier.deliveryDeadline">
-              <p class="text-xs text-gray-500">
+              <p class="propeller-cart-carriers__carrier-deadline text-xs text-gray-500">
                 {{ getLabel('deliveryDeadline', 'Delivery deadline:')
                 }}{{ carrier.deliveryDeadline }}
               </p>
@@ -37,7 +38,7 @@
     </template>
 
     <template v-if="carriers.length === 0">
-      <p class="text-gray-500 italic">
+      <p class="propeller-cart-carriers__empty text-gray-500 italic">
         {{ getLabel('noCarriers', 'No carriers available.') }}
       </p>
     </template>

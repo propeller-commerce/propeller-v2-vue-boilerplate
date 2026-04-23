@@ -1,15 +1,19 @@
 <template>
-  <div :class="`cluster-configurator ${className || ''}`">
+  <div :class="`propeller-cluster-configurator ${className || ''}`">
     <template v-if="!!config?.settings?.length">
-      <div class="configurator-content flex flex-col gap-6">
+      <div class="propeller-cluster-configurator__content flex flex-col gap-6">
         <template :key="setting.id" v-for="(setting, index) in getSettingsWithValues()">
-          <div class="attribute-group">
-            <h4 class="font-semibold text-sm text-gray-700 mb-3">
+          <div
+            class="propeller-cluster-configurator__group"
+            :data-display-type="setting.displayType"
+            :data-disabled="setting.disabled ? 'true' : 'false'"
+          >
+            <h4 class="propeller-cluster-configurator__label font-semibold text-sm text-muted-foreground mb-3">
               {{ setting.displayName || setting.name }}
             </h4>
             <template v-if="setting.displayType === 'DROPDOWN'">
               <select
-                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
+                class="propeller-cluster-configurator__select w-full border border-border rounded-[var(--radius-container)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-muted disabled:text-foreground-subtle cursor-pointer"
                 :value="setting.selectedValue"
                 :disabled="setting.disabled"
                 @change="async (e) => handleAttributeSelect(setting.name, (e.target as HTMLSelectElement).value)"
@@ -24,15 +28,16 @@
             </template>
 
             <template v-if="setting.displayType === 'RADIO'">
-              <div class="flex flex-wrap gap-2">
+              <div class="propeller-cluster-configurator__options flex flex-wrap gap-2">
                 <template :key="val" v-for="(val, index) in setting.availableValues">
                   <label
-                    :class="`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors select-none ${
+                    :data-selected="setting.selectedValue === val ? 'true' : 'false'"
+                    :class="`propeller-cluster-configurator__radio flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-container)] border text-sm font-medium transition-colors select-none ${
                       setting.disabled
-                        ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400'
+                        ? 'opacity-50 cursor-not-allowed border-border text-foreground-subtle'
                         : setting.selectedValue === val
                           ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer'
-                          : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'
+                          : 'border-border text-muted-foreground hover:border-secondary/30 cursor-pointer'
                     }`"
                     ><input
                       type="radio"
@@ -49,22 +54,23 @@
             </template>
 
             <template v-if="setting.displayType === 'COLOR'">
-              <div class="flex flex-wrap gap-2">
+              <div class="propeller-cluster-configurator__options flex flex-wrap gap-2">
                 <template :key="val" v-for="(val, index) in setting.availableValues">
                   <button
                     type="button"
                     :title="val"
                     :disabled="setting.disabled"
                     @click="async (event) => handleAttributeSelect(setting.name, val)"
+                    :data-selected="setting.selectedValue === val ? 'true' : 'false'"
                     :style="{
                       backgroundColor: val,
                     }"
-                    :class="`w-8 h-8 rounded-full border-2 transition-all ${
+                    :class="`propeller-cluster-configurator__color w-8 h-8 rounded-full border-2 transition-all ${
                       setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                     } ${
                       setting.selectedValue === val
                         ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1 scale-110'
-                        : 'border-gray-300 hover:scale-105'
+                        : 'border-input hover:scale-105'
                     }`"
                   ></button>
                 </template>
@@ -72,24 +78,25 @@
             </template>
 
             <template v-if="setting.displayType === 'IMAGE'">
-              <div class="flex flex-wrap gap-3">
+              <div class="propeller-cluster-configurator__options flex flex-wrap gap-3">
                 <template :key="val" v-for="(val, index) in setting.availableValues">
                   <button
                     type="button"
                     :disabled="setting.disabled"
                     @click="async (event) => handleAttributeSelect(setting.name, val)"
-                    :class="`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all ${
+                    :data-selected="setting.selectedValue === val ? 'true' : 'false'"
+                    :class="`propeller-cluster-configurator__image-swatch relative w-16 h-16 rounded-[var(--radius-container)] border-2 overflow-hidden transition-all ${
                       setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                     } ${
                       setting.selectedValue === val
                         ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1'
-                        : 'border-gray-200 hover:border-secondary/30'
+                        : 'border-border hover:border-secondary/30'
                     }`"
                   >
-                    <img class="w-full h-full object-cover" :src="val" :alt="val" />
+                    <img class="propeller-cluster-configurator__image w-full h-full object-cover" :src="val" :alt="val" />
                     <template v-if="setting.selectedValue === val">
                       <div
-                        class="absolute inset-0 bg-secondary bg-opacity-20 flex items-center justify-center"
+                        class="propeller-cluster-configurator__image-check absolute inset-0 bg-secondary bg-opacity-20 flex items-center justify-center"
                       >
                         <svg fill="currentColor" viewBox="0 0 20 20" class="w-5 h-5 text-secondary">
                           <path
@@ -113,18 +120,19 @@
                 setting.displayType !== 'IMAGE'
               "
             >
-              <div class="flex flex-wrap gap-2">
+              <div class="propeller-cluster-configurator__options flex flex-wrap gap-2">
                 <template :key="val" v-for="(val, index) in setting.availableValues">
                   <button
                     type="button"
                     :disabled="setting.disabled"
                     @click="async (event) => handleAttributeSelect(setting.name, val)"
-                    :class="`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                    :data-selected="setting.selectedValue === val ? 'true' : 'false'"
+                    :class="`propeller-cluster-configurator__chip px-3 py-1.5 rounded-[var(--radius-container)] border text-sm font-medium transition-colors ${
                       setting.disabled
-                        ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400'
+                        ? 'opacity-50 cursor-not-allowed border-border text-foreground-subtle'
                         : setting.selectedValue === val
                           ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer'
-                          : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'
+                          : 'border-border text-muted-foreground hover:border-secondary/30 cursor-pointer'
                     }`"
                   >
                     {{ val }}

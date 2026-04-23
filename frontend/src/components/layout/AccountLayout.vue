@@ -4,7 +4,7 @@
       <div class="flex flex-col lg:flex-row gap-8">
         <!-- Sidebar Navigation -->
         <aside class="w-full lg:w-72 flex-shrink-0">
-          <div class="overflow-hidden border border-border bg-card shadow-sm rounded-lg sticky top-24">
+          <div class="overflow-hidden border border-border bg-card shadow-sm rounded-[var(--radius-container)] sticky top-24">
             <AccountIconAndMenu
               variant="sidebar"
               :currentPath="currentPath"

@@ -1,22 +1,23 @@
 <template>
-  <div :class="containerClass">
+  <div :class="`propeller-cart-paymethods ${containerClass}`">
     <template v-if="payMethods.length > 0">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="propeller-cart-paymethods__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <template :key="method.code" v-for="(method, index) in payMethods">
           <div
             @click="async (event) => handleSelect(method)"
-            :class="`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
+            :data-selected="selectedCode === method.code ? 'true' : 'false'"
+            :class="`propeller-cart-paymethods__method cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
               selectedCode === method.code
                 ? 'border-secondary bg-secondary/5 shadow-sm'
                 : 'hover:border-secondary/30'
             }`"
           >
-            <div class="flex justify-between items-center">
+            <div class="propeller-cart-paymethods__method-row flex justify-between items-center">
               <div class="flex items-center gap-2">
-                <span class="font-medium">{{ method.name || method.code }}</span>
+                <span class="propeller-cart-paymethods__method-name font-medium">{{ method.name || method.code }}</span>
               </div>
               <template v-if="method.price > 0">
-                <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{{
+                <span class="propeller-cart-paymethods__method-price text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{{
                   formatMethodPrice(method.price)
                 }}</span>
               </template>
@@ -27,7 +28,7 @@
     </template>
 
     <template v-if="payMethods.length === 0">
-      <p class="text-gray-500 italic">
+      <p class="propeller-cart-paymethods__empty text-gray-500 italic">
         {{ getLabel('noMethods', 'No payment methods available.') }}
       </p>
     </template>

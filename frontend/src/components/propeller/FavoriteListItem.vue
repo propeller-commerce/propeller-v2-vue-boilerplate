@@ -1,11 +1,12 @@
 <template>
   <div
     @click="async (e) => handleItemClick(e)"
-    :class="`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${
+    :data-type="isProduct() ? 'product' : 'cluster'"
+    :class="`propeller-favorite-list-item flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${
       className || ''
     }`"
   >
-    <div class="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
+    <div class="propeller-favorite-list-item__media relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
       <template v-if="titleLinkable !== false">
         <a
           class="block h-full w-full"
@@ -13,11 +14,11 @@
           @click="async (e) => handleItemClick(e)"
         >
           <template v-if="!!getImageUrl()">
-            <img class="h-full w-full object-contain" :src="getImageUrl()" :alt="getName()" />
+            <img class="propeller-favorite-list-item__image h-full w-full object-contain" :src="getImageUrl()" :alt="getName()" />
           </template>
 
           <template v-if="!getImageUrl()">
-            <div class="flex h-full w-full items-center justify-center text-gray-200">
+            <div class="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-gray-200">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-8 w-8">
                 <path
                   strokeLinecap="round"
@@ -34,11 +35,11 @@
       <template v-if="titleLinkable === false">
         <div class="block h-full w-full">
           <template v-if="!!getImageUrl()">
-            <img class="h-full w-full object-contain" :src="getImageUrl()" :alt="getName()" />
+            <img class="propeller-favorite-list-item__image h-full w-full object-contain" :src="getImageUrl()" :alt="getName()" />
           </template>
 
           <template v-if="!getImageUrl()">
-            <div class="flex h-full w-full items-center justify-center text-gray-200">
+            <div class="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-gray-200">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-8 w-8">
                 <path
                   strokeLinecap="round"
@@ -52,14 +53,14 @@
         </div>
       </template>
     </div>
-    <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+    <div class="propeller-favorite-list-item__body flex flex-col gap-0.5 min-w-0 flex-1">
       <template v-if="showSku !== false && !!getSku()">
-        <span class="font-mono text-xs text-gray-400">{{ getSku() }}</span>
+        <span class="propeller-favorite-list-item__sku font-mono text-xs text-gray-400">{{ getSku() }}</span>
       </template>
 
       <template v-if="titleLinkable !== false">
         <a
-          class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-secondary line-clamp-1"
+          class="propeller-favorite-list-item__title text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-secondary line-clamp-1"
           :href="getItemUrl()"
           @click="async (e) => handleItemClick(e)"
           >{{ getName() }}</a
@@ -67,7 +68,7 @@
       </template>
 
       <template v-if="titleLinkable === false">
-        <span class="text-sm font-medium leading-tight text-gray-900 line-clamp-1">{{
+        <span class="propeller-favorite-list-item__title text-sm font-medium leading-tight text-gray-900 line-clamp-1">{{
           getName()
         }}</span>
       </template>
@@ -85,10 +86,11 @@
 
     <template v-if="showStockComponent && !isProduct()">
       <template v-if="getCluster()?.defaultProduct?.inventory?.totalQuantity !== undefined">
-        <div class="flex-shrink-0">
+        <div class="propeller-favorite-list-item__stock flex-shrink-0">
           <template v-if="(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5">
             <span
-              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-green-600 bg-green-50"
+              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-green-600 bg-green-50"
+              data-stock="in"
               >{{ getLabel('inStock', 'In stock') }}</span
             >
           </template>
@@ -100,14 +102,16 @@
             "
           >
             <span
-              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-amber-600 bg-amber-50"
+              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-amber-600 bg-amber-50"
+              data-stock="low"
               >{{ getLabel('lowStock', 'Low stock') }}</span
             >
           </template>
 
           <template v-if="(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) === 0">
             <span
-              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-red-600 bg-red-50"
+              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-red-600 bg-red-50"
+              data-stock="out"
               >{{ getLabel('outOfStock', 'Out of stock') }}</span
             >
           </template>
@@ -116,12 +120,12 @@
     </template>
 
     <template v-if="!!getItemPrice()">
-      <span class="text-base font-bold text-gray-900 whitespace-nowrap flex-shrink-0">{{
+      <span class="propeller-favorite-list-item__price text-base font-bold text-gray-900 whitespace-nowrap flex-shrink-0">{{
         getItemPrice()
       }}</span>
     </template>
 
-    <div class="flex items-center gap-2 flex-shrink-0" @click="async (e) => e.stopPropagation()">
+    <div class="propeller-favorite-list-item__actions flex items-center gap-2 flex-shrink-0" @click="async (e) => e.stopPropagation()">
       <template v-if="allowAddToCart !== false && isProduct() && !!graphqlClient">
         <AddToCart
           :graphqlClient="graphqlClient"
@@ -145,7 +149,7 @@
 
       <template v-if="!isProduct()">
         <a
-          class="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-secondary/90 whitespace-nowrap"
+          class="propeller-favorite-list-item__view-cluster inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-secondary/90 whitespace-nowrap"
           :href="getItemUrl()"
           @click="async (e) => handleItemClick(e)"
           >{{ getLabel('viewCluster', 'View cluster') }}</a
@@ -155,7 +159,7 @@
       <template v-if="showDelete !== false">
         <button
           type="button"
-          class="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+          class="propeller-favorite-list-item__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
           @click="async (event) => handleDelete()"
           :title="getLabel('delete', 'Remove from list')"
         >

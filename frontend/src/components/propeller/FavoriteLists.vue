@@ -1,11 +1,14 @@
 <template>
-  <div :class="className">
+  <div
+    :class="`propeller-favorite-lists ${className || ''}`"
+    :data-loading="loading ? 'true' : 'false'"
+  >
     <template
       v-if="allowFavoriteListCreate !== false && !loading && isMounted && displayedLists.length > 0"
     >
-      <div class="flex justify-end mb-4">
+      <div class="propeller-favorite-lists__toolbar flex justify-end mb-4">
         <button
-          class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
+          class="propeller-favorite-lists__create-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
           @click="
             async (event) => {
               showCreateModal = true;
@@ -33,7 +36,7 @@
 
     <template v-if="loading">
       <div class="space-y-4">
-        <div class="border border-gray-200 rounded-lg p-6 animate-pulse">
+        <div class="propeller-favorite-lists__skeleton border border-gray-200 rounded-lg p-6 animate-pulse">
           <div class="flex justify-between items-start">
             <div class="space-y-2 flex-1">
               <div class="h-6 w-1/3 bg-gray-200 rounded"></div>
@@ -42,7 +45,7 @@
             </div>
           </div>
         </div>
-        <div class="border border-gray-200 rounded-lg p-6 animate-pulse">
+        <div class="propeller-favorite-lists__skeleton border border-gray-200 rounded-lg p-6 animate-pulse">
           <div class="flex justify-between items-start">
             <div class="space-y-2 flex-1">
               <div class="h-6 w-1/3 bg-gray-200 rounded"></div>
@@ -56,7 +59,7 @@
 
     <template v-if="!loading && isMounted">
       <template v-if="displayedLists.length > 0">
-        <div class="space-y-4">
+        <div class="propeller-favorite-lists__list space-y-4">
           <template :key="list.id" v-for="(list, index) in displayedLists">
             <div
               @click="
@@ -66,20 +69,22 @@
                   }
                 }
               "
+              :data-editing="editingListId === String(list.id) ? 'true' : 'false'"
+              :data-default="list.isDefault ? 'true' : 'false'"
               :class="
-                'border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors' +
+                'propeller-favorite-lists__item border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors' +
                 (editingListId !== String(list.id) && onListClick ? ' cursor-pointer' : '')
               "
             >
               <div class="flex justify-between items-start">
                 <div class="flex-1">
                   <template v-if="editingListId === String(list.id)">
-                    <div class="space-y-4">
+                    <div class="propeller-favorite-lists__edit space-y-4">
                       <div class="space-y-2">
                         <input
                           type="text"
                           placeholder="Enter list name"
-                          class="max-w-md block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                          class="propeller-favorite-lists__input max-w-md block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                           :value="editListName"
                           @change="
                             async (e) => {
@@ -91,7 +96,7 @@
                       <div class="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          class="rounded border-gray-300"
+                          class="propeller-favorite-lists__checkbox rounded border-gray-300"
                           :id="`default-edit-${list.id}`"
                           :checked="editSetAsDefault"
                           @change="
@@ -99,19 +104,19 @@
                               editSetAsDefault = e.target.checked;
                             }
                           "
-                        /><label class="text-sm text-gray-500" :for="`default-edit-${list.id}`">{{
+                        /><label class="propeller-favorite-lists__checkbox-label text-sm text-gray-500" :for="`default-edit-${list.id}`">{{
                           getLabel('makeDefault', 'Make default')
                         }}</label>
                       </div>
                       <div class="flex gap-2">
                         <button
-                          class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
+                          class="propeller-favorite-lists__save-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                           @click="async (event) => handleUpdateList(String(list.id))"
                           :disabled="!editListName.trim()"
                         >
                           {{ getLabel('editSave', 'Save') }}</button
                         ><button
-                          class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                          class="propeller-favorite-lists__cancel-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                           @click="async (event) => handleCancelEdit()"
                         >
                           {{ getLabel('editCancel', 'Cancel') }}
@@ -121,17 +126,17 @@
                   </template>
 
                   <template v-if="editingListId !== String(list.id)">
-                    <div class="space-y-2">
+                    <div class="propeller-favorite-lists__display space-y-2">
                       <div class="flex items-center gap-2">
-                        <span class="text-xl font-semibold">{{ list.name }}</span>
+                        <span class="propeller-favorite-lists__name text-xl font-semibold">{{ list.name }}</span>
                         <template v-if="showDefaultIndicator !== false && list.isDefault">
                           <span
-                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary"
+                            class="propeller-favorite-lists__default-badge inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary"
                             >{{ getLabel('defaultBadge', 'Default') }}</span
                           >
                         </template>
                       </div>
-                      <div class="flex items-center gap-4 text-sm text-gray-500">
+                      <div class="propeller-favorite-lists__meta flex items-center gap-4 text-sm text-gray-500">
                         <template v-if="showLastModified !== false">
                           <div class="flex items-center gap-1">
                             <svg
@@ -181,10 +186,10 @@
                   </template>
                 </div>
                 <template v-if="showActions !== false && editingListId !== String(list.id)">
-                  <div class="flex gap-2">
+                  <div class="propeller-favorite-lists__actions flex gap-2">
                     <button
                       title="Edit"
-                      class="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      class="propeller-favorite-lists__edit-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                       @click="
                         async (e) => {
                           e.stopPropagation();
@@ -208,7 +213,7 @@
                       </svg></button
                     ><button
                       title="Delete"
-                      class="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50"
+                      class="propeller-favorite-lists__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50"
                       @click="
                         async (e) => {
                           e.stopPropagation();
@@ -241,9 +246,9 @@
       </template>
 
       <template v-if="displayedLists.length === 0">
-        <div class="border border-gray-200 rounded-lg p-12 text-center space-y-4">
+        <div class="propeller-favorite-lists__empty border border-gray-200 rounded-lg p-12 text-center space-y-4">
           <div
-            class="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto"
+            class="propeller-favorite-lists__empty-icon-wrapper bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -255,7 +260,7 @@
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              class="text-gray-400"
+              class="propeller-favorite-lists__empty-icon text-gray-400"
             >
               <path
                 d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3.332.67-4.5 2.17C10.832 3.67 9.26 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
@@ -263,10 +268,10 @@
             </svg>
           </div>
           <div>
-            <p class="text-lg font-medium">
+            <p class="propeller-favorite-lists__empty-title text-lg font-medium">
               {{ getLabel('noLists', 'No favorite lists') }}
             </p>
-            <p class="text-gray-500">
+            <p class="propeller-favorite-lists__empty-message text-gray-500">
               {{
                 getLabel('noListsDescription', 'Start by creating a new list to save your items.')
               }}
@@ -274,7 +279,7 @@
           </div>
           <template v-if="allowFavoriteListCreate !== false">
             <button
-              class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
+              class="propeller-favorite-lists__create-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
               @click="
                 async (event) => {
                   showCreateModal = true;
@@ -290,15 +295,15 @@
 
     <template v-if="showCreateModal">
       <div
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        class="propeller-favorite-lists__create-modal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-white p-6 rounded-lg max-w-md w-full shadow-lg border">
+        <div class="propeller-favorite-lists__create-modal-content bg-white p-6 rounded-lg max-w-md w-full shadow-lg border">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold">
+            <h3 class="propeller-favorite-lists__create-modal-title text-xl font-bold">
               {{ getLabel('createTitle', 'Create New List') }}
             </h3>
             <button
-              class="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              class="propeller-favorite-lists__create-modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               @click="
                 async (event) => {
                   closeCreateModal();
@@ -310,10 +315,10 @@
           </div>
           <div class="space-y-4">
             <div class="space-y-2">
-              <label class="text-sm font-medium">Name</label
+              <label class="propeller-favorite-lists__input-label text-sm font-medium">Name</label
               ><input
                 type="text"
-                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                class="propeller-favorite-lists__input block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                 :value="newListName"
                 @change="
                   async (e) => {
@@ -327,20 +332,20 @@
               <input
                 type="checkbox"
                 id="create-set-default"
-                class="rounded border-gray-300"
+                class="propeller-favorite-lists__checkbox rounded border-gray-300"
                 :checked="newSetAsDefault"
                 @change="
                   async (e) => {
                     newSetAsDefault = e.target.checked;
                   }
                 "
-              /><label for="create-set-default" class="text-sm text-gray-500">{{
+              /><label for="create-set-default" class="propeller-favorite-lists__checkbox-label text-sm text-gray-500">{{
                 getLabel('setAsDefault', 'Set as default favorite list')
               }}</label>
             </div>
             <div class="flex justify-end gap-3 pt-2">
               <button
-                class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                class="propeller-favorite-lists__cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                 @click="
                   async (event) => {
                     closeCreateModal();
@@ -349,7 +354,7 @@
               >
                 {{ getLabel('cancelButton', 'Cancel') }}</button
               ><button
-                class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
+                class="propeller-favorite-lists__save-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                 @click="async (event) => handleCreateList()"
                 :disabled="!newListName.trim()"
               >
@@ -363,37 +368,37 @@
 
     <template v-if="showDeleteModal && listToDelete">
       <div
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        class="propeller-favorite-lists__delete-modal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-white p-6 rounded-lg max-w-md w-full shadow-lg border">
+        <div class="propeller-favorite-lists__delete-modal-content bg-white p-6 rounded-lg max-w-md w-full shadow-lg border">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold">
+            <h3 class="propeller-favorite-lists__delete-modal-title text-xl font-bold">
               {{ getLabel('deleteTitle', 'Delete Favorite List') }}
             </h3>
             <button
-              class="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              class="propeller-favorite-lists__delete-modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               @click="async (event) => handleCancelDelete()"
             >
               ×
             </button>
           </div>
           <div class="space-y-4">
-            <p>
+            <p class="propeller-favorite-lists__delete-prompt">
               {{ getLabel('deleteConfirm', 'Are you sure you want to delete')
               }}<strong>&quot;{{ listToDelete?.name }}&quot;</strong>?
             </p>
-            <p class="text-sm text-red-600">
+            <p class="propeller-favorite-lists__delete-warning text-sm text-red-600">
               {{ getLabel('deleteWarning', 'This action cannot be undone.') }}
             </p>
           </div>
           <div class="flex justify-end gap-3 pt-6">
             <button
-              class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+              class="propeller-favorite-lists__cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
               @click="async (event) => handleCancelDelete()"
             >
               {{ getLabel('cancelButton', 'Cancel') }}</button
             ><button
-              class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+              class="propeller-favorite-lists__confirm-delete-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
               @click="async (event) => handleConfirmDelete()"
             >
               {{ getLabel('deleteButton', 'Delete') }}

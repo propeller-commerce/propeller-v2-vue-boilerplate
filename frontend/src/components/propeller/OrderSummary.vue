@@ -1,55 +1,55 @@
 <template>
-  <div :class="containerClass">
+  <div :class="`propeller-order-summary ${containerClass}`">
     <template v-if="title">
-      <h2 class="text-xl font-bold mb-4">{{ title }}</h2>
+      <h2 class="propeller-order-summary__title text-xl font-bold mb-4">{{ title }}</h2>
     </template>
 
     <div
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-5 border-b border-gray-200 mb-5"
+      class="propeller-order-summary__meta grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-5 border-b border-gray-200 mb-5"
     >
       <template v-if="showOrderNumber && orderNumber">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
+        <div class="propeller-order-summary__meta-item" data-meta="order-number">
+          <p class="propeller-order-summary__meta-label text-sm text-gray-500 mb-1">
             {{ getLabel('orderNumber', 'Order Number') }}
           </p>
-          <p class="font-semibold">{{ orderNumber }}</p>
+          <p class="propeller-order-summary__meta-value font-semibold">{{ orderNumber }}</p>
         </div>
       </template>
 
       <template v-if="showOrderDate && orderDate">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
+        <div class="propeller-order-summary__meta-item" data-meta="order-date">
+          <p class="propeller-order-summary__meta-label text-sm text-gray-500 mb-1">
             {{ getLabel('orderDate', 'Order Date') }}
           </p>
-          <p class="font-semibold">{{ formatOrderDate(orderDate) }}</p>
+          <p class="propeller-order-summary__meta-value font-semibold">{{ formatOrderDate(orderDate) }}</p>
         </div>
       </template>
 
       <template v-if="showOrderStatus && orderStatus">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
+        <div class="propeller-order-summary__meta-item" data-meta="status">
+          <p class="propeller-order-summary__meta-label text-sm text-gray-500 mb-1">
             {{ getLabel('status', 'Status') }}
           </p>
           <span
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary"
+            class="propeller-order-summary__status inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary"
             >{{ orderStatus }}</span
           >
         </div>
       </template>
 
       <template v-if="showOrderTotal">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
+        <div class="propeller-order-summary__meta-item" data-meta="total">
+          <p class="propeller-order-summary__meta-label text-sm text-gray-500 mb-1">
             {{ getLabel('total', 'Total') }}
           </p>
-          <p class="font-bold text-lg">{{ formatItemPrice(orderTotal) }}</p>
+          <p class="propeller-order-summary__total font-bold text-lg">{{ formatItemPrice(orderTotal) }}</p>
         </div>
       </template>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
+    <div class="propeller-order-summary__addresses grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
       <template v-if="showInvoiceAddress">
-        <div class="space-y-2">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+        <div class="propeller-order-summary__address space-y-2" data-address="invoice">
+          <h3 class="propeller-order-summary__address-title text-sm font-semibold text-gray-500 uppercase tracking-wide">
             {{ getLabel('invoiceAddress', 'Invoice Address') }}
           </h3>
           <template v-if="invoiceAddress && invoiceAddress.street">
@@ -80,7 +80,7 @@
               </template>
 
               <template v-if="invoiceAddress.email">
-                <p class="text-gray-500">{{ invoiceAddress.email }}</p>
+                <p class="propeller-order-summary__address-email text-gray-500">{{ invoiceAddress.email }}</p>
               </template>
             </div>
           </template>
@@ -88,8 +88,8 @@
       </template>
 
       <template v-if="showDeliveryAddress">
-        <div class="space-y-2">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+        <div class="propeller-order-summary__address space-y-2" data-address="delivery">
+          <h3 class="propeller-order-summary__address-title text-sm font-semibold text-gray-500 uppercase tracking-wide">
             {{ getLabel('deliveryAddress', 'Delivery Address') }}
           </h3>
           <template v-if="deliveryAddress && deliveryAddress.street">
@@ -120,7 +120,7 @@
               </template>
 
               <template v-if="deliveryAddress.email">
-                <p class="text-gray-500">{{ deliveryAddress.email }}</p>
+                <p class="propeller-order-summary__address-email text-gray-500">{{ deliveryAddress.email }}</p>
               </template>
             </div>
           </template>
@@ -128,7 +128,7 @@
       </template>
     </div>
     <template v-if="showDeliveryInfo && (paymentMethod || carrierName || requestDate)">
-      <div class="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm">
+      <div class="propeller-order-summary__info-panel bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm">
         <template v-if="paymentMethod">
           <div class="flex justify-between">
             <span class="font-medium">{{ getLabel('payment', 'Payment:') }}</span
@@ -153,7 +153,7 @@
     </template>
 
     <template v-if="showRemarks && (orderReference || orderRemarks)">
-      <div class="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm mt-4">
+      <div class="propeller-order-summary__remarks-panel bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm mt-4">
         <template v-if="orderReference">
           <div class="flex justify-between">
             <span class="font-medium">{{ getLabel('reference', 'Reference:') }}</span

@@ -1,16 +1,19 @@
 <template>
-  <div :class="className || ''">
+  <div
+    :class="`propeller-favorite-list-details ${className || ''}`"
+    :data-loading="loading ? 'true' : 'false'"
+  >
     <template v-if="loading">
-      <div class="space-y-4">
+      <div class="propeller-favorite-list-details__skeleton space-y-4">
         <template :key="i" v-for="(i, index) in [1, 2, 3]">
-          <div class="flex items-center gap-4 p-4 border-b border-gray-200 animate-pulse">
-            <div class="w-20 h-20 bg-gray-100 rounded-md flex-shrink-0"></div>
+          <div class="propeller-favorite-list-details__skeleton-row flex items-center gap-4 p-4 border-b border-border animate-pulse">
+            <div class="w-20 h-20 bg-muted rounded-[var(--radius-control)] flex-shrink-0"></div>
             <div class="flex-1 space-y-2">
-              <div class="h-4 w-1/4 bg-gray-100 rounded"></div>
-              <div class="h-5 w-1/2 bg-gray-100 rounded"></div>
-              <div class="h-4 w-1/6 bg-gray-100 rounded"></div>
+              <div class="h-4 w-1/4 bg-muted rounded"></div>
+              <div class="h-5 w-1/2 bg-muted rounded"></div>
+              <div class="h-4 w-1/6 bg-muted rounded"></div>
             </div>
-            <div class="h-10 w-28 bg-gray-100 rounded"></div>
+            <div class="h-10 w-28 bg-muted rounded"></div>
           </div>
         </template>
       </div>
@@ -18,7 +21,7 @@
 
     <template v-if="!loading && isMounted">
       <template v-if="allItems.length > 0">
-        <div class="space-y-3">
+        <div class="propeller-favorite-list-details__list space-y-3">
           <template
             :key="'productId' in item ? 'p-' + item.productId : 'c-' + item.clusterId"
             v-for="(item, idx) in getPagedItems()"
@@ -57,7 +60,7 @@
             </div>
           </template>
           <template v-if="showPagination !== false && getTotalPages() > 1">
-            <div class="mt-6">
+            <div class="propeller-favorite-list-details__pagination mt-6">
               <GridPagination
                 :products="getPaginationData()"
                 :onPageChange="(page) => handlePageChange(page)"
@@ -69,9 +72,9 @@
       </template>
 
       <template v-if="allItems.length === 0">
-        <div class="border border-gray-200 rounded-lg p-12 text-center space-y-4">
+        <div class="propeller-favorite-list-details__empty border border-gray-200 rounded-lg p-12 text-center space-y-4">
           <div
-            class="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto"
+            class="propeller-favorite-list-details__empty-icon-wrapper bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -83,7 +86,7 @@
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              class="text-gray-400"
+              class="propeller-favorite-list-details__empty-icon text-gray-400"
             >
               <path
                 d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
@@ -91,10 +94,10 @@
             </svg>
           </div>
           <div>
-            <p class="text-lg font-medium">
+            <p class="propeller-favorite-list-details__empty-title text-lg font-medium">
               {{ getLabel('emptyTitle', 'List is empty') }}
             </p>
-            <p class="text-gray-500">
+            <p class="propeller-favorite-list-details__empty-message text-gray-500">
               {{
                 getLabel(
                   'emptyDescription',

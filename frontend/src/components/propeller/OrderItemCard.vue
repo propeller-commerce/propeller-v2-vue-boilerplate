@@ -1,18 +1,18 @@
 <template>
-  <tbody>
-    <tr :class="isChildItem ? 'border-0' : 'hover:bg-gray-50 transition'">
-      <td :class="isChildItem ? 'px-6 py-2 pl-28' : 'px-6 py-4'">
+  <tbody class="propeller-order-item-card">
+    <tr :class="`propeller-order-item-card__row ${isChildItem ? 'border-0' : 'hover:bg-surface-hover transition'}`" :data-child="isChildItem ? 'true' : 'false'">
+      <td :class="`propeller-order-item-card__cell propeller-order-item-card__cell--product ${isChildItem ? 'px-6 py-2 pl-28' : 'px-6 py-4'}`">
         <div class="flex items-center gap-4">
           <template v-if="showImage">
             <template v-if="productImage">
-              <div class="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
-                <img class="object-cover w-full h-full" :src="productImage" :alt="productName" />
+              <div class="propeller-order-item-card__media relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
+                <img class="propeller-order-item-card__image object-cover w-full h-full" :src="productImage" :alt="productName" />
               </div>
             </template>
 
             <template v-if="!productImage">
               <div
-                class="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs"
+                class="propeller-order-item-card__image-placeholder w-16 h-16 bg-muted rounded flex items-center justify-center text-foreground-subtle text-xs"
               >
                 No Img
               </div>
@@ -22,28 +22,28 @@
           <div>
             <template v-if="titleLinkable && productUrl && !isChildItem">
               <a
-                class="font-medium text-foreground hover:text-primary hover:underline"
+                class="propeller-order-item-card__title font-medium text-foreground hover:text-primary hover:underline"
                 :href="productUrl"
                 >{{ productName }}</a
               >
             </template>
 
             <template v-if="!titleLinkable || !productUrl || isChildItem">
-              <span :class="isChildItem ? 'text-sm text-gray-700' : 'font-medium'">{{
+              <span :class="`propeller-order-item-card__title ${isChildItem ? 'text-sm text-muted-foreground' : 'font-medium'}`">{{
                 productName
               }}</span>
             </template>
 
             <template v-if="showSku && productSku">
-              <p class="text-sm text-gray-500 mt-1">SKU: {{ productSku }}</p>
+              <p class="propeller-order-item-card__sku text-sm text-muted-foreground mt-1">SKU: {{ productSku }}</p>
             </template>
 
             <template v-if="showItemNotes && notes">
-              <p class="text-sm text-gray-400 mt-1 italic">{{ notes }}</p>
+              <p class="propeller-order-item-card__notes text-sm text-foreground-subtle mt-1 italic">{{ notes }}</p>
             </template>
 
             <template v-if="showStockComponent">
-              <p class="text-xs text-gray-400 mt-1">Stock info</p>
+              <p class="propeller-order-item-card__stock text-xs text-foreground-subtle mt-1">Stock info</p>
             </template>
           </div>
         </div>
@@ -51,7 +51,7 @@
       <template v-if="showQuantity">
         <td
           :class="
-            isChildItem ? 'px-6 py-2 text-center text-sm text-gray-600' : 'px-6 py-4 text-center'
+            isChildItem ? 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-gray-600' : 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-4 text-center'
           "
         >
           {{ quantity }}
@@ -62,8 +62,8 @@
         <td
           :class="
             isChildItem
-              ? 'px-6 py-2 text-right text-sm text-gray-600'
-              : 'px-6 py-4 text-right whitespace-nowrap text-orange-600'
+              ? 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-gray-600'
+              : 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-4 text-right whitespace-nowrap text-orange-600'
           "
         >
           <template v-if="discount > 0">
@@ -76,8 +76,8 @@
         <td
           :class="
             isChildItem
-              ? 'px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600'
-              : 'px-6 py-4 text-right whitespace-nowrap'
+              ? 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600'
+              : 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-4 text-right whitespace-nowrap'
           "
         >
           {{ formatItemPrice(priceTotal) }}
@@ -86,24 +86,24 @@
     </tr>
     <template v-if="hasChildren">
       <template :key="child.id || child.uuid" v-for="(child, index) in childItems || []">
-        <tr class="border-0">
-          <td class="px-6 py-2 pl-28">
-            <span class="text-sm text-gray-700">{{
+        <tr class="propeller-order-item-card__child-row border-0" data-child="true">
+          <td class="propeller-order-item-card__cell propeller-order-item-card__cell--product px-6 py-2 pl-28">
+            <span class="propeller-order-item-card__child-title text-sm text-gray-700">{{
               child.product?.names?.[0]?.value || child.name || 'Unknown'
             }}</span>
           </td>
           <template v-if="showQuantity">
-            <td class="px-6 py-2 text-center text-sm text-gray-600">
+            <td class="propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-gray-600">
               {{ child.quantity || 0 }}
             </td>
           </template>
 
           <template v-if="showDiscount">
-            <td class="px-6 py-2 text-right text-sm text-gray-600"></td>
+            <td class="propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-gray-600"></td>
           </template>
 
           <template v-if="showPrice">
-            <td class="px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600">
+            <td class="propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600">
               {{ formatItemPrice(child.priceTotal || 0) }}
             </td>
           </template>

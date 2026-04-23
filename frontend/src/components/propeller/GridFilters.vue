@@ -1,20 +1,22 @@
 <template>
   <div
-    :class="`space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${
+    :class="`propeller-grid-filters space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${
       isPending ? 'opacity-50 pointer-events-none' : ''
     } ${className || ''}`"
+    :data-mobile="isMobile ? 'true' : 'false'"
+    :data-pending="isPending ? 'true' : 'false'"
   >
     <template v-if="showPriceFilter() && (priceMin !== undefined || priceMax !== undefined)">
-      <div class="space-y-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Price Range</h3>
+      <div class="propeller-grid-filters__price space-y-3">
+        <h3 class="propeller-grid-filters__price-title text-xs font-semibold uppercase tracking-wide text-gray-500">Price Range</h3>
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <span
-              class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
+              class="propeller-grid-filters__price-currency absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
               >€</span
             ><input
               type="number"
-              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
+              class="propeller-grid-filters__price-input w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
               :value="currentMin"
               :min="getMinBound()"
               :max="getMaxBound()"
@@ -22,14 +24,14 @@
               @blur="async (event) => applyPrice()"
             />
           </div>
-          <span class="text-gray-400 text-sm select-none">–</span>
+          <span class="propeller-grid-filters__price-separator text-gray-400 text-sm select-none">–</span>
           <div class="relative flex-1">
             <span
-              class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
+              class="propeller-grid-filters__price-currency absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
               >€</span
             ><input
               type="number"
-              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
+              class="propeller-grid-filters__price-input w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
               :value="currentMax"
               :min="getMinBound()"
               :max="getMaxBound()"
@@ -38,10 +40,10 @@
             />
           </div>
         </div>
-        <div class="relative h-4 pt-1">
+        <div class="propeller-grid-filters__price-slider relative h-4 pt-1">
           <input
             type="range"
-            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
+            class="propeller-grid-filters__price-slider-thumb absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMin"
@@ -50,7 +52,7 @@
             @touchend="applyPrice()"
           /><input
             type="range"
-            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
+            class="propeller-grid-filters__price-slider-thumb absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMax"
@@ -58,31 +60,31 @@
             @pointerup="applyPrice()"
             @touchend="applyPrice()"
           />
-          <div class="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10"></div>
+          <div class="propeller-grid-filters__price-slider-track absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10"></div>
         </div>
       </div>
-      <div class="h-px bg-gray-100"></div>
+      <div class="propeller-grid-filters__divider h-px bg-gray-100"></div>
     </template>
 
     <template v-if="filters.length === 0">
-      <p class="text-sm text-gray-400 italic">No filters available</p>
+      <p class="propeller-grid-filters__empty text-sm text-gray-400 italic">No filters available</p>
     </template>
 
     <template :key="getFilterName(filter)" v-for="(filter, index) in getFilteredFilters()">
-      <div class="border-b border-gray-100 pb-3 last:border-b-0">
+      <div class="propeller-grid-filters__group border-b border-gray-100 pb-3 last:border-b-0" :data-expanded="isExpanded(getFilterName(filter)) ? 'true' : 'false'">
         <button
           type="button"
-          class="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
+          class="propeller-grid-filters__group-toggle w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
           @click="async (event) => toggleAccordion(getFilterName(filter))"
         >
-          <span class="text-sm font-semibold text-gray-700 truncate">{{
+          <span class="propeller-grid-filters__group-title text-sm font-semibold text-gray-700 truncate">{{
             getFilterTitle(filter)
           }}</span
           ><svg
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            :class="`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200 ${
+            :class="`propeller-grid-filters__chevron h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200 ${
               isExpanded(getFilterName(filter)) ? 'rotate-180' : ''
             }`"
           >
@@ -95,18 +97,18 @@
           </svg>
         </button>
         <template v-if="isExpanded(getFilterName(filter))">
-          <div class="pt-2 space-y-1.5">
+          <div class="propeller-grid-filters__options pt-2 space-y-1.5">
             <template :key="option.value" v-for="(option, index) in getValidOptions(filter)">
-              <label class="flex items-center gap-2 cursor-pointer group"
+              <label class="propeller-grid-filters__option flex items-center gap-2 cursor-pointer group"
                 ><input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
+                  class="propeller-grid-filters__checkbox h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
                   :checked="isSelected(getFilterName(filter), option.value)"
                   @change="async (e) => handleCheckbox(filter, option.value, e.target.checked)"
                 /><span
-                  class="flex-1 text-sm text-gray-600 leading-none select-none group-hover:text-gray-900"
+                  class="propeller-grid-filters__option-label flex-1 text-sm text-gray-600 leading-none select-none group-hover:text-gray-900"
                   >{{ option.value
-                  }}<span class="ml-1 text-xs text-gray-400"> ({{ getCount(option) }}) </span></span
+                  }}<span class="propeller-grid-filters__option-count ml-1 text-xs text-gray-400"> ({{ getCount(option) }}) </span></span
                 ></label
               >
             </template>

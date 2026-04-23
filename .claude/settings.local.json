@@ -14,7 +14,10 @@
       "Bash(sed -i 's/imageSearchFilters: configuration?\\\\.imageSearchFiltersGrid,/imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,/g; s/imageVariantFilters: configuration?\\\\.imageVariantFiltersSmall,/imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput,/g' composables/react/useCart.ts)",
       "Bash(xargs cat:*)",
       "Bash(xargs head:*)",
-      "Bash(grep -l \"from '@/composables/vue/\" d:/laragon/www/propeller-next/output/vue/ui-components/*.vue)"
+      "Bash(grep -l \"from '@/composables/vue/\" d:/laragon/www/propeller-next/output/vue/ui-components/*.vue)",
+      "Read(//c/workspace/**)",
+      "Read(//c//**)",
+      "Bash(npx vue-tsc *)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

@@ -1,5 +1,5 @@
 <template>
-  <div :class="`purchase-authorization-configurator ${className || ''}`">
+  <div :class="`propeller-purchase-authorization-configurator ${className || ''}`">
     <template v-if="isAuthManager">
       <div class="space-y-4">
         <div class="flex items-center justify-between">
@@ -9,7 +9,7 @@
           <template v-if="allowContactCreate !== false">
             <button
               type="button"
-              class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition text-sm font-medium"
+              class="propeller-purchase-authorization-configurator__add-btn flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-[var(--radius-container)] hover:bg-primary/80 transition text-sm font-medium"
               @click="async (event) => openAddContactModal()"
             >
               {{ getLabel('addContact', 'Add contact') }}
@@ -60,13 +60,13 @@
                             .join(' ')
                         }}
                       </div>
-                      <div class="text-xs text-gray-500 mt-0.5">
+                      <div class="text-xs text-muted-foreground mt-0.5">
                         {{ contact.email }}
                       </div>
                     </td>
                     <td class="px-4 py-3">
                       <select
-                        class="border border-input rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="border border-input rounded-[var(--radius-control)] px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         :value="getRowRole(contact.contactId)"
                         :disabled="isCurrentUser(contact.contactId)"
                         @change="async (e) => handleRoleChange(contact.contactId, e.target.value)"
@@ -90,7 +90,7 @@
                           type="number"
                           min="0"
                           step="0.01"
-                          class="w-28 border border-input rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                          class="w-28 border border-input rounded-[var(--radius-control)] px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                           :value="getRowLimit(contact.contactId) ?? ''"
                           :disabled="isCurrentUser(contact.contactId)"
                           @change="
@@ -105,7 +105,7 @@
                         <template v-if="hasPac(contact.contactId) && isRowDirty(contact.contactId)">
                           <button
                             type="button"
-                            class="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-[var(--radius-control)] hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             :disabled="isRowLoading(contact.contactId)"
                             @click="async (event) => handleSave(contact.contactId)"
                           >
@@ -122,7 +122,7 @@
                         <template v-if="!hasPac(contact.contactId)">
                           <button
                             type="button"
-                            class="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-[var(--radius-control)] hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             :disabled="
                               isRowLoading(contact.contactId) || !getRowRole(contact.contactId)
                             "
@@ -141,7 +141,7 @@
                         <template v-if="hasPac(contact.contactId)">
                           <button
                             type="button"
-                            class="text-xs border border-border px-3 py-1.5 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="text-xs border border-border px-3 py-1.5 rounded-[var(--radius-control)] hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed"
                             :disabled="
                               isRowLoading(contact.contactId) || isCurrentUser(contact.contactId)
                             "
@@ -168,7 +168,7 @@
             <div class="flex items-center justify-center gap-3 pt-2">
               <button
                 type="button"
-                class="text-sm px-3 py-1.5 border border-border rounded-md hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
+                class="text-sm px-3 py-1.5 border border-border rounded-[var(--radius-control)] hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="currentPage <= 1"
                 @click="async (event) => handlePageChange(currentPage - 1)"
               >
@@ -178,7 +178,7 @@
                 }}{{ getTotalPages() }}</span
               ><button
                 type="button"
-                class="text-sm px-3 py-1.5 border border-border rounded-md hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
+                class="text-sm px-3 py-1.5 border border-border rounded-[var(--radius-control)] hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="currentPage >= getTotalPages()"
                 @click="async (event) => handlePageChange(currentPage + 1)"
               >
@@ -216,7 +216,7 @@
               }}</label
               ><input
                 type="text"
-                class="w-full border border-input rounded-md px-3 py-2 text-sm bg-muted cursor-not-allowed"
+                class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-muted cursor-not-allowed"
                 :readOnly="true"
                 :value="company?.name ?? ''"
               />
@@ -226,7 +226,7 @@
                 getLabel('gender', 'Gender')
               }}</label
               ><select
-                class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 :value="addContactForm.gender"
                 @change="
                   async (e) => {
@@ -256,7 +256,7 @@
                 >{{ getLabel('email', 'Email') }} * </label
               ><input
                 type="email"
-                class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 :value="addContactForm.email"
                 @change="
                   async (e) => {
@@ -275,7 +275,7 @@
                 }}</label
                 ><input
                   type="text"
-                  class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   :value="addContactForm.firstName"
                   @change="
                     async (e) => {
@@ -293,7 +293,7 @@
                 }}</label
                 ><input
                   type="text"
-                  class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   :value="addContactForm.middleName"
                   @change="
                     async (e) => {
@@ -311,7 +311,7 @@
                 }}</label
                 ><input
                   type="text"
-                  class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   :value="addContactForm.lastName"
                   @change="
                     async (e) => {
@@ -328,7 +328,7 @@
               <label class="block text-sm font-medium mb-1">{{ getLabel('phone', 'Phone') }}</label
               ><input
                 type="tel"
-                class="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 :value="addContactForm.phone"
                 @change="
                   async (e) => {

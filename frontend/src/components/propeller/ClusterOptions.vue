@@ -1,16 +1,20 @@
 <template>
-  <div :class="`cluster-options ${className || ''}`">
+  <div :class="`propeller-cluster-options ${className || ''}`">
     <template v-if="getOptionsForRender().length > 0">
-      <div class="cluster-options-content flex flex-col gap-6">
+      <div class="propeller-cluster-options__content flex flex-col gap-6">
         <template :key="option.id" v-for="(option, index) in getOptionsForRender()">
-          <div class="option-group">
-            <div class="flex items-center gap-2 mb-2">
-              <h4 class="font-semibold text-sm text-gray-700">
+          <div
+            class="propeller-cluster-options__group"
+            :data-required="option.isRequired ? 'true' : 'false'"
+            :data-error="option.hasError ? 'true' : 'false'"
+          >
+            <div class="propeller-cluster-options__label-row flex items-center gap-2 mb-2">
+              <h4 class="propeller-cluster-options__label font-semibold text-sm text-muted-foreground">
                 {{ option.name }}
               </h4>
               <template v-if="option.isRequired">
                 <span
-                  class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-500/10"
+                  class="propeller-cluster-options__required-badge inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/10"
                   >{{ getLabel('required', 'Required') }}</span
                 >
               </template>
@@ -18,12 +22,12 @@
             <select
               :value="option.selectedProductId"
               @change="async (e) => handleOptionChange(option.idStr, e.target.value)"
-              :class="`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${
+              :class="`propeller-cluster-options__select w-full rounded-[var(--radius-container)] border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${
                 option.hasError
-                  ? 'border-red-400 focus:ring-red-500'
+                  ? 'border-destructive focus:ring-destructive'
                   : option.isRequired
-                    ? 'border-gray-300 focus:ring-secondary'
-                    : 'border-gray-200 focus:ring-secondary'
+                    ? 'border-input focus:ring-secondary'
+                    : 'border-border focus:ring-secondary'
               }`"
             >
               <option value="">
@@ -42,18 +46,18 @@
               </template>
             </select>
             <template v-if="option.hasError">
-              <p class="mt-1 text-xs text-red-500">
+              <p class="propeller-cluster-options__error mt-1 text-xs text-destructive">
                 {{ getLabel('requiredError', 'This option is required') }}
               </p>
             </template>
 
             <template v-if="option.hasSelection">
               <div
-                class="mt-3 flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3"
+                class="propeller-cluster-options__preview mt-3 flex items-center gap-3 rounded-[var(--radius-container)] border border-border-subtle bg-muted p-3"
               >
                 <template v-if="!!option.previewImageUrl">
                   <img
-                    class="h-12 w-12 flex-shrink-0 rounded border border-gray-100 bg-white object-contain"
+                    class="propeller-cluster-options__preview-image h-12 w-12 flex-shrink-0 rounded border border-border-subtle bg-card object-contain"
                     :src="option.previewImageUrl"
                     :alt="option.previewName"
                   />
@@ -61,13 +65,13 @@
 
                 <template v-if="!option.previewImageUrl">
                   <div
-                    class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100"
+                    class="propeller-cluster-options__preview-image-placeholder flex h-12 w-12 flex-shrink-0 items-center justify-center rounded border border-border bg-muted"
                   >
                     <svg
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
-                      class="h-5 w-5 text-gray-300"
+                      class="h-5 w-5 text-foreground-subtle"
                     >
                       <path
                         strokeLinecap="round"
@@ -80,10 +84,10 @@
                 </template>
 
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-medium text-gray-900">
+                  <p class="propeller-cluster-options__preview-name truncate text-sm font-medium text-foreground">
                     {{ option.previewName }}
                   </p>
-                  <p class="text-sm font-semibold text-secondary">
+                  <p class="propeller-cluster-options__preview-price text-sm font-semibold text-secondary">
                     {{ option.previewPrice }}
                   </p>
                 </div>

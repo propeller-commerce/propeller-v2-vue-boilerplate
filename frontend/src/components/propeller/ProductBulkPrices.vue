@@ -1,22 +1,25 @@
 <template>
   <template v-if="!isHidden() && hasItems()">
-    <div :class="`product-bulk-prices ${className || ''}`">
+    <div
+      :class="`propeller-product-bulk-prices ${className || ''}`"
+      :data-include-tax="getIncludeTax() ? 'true' : 'false'"
+    >
       <template v-if="getLabel('title', 'Volume pricing')">
-        <h3 class="text-base font-semibold text-foreground mb-3">
+        <h3 class="propeller-product-bulk-prices__title text-base font-semibold text-foreground mb-3">
           {{ getLabel('title', 'Volume pricing') }}
         </h3>
       </template>
 
-      <div class="overflow-hidden rounded-lg border border-border">
-        <table class="w-full text-sm">
-          <thead class="bg-muted/50">
+      <div class="propeller-product-bulk-prices__table-wrapper overflow-hidden rounded-lg border border-border">
+        <table class="propeller-product-bulk-prices__table w-full text-sm">
+          <thead class="propeller-product-bulk-prices__thead bg-muted/50">
             <tr>
-              <th class="px-4 py-2 text-left font-medium text-muted-foreground">
+              <th class="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--quantity px-4 py-2 text-left font-medium text-muted-foreground">
                 {{ getLabel('quantityFrom', 'Qty from') }}
               </th>
-              <th class="px-4 py-2 text-right font-medium text-muted-foreground">
+              <th class="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--price px-4 py-2 text-right font-medium text-muted-foreground">
                 {{ getLabel('price', 'Price')
-                }}<span class="font-normal text-xs">
+                }}<span class="propeller-product-bulk-prices__tax-label font-normal text-xs">
                   (
                   <template v-if="getIncludeTax()">
                     {{ getLabel('inclTax', 'incl. VAT') }}
@@ -30,13 +33,13 @@
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-border">
+          <tbody class="propeller-product-bulk-prices__tbody divide-y divide-border">
             <template :key="index" v-for="(tier, index) in getBulkPrices()">
-              <tr class="bg-white hover:bg-muted/20 transition-colors">
-                <td class="px-4 py-2 text-foreground font-medium">
+              <tr class="propeller-product-bulk-prices__row bg-white hover:bg-muted/20 transition-colors">
+                <td class="propeller-product-bulk-prices__cell propeller-product-bulk-prices__cell--quantity px-4 py-2 text-foreground font-medium">
                   {{ getQuantityLabel(tier, index) }}
                 </td>
-                <td class="px-4 py-2 text-right text-foreground font-semibold">
+                <td class="propeller-product-bulk-prices__cell propeller-product-bulk-prices__cell--price px-4 py-2 text-right text-foreground font-semibold">
                   {{ getPrice(tier) }}
                 </td>
               </tr>

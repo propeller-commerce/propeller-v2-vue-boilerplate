@@ -1,18 +1,21 @@
 <template>
-  <div :class="className">
-    <div class="flex items-center gap-2 w-full">
+  <div
+    :class="`propeller-add-to-cart ${className || ''}`"
+    :data-loading="loading ? 'true' : 'false'"
+  >
+    <div class="propeller-add-to-cart__controls flex items-center gap-2 w-full">
       <template v-if="allowIncrDecr !== false">
-        <div class="flex items-center border border-gray-300 rounded-md bg-white h-10">
+        <div class="propeller-add-to-cart__stepper flex items-center border border-input rounded-[var(--radius-control)] bg-card h-10">
           <button
             type="button"
-            class="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
+            class="propeller-add-to-cart__decrement px-3 h-full text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
             @click="async (event) => decrement()"
             :disabled="quantity <= getMinQuantity(props.product) || loading"
           >
             -</button
           ><input
             type="number"
-            class="w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            class="propeller-add-to-cart__quantity w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             :min="getMinQuantity(props.product)"
             :step="getStep(props.product)"
             :value="quantity"
@@ -28,7 +31,7 @@
             "
           /><button
             type="button"
-            class="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
+            class="propeller-add-to-cart__increment px-3 h-full text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
             @click="async (event) => increment()"
             :disabled="loading"
           >
@@ -40,7 +43,7 @@
       <template v-if="allowIncrDecr === false">
         <input
           type="number"
-          class="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          class="propeller-add-to-cart__quantity w-16 h-10 text-center text-sm border border-input rounded-[var(--radius-control)] focus:ring-2 focus:ring-secondary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           :min="getMinQuantity(props.product)"
           :step="getStep(props.product)"
           :value="quantity"
@@ -59,7 +62,7 @@
 
       <button
         type="button"
-        class="flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        class="propeller-add-to-cart__submit flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-[var(--radius-control)] text-white bg-secondary hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         @click="async (event) => handleAddToCart()"
         :disabled="loading"
       >
@@ -74,15 +77,16 @@
     </div>
     <template v-if="toastVisible">
       <div
-        :class="`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${
+        :class="`propeller-add-to-cart__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-[var(--radius-container)] shadow-lg p-4 ${
           toastType === 'success'
-            ? 'bg-green-50 border border-green-200'
-            : 'bg-red-50 border border-red-200'
+            ? 'bg-success/10 border border-success'
+            : 'bg-destructive/10 border border-destructive'
         }`"
+        :data-toast-type="toastType"
       >
         <div
-          :class="`flex-shrink-0 w-5 h-5 mt-0.5 ${
-            toastType === 'success' ? 'text-green-500' : 'text-red-500'
+          :class="`propeller-add-to-cart__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${
+            toastType === 'success' ? 'text-success' : 'text-destructive'
           }`"
         >
           <template v-if="toastType === 'success'">
@@ -102,8 +106,8 @@
           </template>
         </div>
         <p
-          :class="`flex-1 text-sm font-medium ${
-            toastType === 'success' ? 'text-green-800' : 'text-red-800'
+          :class="`propeller-add-to-cart__toast-message flex-1 text-sm font-medium ${
+            toastType === 'success' ? 'text-success' : 'text-destructive'
           }`"
         >
           {{ toastMessage }}
@@ -111,10 +115,10 @@
         <button
           type="button"
           @click="async (event) => dismissToast()"
-          :class="`flex-shrink-0 rounded focus:outline-none ${
+          :class="`propeller-add-to-cart__toast-close flex-shrink-0 rounded focus:outline-none ${
             toastType === 'success'
-              ? 'text-green-400 hover:text-green-600'
-              : 'text-red-400 hover:text-red-600'
+              ? 'text-success hover:text-success'
+              : 'text-destructive hover:text-destructive'
           }`"
         >
           <svg
@@ -131,25 +135,25 @@
     </template>
 
     <template v-if="modalVisible">
-      <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="fixed inset-0 bg-gray-500/20" @click="async (event) => closeModal()"></div>
-        <div class="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
-          <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+      <div class="propeller-add-to-cart__modal fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div class="propeller-add-to-cart__modal-backdrop fixed inset-0 bg-gray-500/20" @click="async (event) => closeModal()"></div>
+        <div class="propeller-add-to-cart__modal-content relative w-full max-w-lg bg-card rounded-[var(--radius-container)] shadow-2xl overflow-hidden">
+          <div class="propeller-add-to-cart__modal-header flex items-center gap-3 px-6 py-4 border-b border-border-subtle">
             <svg
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              class="h-5 w-5 flex-shrink-0 text-green-500"
+              class="propeller-add-to-cart__modal-success-icon h-5 w-5 flex-shrink-0 text-success"
               :strokeWidth="2"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
             </svg>
-            <h3 class="flex-1 text-base font-semibold text-gray-900">
+            <h3 class="propeller-add-to-cart__modal-title flex-1 text-base font-semibold text-foreground">
               {{ getLabel('modalTitle', 'Added to cart') }}
             </h3>
             <button
               type="button"
-              class="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
+              class="propeller-add-to-cart__modal-close flex-shrink-0 text-foreground-subtle hover:text-muted-foreground focus:outline-none"
               @click="async (event) => closeModal()"
             >
               <svg
@@ -163,11 +167,11 @@
               </svg>
             </button>
           </div>
-          <div class="px-6 py-5">
-            <div class="flex items-start gap-4">
+          <div class="propeller-add-to-cart__modal-body px-6 py-5">
+            <div class="propeller-add-to-cart__modal-product flex items-start gap-4">
               <template v-if="!!getModalImageUrl()">
                 <img
-                  class="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                  class="propeller-add-to-cart__modal-image w-16 h-16 object-contain rounded border border-border-subtle flex-shrink-0"
                   :src="getModalImageUrl()"
                   :alt="getModalName()"
                 />
@@ -175,13 +179,13 @@
 
               <template v-if="!getModalImageUrl()">
                 <div
-                  class="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50"
+                  class="propeller-add-to-cart__modal-image-placeholder w-16 h-16 flex items-center justify-center rounded border border-border-subtle flex-shrink-0 bg-muted"
                 >
                   <svg
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    class="w-8 h-8 text-gray-300"
+                    class="w-8 h-8 text-foreground-subtle"
                     :strokeWidth="1.5"
                   >
                     <path
@@ -195,33 +199,33 @@
 
               <div class="flex-1 min-w-0">
                 <a
-                  class="text-sm font-medium text-secondary leading-tight hover:underline line-clamp-2"
+                  class="propeller-add-to-cart__modal-product-title text-sm font-medium text-secondary leading-tight hover:underline line-clamp-2"
                   :href="getProductUrl()"
                   >{{ getModalName() }}</a
                 >
                 <template v-if="!!getModalSku()">
-                  <p class="text-xs text-gray-400 mt-0.5">SKU: {{ getModalSku() }}</p>
+                  <p class="propeller-add-to-cart__modal-sku text-xs text-foreground-subtle mt-0.5">SKU: {{ getModalSku() }}</p>
                 </template>
               </div>
               <div class="flex-shrink-0 text-right">
-                <p class="text-xs text-gray-500">
+                <p class="propeller-add-to-cart__modal-quantity text-xs text-muted-foreground">
                   {{ getLabel('quantity', 'Quantity') }}: {{ quantity }}
                 </p>
                 <template v-if="!!getModalPrice()">
-                  <p class="text-sm font-semibold text-gray-900 mt-0.5">
+                  <p class="propeller-add-to-cart__modal-price text-sm font-semibold text-foreground mt-0.5">
                     {{ getModalPrice() }}
                   </p>
                 </template>
               </div>
             </div>
             <template v-if="getChildItems().length > 0">
-              <div class="mt-3 ml-20 space-y-1 border-l-2 border-gray-100 pl-2">
+              <div class="propeller-add-to-cart__modal-children mt-3 ml-20 space-y-1 border-l-2 border-border-subtle pl-2">
                 <template :key="idx" v-for="(child, idx) in getChildItems()">
-                  <div class="flex justify-between items-center text-xs text-gray-600">
+                  <div class="propeller-add-to-cart__modal-child flex justify-between items-center text-xs text-muted-foreground">
                     <span class="line-clamp-1">{{
                       child.product?.names?.[0]?.value || 'Option'
                     }}</span
-                    ><span class="text-gray-400 whitespace-nowrap ml-2">{{
+                    ><span class="text-foreground-subtle whitespace-nowrap ml-2">{{
                       '\u20AC' +
                       (((includeTax !== undefined ? !!includeTax : includeTax)
                         ? child.totalSumNet
@@ -233,10 +237,10 @@
               </div>
             </template>
           </div>
-          <div class="flex gap-3 px-6 py-4 border-t border-gray-100">
+          <div class="propeller-add-to-cart__modal-actions flex gap-3 px-6 py-4 border-t border-border-subtle">
             <button
               type="button"
-              class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+              class="propeller-add-to-cart__modal-continue flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-input bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
               @click="async (event) => closeModal()"
             >
               {{ getLabel('continueShopping', 'Continue shopping') }}
@@ -246,7 +250,7 @@
             >
               <button
                 type="button"
-                class="flex-1 inline-flex justify-center rounded-md border border-secondary bg-white px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                class="propeller-add-to-cart__modal-quote flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-secondary bg-card px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                 @click="
                   async (event) => {
                     closeModal();
@@ -261,7 +265,7 @@
             <template v-if="checkoutAllowed">
               <button
                 type="button"
-                class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                class="propeller-add-to-cart__modal-checkout flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                 @click="
                   async (event) => {
                     closeModal();

@@ -1,16 +1,16 @@
 <template>
-  <div :class="className">
+  <div :class="`propeller-order-list ${className || ''}`" :data-loading="loading ? 'true' : 'false'">
     <template v-if="enableSearch && searchFields.length > 0">
-      <div class="mb-6 bg-white p-4 rounded-lg shadow space-y-4">
+      <div class="propeller-order-list__filters mb-6 bg-white p-4 rounded-lg shadow space-y-4">
         <template v-if="searchFields.includes('term')">
-          <div class="w-full">
-            <label class="block text-sm font-medium text-gray-700 capitalize mb-1">{{
+          <div class="propeller-order-list__search-field w-full">
+            <label class="propeller-order-list__filter-label block text-sm font-medium text-gray-700 capitalize mb-1">{{
               getColumnLabel('term')
             }}</label
             ><input
               type="text"
               placeholder="Search..."
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+              class="propeller-order-list__search-input block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
               :value="searchForm.term || ''"
               @change="
                 async (e) => {
@@ -34,7 +34,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
           <template :key="field" v-for="(field, index) in searchFields.filter((f) => f !== 'term')">
             <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 capitalize">{{
+              <label class="propeller-order-list__filter-label block text-sm font-medium text-gray-700 capitalize">{{
                 getColumnLabel(field)
               }}</label>
               <template v-if="field === 'createdAt'">
@@ -42,7 +42,7 @@
                   <input
                     type="date"
                     placeholder="From"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.greaterThan
                         ? searchForm.createdAt.greaterThan.split('T')[0]
@@ -64,7 +64,7 @@
                   /><input
                     type="date"
                     placeholder="To"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.lessThan
                         ? searchForm.createdAt.lessThan.split('T')[0]
@@ -92,7 +92,7 @@
                   <input
                     type="date"
                     placeholder="From"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.greaterThan
                         ? searchForm.lastModifiedAt.greaterThan.split('T')[0]
@@ -114,7 +114,7 @@
                   /><input
                     type="date"
                     placeholder="To"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.lessThan
                         ? searchForm.lastModifiedAt.lessThan.split('T')[0]
@@ -142,7 +142,7 @@
                   <input
                     type="number"
                     placeholder="Min"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.price?.greaterThan || ''"
                     @change="
                       async (e) => {
@@ -159,7 +159,7 @@
                   /><input
                     type="number"
                     placeholder="Max"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.price?.lessThan || ''"
                     @change="
                       async (e) => {
@@ -180,7 +180,7 @@
               <template v-if="field === 'sortInput'">
                 <div class="flex space-x-2 w-full">
                   <select
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.sortInput?.field || ''"
                     @change="
                       async (e) => {
@@ -203,7 +203,7 @@
                       <option :value="sortField">{{ sortField }}</option>
                     </template></select
                   ><select
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.sortInput?.order || ''"
                     @change="
                       async (e) => {
@@ -229,7 +229,7 @@
               <template v-if="field === 'type'">
                 <div class="flex space-x-2">
                   <select
-                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.type || ''"
                     @change="
                       async (e) => {
@@ -250,9 +250,9 @@
             </div>
           </template>
         </div>
-        <div class="flex justify-end space-x-2">
+        <div class="propeller-order-list__filter-actions flex justify-end space-x-2">
           <button
-            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="propeller-order-list__clear-btn inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             @click="
               async (event) => {
                 resetSearch();
@@ -261,7 +261,7 @@
           >
             Clear</button
           ><button
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="propeller-order-list__search-btn inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             @click="async (event) => fetchOrders(1)"
           >
             Search
@@ -272,14 +272,15 @@
 
     <template v-if="!loading || orders.length > 0">
       <template v-if="orders.length > 0">
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="propeller-order-list__results bg-white rounded-lg shadow overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+            <table class="propeller-order-list__table min-w-full divide-y divide-gray-200">
+              <thead class="propeller-order-list__thead bg-gray-50">
                 <tr>
                   <template :key="col" v-for="(col, index) in columns">
                     <th
-                      :class="`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                      :data-column="col"
+                      :class="`propeller-order-list__th px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                         col === 'action' || col === 'total' ? 'text-right' : ''
                       }`"
                     >
@@ -288,20 +289,22 @@
                   </template>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
+              <tbody class="propeller-order-list__tbody bg-white divide-y divide-gray-200">
                 <template :key="order.id" v-for="(order, index) in orders">
                   <tr
-                    class="hover:bg-gray-50"
+                    class="propeller-order-list__row hover:bg-gray-50"
+                    :data-clickable="rowsClickable ? 'true' : 'false'"
                     @click="async (event) => rowsClickable && onOrderClick(order.id)"
                   >
                     <template :key="col" v-for="(col, index) in columns">
                       <td
-                        :class="`px-6 py-4 whitespace-nowrap text-sm ${
+                        :data-column="col"
+                        :class="`propeller-order-list__cell px-6 py-4 whitespace-nowrap text-sm ${
                           col === 'id' || col === 'action' ? 'font-medium' : 'text-gray-500'
                         } ${col === 'action' || col === 'total' ? 'text-right' : ''}`"
                       >
                         <template v-if="col === 'id'">
-                          <span class="text-gray-900">{{ order.id }}</span>
+                          <span class="propeller-order-list__order-id text-gray-900">{{ order.id }}</span>
                         </template>
 
                         <template v-if="col === 'date'">
@@ -310,7 +313,8 @@
 
                         <template v-if="col === 'status'">
                           <span
-                            :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                            :data-status="order.status"
+                            :class="`propeller-order-list__status px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
                               order.status
                             )}`"
                             >{{ order.status }}</span
@@ -323,7 +327,7 @@
 
                         <template v-if="col === 'action' && !rowsClickable">
                           <button
-                            class="text-primary hover:text-primary/70 cursor-pointer"
+                            class="propeller-order-list__action-btn text-primary hover:text-primary/70 cursor-pointer"
                             @click="
                               async (event) => {
                                 event.preventDefault();
@@ -355,26 +359,26 @@
           </div>
           <template v-if="!hidePagination && totalPages > 1">
             <div
-              class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
+              class="propeller-order-list__pagination bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
             >
-              <div class="flex-1 flex justify-between sm:hidden">
+              <div class="propeller-order-list__pagination-mobile flex-1 flex justify-between sm:hidden">
                 <button
-                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  class="propeller-order-list__pagination-btn relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                   @click="async (event) => goToPage(currentPage - 1)"
                   :disabled="currentPage === 1"
                 >
                   {{ getLabel('previous', 'Previous') }}</button
                 ><button
-                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  class="propeller-order-list__pagination-btn ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                   @click="async (event) => goToPage(currentPage + 1)"
                   :disabled="currentPage === totalPages"
                 >
                   {{ getLabel('next', 'Next') }}
                 </button>
               </div>
-              <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div class="propeller-order-list__pagination-desktop hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
-                  <p class="text-sm text-gray-700">
+                  <p class="propeller-order-list__pagination-summary text-sm text-gray-700">
                     {{ getLabel('showingPage', 'Showing page') }}&nbsp;<span class="font-medium">{{
                       currentPage
                     }}</span
@@ -386,16 +390,16 @@
                 <div>
                   <nav
                     aria-label="Pagination"
-                    class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                    class="propeller-order-list__pagination-nav relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
                   >
                     <button
-                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      class="propeller-order-list__pagination-btn relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                       @click="async (event) => goToPage(currentPage - 1)"
                       :disabled="currentPage === 1"
                     >
                       {{ getLabel('previous', 'Previous') }}</button
                     ><button
-                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      class="propeller-order-list__pagination-btn relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                       @click="async (event) => goToPage(currentPage + 1)"
                       :disabled="currentPage === totalPages"
                     >
@@ -410,7 +414,7 @@
       </template>
 
       <template v-else>
-        <div class="bg-white rounded-lg shadow p-8 text-center">
+        <div class="propeller-order-list__empty bg-white rounded-lg shadow p-8 text-center">
           <p class="text-gray-500 mb-4">
             {{ getLabel('noOrders', 'No orders found.') }}
           </p>
@@ -419,7 +423,7 @@
     </template>
 
     <template v-else>
-      <div class="p-8 text-center text-gray-500">
+      <div class="propeller-order-list__loading p-8 text-center text-gray-500">
         {{ getLabel('loading', 'Loading orders...') }}
       </div>
     </template>

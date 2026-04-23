@@ -1,7 +1,7 @@
 <template>
-  <div class="relative">
+  <div class="propeller-cart-icon relative" :data-sidebar-open="sidebarOpen ? 'true' : 'false'">
     <div
-      class="relative"
+      class="propeller-cart-icon__trigger-wrapper relative"
       @mouseenter="
         async (event) => {
           isHovered = true;
@@ -17,7 +17,7 @@
         type="button"
         @click="async (event) => handleIconClick()"
         :aria-label="getLabel('cartIconLabel', 'Shopping cart')"
-        :class="`relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${
+        :class="`propeller-cart-icon__trigger relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${
           iconClassName ? ' ' + iconClassName : ''
         }`"
       >
@@ -25,7 +25,7 @@
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
-          class="w-6 h-6"
+          class="propeller-cart-icon__icon w-6 h-6"
           :strokeWidth="1.5"
         >
           <path
@@ -36,20 +36,20 @@
         </svg>
         <template v-if="isMounted && showBadge !== false && getTotalItems() > 0">
           <span
-            class="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold pointer-events-none"
+            class="propeller-cart-icon__badge absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold pointer-events-none"
             >{{ getTotalItems() }}</span
           >
         </template>
       </button>
       <template v-if="showTotals && isHovered">
         <div
-          class="absolute top-full right-0 mt-1 z-40 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap"
+          class="propeller-cart-icon__popover absolute top-full right-0 mt-1 z-40 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap"
         >
           <div class="flex justify-between gap-4">
-            <span class="text-gray-500">{{ getLabel('totalLabel', 'Total') }}</span
-            ><span class="font-semibold text-gray-900">{{ getTotalPrice() }}</span>
+            <span class="propeller-cart-icon__popover-label text-gray-500">{{ getLabel('totalLabel', 'Total') }}</span
+            ><span class="propeller-cart-icon__popover-total font-semibold text-gray-900">{{ getTotalPrice() }}</span>
           </div>
-          <div class="text-xs text-gray-400 mt-0.5">
+          <div class="propeller-cart-icon__popover-count text-xs text-gray-400 mt-0.5">
             {{ getTotalItems() }}{{ getLabel('itemsLabel', 'item(s)') }}
           </div>
         </div>
@@ -58,7 +58,7 @@
     <template v-if="sidebarOpen">
       <div
         aria-hidden="true"
-        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70]"
+        class="propeller-cart-icon__backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-[70]"
         @click="async (event) => closeSidebar()"
       ></div>
     </template>
@@ -67,13 +67,14 @@
       role="dialog"
       aria-modal="true"
       :aria-label="getSidebarTitle()"
-      :class="`fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${
+      :data-open="sidebarOpen ? 'true' : 'false'"
+      :class="`propeller-cart-icon__sidebar fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${
         sidebarOpen ? ' translate-x-0' : ' translate-x-full'
       }${sidebarClassName ? ' ' + sidebarClassName : ''}`"
     >
       <div class="flex flex-col h-full">
         <template v-if="isMounted">
-          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <div class="propeller-cart-icon__sidebar-header flex items-center justify-between px-5 py-4 border-b border-gray-200">
             <div class="flex items-center gap-2">
               <svg
                 fill="none"
@@ -88,17 +89,17 @@
                   d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
                 ></path>
               </svg>
-              <h2 class="text-base font-semibold text-gray-900">
+              <h2 class="propeller-cart-icon__sidebar-title text-base font-semibold text-gray-900">
                 {{ getSidebarTitle() }}
               </h2>
               <span
-                class="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-secondary/10 text-secondary text-xs font-bold"
+                class="propeller-cart-icon__sidebar-count inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-secondary/10 text-secondary text-xs font-bold"
                 >{{ getTotalItems() }}</span
               >
             </div>
             <button
               type="button"
-              class="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              class="propeller-cart-icon__sidebar-close p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               @click="async (event) => closeSidebar()"
               :aria-label="getLabel('closeLabel', 'Close')"
             >
@@ -113,16 +114,16 @@
               </svg>
             </button>
           </div>
-          <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div class="propeller-cart-icon__sidebar-body flex-1 overflow-y-auto px-5 py-4 space-y-4">
             <template v-if="getItems().length === 0">
               <div
-                class="flex flex-col items-center justify-center h-full text-center space-y-4 py-16"
+                class="propeller-cart-icon__empty flex flex-col items-center justify-center h-full text-center space-y-4 py-16"
               >
                 <svg
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  class="w-12 h-12 text-gray-200"
+                  class="propeller-cart-icon__empty-icon w-12 h-12 text-gray-200"
                   :strokeWidth="1.5"
                 >
                   <path
@@ -131,12 +132,12 @@
                     d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
                   ></path>
                 </svg>
-                <p class="text-sm text-gray-500">
+                <p class="propeller-cart-icon__empty-message text-sm text-gray-500">
                   {{ getLabel('emptyCart', 'Your cart is empty.') }}
                 </p>
                 <button
                   type="button"
-                  class="text-sm text-secondary hover:underline"
+                  class="propeller-cart-icon__empty-action text-sm text-secondary hover:underline"
                   @click="async (event) => closeSidebar()"
                 >
                   {{ getLabel('continueShopping', 'Continue Shopping') }}
@@ -146,13 +147,13 @@
 
             <template v-if="getItems().length > 0">
               <template :key="item.itemId" v-for="(item, index) in getItems()">
-                <div class="flex gap-3">
+                <div class="propeller-cart-icon__item flex gap-3" :data-bundle="isBundleItem(item) ? 'true' : 'false'">
                   <div
-                    class="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center"
+                    class="propeller-cart-icon__item-media w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center"
                   >
                     <template v-if="!!getItemImageUrl(item)">
                       <img
-                        class="w-full h-full object-contain p-2"
+                        class="propeller-cart-icon__item-image w-full h-full object-contain p-2"
                         :src="getItemImageUrl(item)"
                         :alt="getItemName(item)"
                       />
@@ -174,23 +175,23 @@
                       </svg>
                     </template>
                   </div>
-                  <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
+                  <div class="propeller-cart-icon__item-body flex-1 min-w-0 flex flex-col justify-between py-1">
                     <template v-if="isBundleItem(item)">
                       <div>
                         <div class="flex justify-between items-start gap-2">
                           <span
-                            class="text-sm font-medium leading-tight text-gray-900 line-clamp-2"
+                            class="propeller-cart-icon__item-title text-sm font-medium leading-tight text-gray-900 line-clamp-2"
                             >{{ getBundleName(item) }}</span
                           >
                           <template v-if="!!getBundlePrice(item)">
-                            <span class="font-semibold text-sm text-gray-900 whitespace-nowrap">{{
+                            <span class="propeller-cart-icon__item-price font-semibold text-sm text-gray-900 whitespace-nowrap">{{
                               getBundlePrice(item)
                             }}</span>
                           </template>
                         </div>
-                        <div class="mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
+                        <div class="propeller-cart-icon__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
                           <template v-if="!!getBundleLeaderName(item)">
-                            <div class="flex justify-between items-center text-xs">
+                            <div class="propeller-cart-icon__item-bundle-leader flex justify-between items-center text-xs">
                               <span class="font-medium text-gray-800">{{
                                 getBundleLeaderName(item)
                               }}</span>
@@ -206,7 +207,7 @@
                             :key="idx"
                             v-for="(bundleItem, idx) in getBundleNonLeaders(item)"
                           >
-                            <div class="flex justify-between items-center text-xs text-gray-600">
+                            <div class="propeller-cart-icon__item-bundle-item flex justify-between items-center text-xs text-gray-600">
                               <span class="line-clamp-1">{{ getBundleItemName(bundleItem) }}</span>
                               <template v-if="!!getBundleItemPrice(bundleItem)">
                                 <span class="text-gray-400 whitespace-nowrap ml-2">{{
@@ -217,7 +218,7 @@
                           </template>
                         </div>
                       </div>
-                      <div class="flex items-center text-xs text-gray-400 mt-1">
+                      <div class="propeller-cart-icon__item-qty flex items-center text-xs text-gray-400 mt-1">
                         <span>{{ getLabel('qty', 'Qty') }}: {{ item.quantity }}</span>
                       </div>
                     </template>
@@ -226,21 +227,21 @@
                       <div>
                         <div class="flex justify-between items-start gap-2">
                           <a
-                            class="text-sm font-medium leading-tight text-gray-900 hover:text-secondary transition-colors line-clamp-2"
+                            class="propeller-cart-icon__item-title text-sm font-medium leading-tight text-gray-900 hover:text-secondary transition-colors line-clamp-2"
                             :href="getItemProductUrl(item)"
                             @click="async (event) => closeSidebar()"
                             >{{ getItemName(item) }}</a
-                          ><span class="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                          ><span class="propeller-cart-icon__item-price font-semibold text-sm text-gray-900 whitespace-nowrap">
                             &euro;{{ item.totalSumNet.toFixed(2) }}</span
                           >
                         </div>
-                        <p class="text-xs text-gray-400 mt-0.5">
+                        <p class="propeller-cart-icon__item-sku text-xs text-gray-400 mt-0.5">
                           SKU: {{ item.product?.sku || 'N/A' }}
                         </p>
                         <template v-if="getItemChildItems(item).length > 0">
-                          <div class="mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
+                          <div class="propeller-cart-icon__item-options mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
                             <template :key="idx" v-for="(child, idx) in getItemChildItems(item)">
-                              <div class="flex justify-between items-center text-xs text-gray-600">
+                              <div class="propeller-cart-icon__item-option flex justify-between items-center text-xs text-gray-600">
                                 <span class="line-clamp-1">{{
                                   child.product.names?.[0]?.value || 'Option'
                                 }}</span
@@ -252,7 +253,7 @@
                           </div>
                         </template>
                       </div>
-                      <div class="flex items-center text-xs text-gray-400">
+                      <div class="propeller-cart-icon__item-qty flex items-center text-xs text-gray-400">
                         <span>{{ getLabel('qty', 'Qty') }}: {{ item.quantity }}</span>
                       </div>
                     </template>
@@ -263,17 +264,17 @@
           </div>
 
           <template v-if="getItems().length > 0">
-            <div class="px-5 py-4 border-t border-gray-200 space-y-3 bg-gray-50">
-              <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-700">{{
+            <div class="propeller-cart-icon__sidebar-footer px-5 py-4 border-t border-gray-200 space-y-3 bg-gray-50">
+              <div class="propeller-cart-icon__total-row flex justify-between items-center">
+                <span class="propeller-cart-icon__total-label text-sm font-medium text-gray-700">{{
                   getLabel('total', 'Total')
                 }}</span
-                ><span class="text-base font-bold text-gray-900">{{ getTotalPrice() }}</span>
+                ><span class="propeller-cart-icon__total-value text-base font-bold text-gray-900">{{ getTotalPrice() }}</span>
               </div>
               <template v-if="showCheckoutButton() && !showRequestAuthorizationButton()">
                 <button
                   type="button"
-                  class="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
+                  class="propeller-cart-icon__checkout-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
                   @click="async (event) => handleCheckoutClick()"
                 >
                   {{ getLabel('checkoutButton', 'Checkout') }}
@@ -283,7 +284,7 @@
               <template v-if="showRequestAuthorizationButton()">
                 <button
                   type="button"
-                  class="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="propeller-cart-icon__authorization-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   @click="async (event) => handleRequestAuthorizationClick()"
                   :disabled="requestLoading"
                 >
@@ -307,7 +308,7 @@
               >
                 <button
                   type="button"
-                  class="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
+                  class="propeller-cart-icon__quote-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
                   @click="
                     async (event) => {
                       closeSidebar();
@@ -322,7 +323,7 @@
               <template v-if="cartPageButton !== false">
                 <button
                   type="button"
-                  class="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  class="propeller-cart-icon__view-cart-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
                   @click="async (event) => handleCartPageClick()"
                 >
                   {{ getLabel('cartPageButton', 'View Cart Details') }}

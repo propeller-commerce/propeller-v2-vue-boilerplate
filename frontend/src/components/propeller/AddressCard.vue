@@ -1,55 +1,59 @@
 <template>
-  <div>
+  <div class="propeller-address-card">
     <template v-if="showCard">
-      <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
-        <div class="flex-grow">
+      <div
+        class="propeller-address-card__card bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col"
+        :data-default="addr?.isDefault === 'Y' ? 'true' : 'false'"
+        :data-type="addr?.type || ''"
+      >
+        <div class="propeller-address-card__body flex-grow">
           <template v-if="showCompanyName !== false && addr?.company">
-            <div class="font-bold text-lg mb-1">{{ addr?.company }}</div>
+            <div class="propeller-address-card__company font-bold text-lg mb-1">{{ addr?.company }}</div>
           </template>
 
           <template v-if="showFullName !== false && (addr?.firstName || addr?.lastName)">
-            <div class="font-medium mb-1">
+            <div class="propeller-address-card__name font-medium mb-1">
               {{ [props.showSalutation !== false ? (addr?.gender === 'M' ? 'Mr.' : addr?.gender === 'F' ? 'Mrs.' : null) : null, addr?.firstName, addr?.middleName, addr?.lastName].filter(Boolean).join(' ') }}
             </div>
           </template>
 
           <template v-if="showStreet !== false && addr?.street">
-            <div class="text-gray-600">
+            <div class="propeller-address-card__street text-gray-600">
               {{ [addr?.street, showNumberExtension !== false ? addr?.number : null, showNumberExtension !== false ? addr?.numberExtension : null].filter(Boolean).join(' ') }}
             </div>
           </template>
 
           <template v-if="(showPostalCode !== false && addr?.postalCode) || (showCity !== false && addr?.city)">
-            <div class="text-gray-600">
+            <div class="propeller-address-card__city text-gray-600">
               {{ [showPostalCode !== false ? addr?.postalCode : null, showCity !== false ? addr?.city : null].filter(Boolean).join(' ') }}
             </div>
           </template>
 
           <template v-if="showCountry !== false && addr?.country">
-            <div class="text-gray-600">{{ getCountryName(addr?.country) }}</div>
+            <div class="propeller-address-card__country text-gray-600">{{ getCountryName(addr?.country) }}</div>
           </template>
 
           <template v-if="!!showEmail && addr?.email">
-            <div class="text-gray-600">{{ addr?.email }}</div>
+            <div class="propeller-address-card__email text-gray-600">{{ addr?.email }}</div>
           </template>
 
           <template v-if="!!showPhone && addr?.phone">
-            <div class="text-gray-600">{{ addr?.phone }}</div>
+            <div class="propeller-address-card__phone text-gray-600">{{ addr?.phone }}</div>
           </template>
 
           <template v-if="showDefaultBadge === true && addr?.isDefault === 'Y'">
             <div class="mt-2">
-              <span class="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
+              <span class="propeller-address-card__default-badge bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
                 Default {{ addr?.type }} Address
               </span>
             </div>
           </template>
         </div>
         <template v-if="enableActions !== false">
-          <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+          <div class="propeller-address-card__actions mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
             <template v-if="enableEdit !== false">
               <button
-                class="text-primary hover:text-primary/80 text-sm font-medium"
+                class="propeller-address-card__edit-btn text-primary hover:text-primary/80 text-sm font-medium"
                 @click="async (event) => openEditModal()"
               >
                 {{ getLabel('edit', 'Edit') }}
@@ -58,7 +62,7 @@
 
             <template v-if="enableDelete !== false">
               <button
-                class="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                class="propeller-address-card__delete-btn text-gray-600 hover:text-gray-800 text-sm font-medium"
                 @click="
                   async (event) => {
                     showDeleteConfirm = true;
@@ -71,7 +75,7 @@
 
             <template v-if="enableSetDefault !== false && addr?.isDefault !== 'Y'">
               <button
-                class="text-primary hover:text-primary/80 text-sm font-medium ml-auto"
+                class="propeller-address-card__default-btn text-primary hover:text-primary/80 text-sm font-medium ml-auto"
                 @click="async (event) => handleSetDefault()"
               >
                 {{ getLabel('setDefault', 'Set Default') }}
@@ -83,7 +87,7 @@
     </template>
 
     <template v-if="inline && showEditModal">
-      <div class="bg-white p-6 rounded-lg border">
+      <div class="propeller-address-card__form bg-white p-6 rounded-lg border">
         <form @submit="async (e) => handleSaveEdit(e)">
           <template v-if="!!formTitle">
             <h3 class="text-xl font-bold mb-4">{{ formTitle }}</h3>
@@ -96,7 +100,7 @@
                   getLabel('gender', 'Gender')
                 }}</label
                 ><select
-                  class="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
                   :value="editGender"
                   @change="
                     async (e) => {
@@ -121,7 +125,7 @@
                 }}</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editCompany"
                   @change="
                     async (e) => {
@@ -137,7 +141,7 @@
                   >{{ getLabel('firstName', 'First Name') }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editFirstName"
                   @change="
                     async (e) => {
@@ -153,7 +157,7 @@
                 }}</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editMiddleName"
                   @change="
                     async (e) => {
@@ -167,7 +171,7 @@
                   >{{ getLabel('lastName', 'Last Name') }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editLastName"
                   @change="
                     async (e) => {
@@ -184,7 +188,7 @@
                   >{{ getLabel('street', 'Street') }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editStreet"
                   @change="
                     async (e) => {
@@ -199,7 +203,7 @@
                   >{{ getLabel('number', 'Number') }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editNumber"
                   @change="
                     async (e) => {
@@ -215,7 +219,7 @@
                 }}</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editNumberExtension"
                   @change="
                     async (e) => {
@@ -231,7 +235,7 @@
                   >{{ getLabel('postalCode', 'Postal Code') }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editPostalCode"
                   @change="
                     async (e) => {
@@ -246,7 +250,7 @@
                   >{{ getLabel('city', 'City') }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editCity"
                   @change="
                     async (e) => {
@@ -284,7 +288,7 @@
                   >{{ getLabel('email', 'Email') }} *</label
                 ><input
                   type="email"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editEmail"
                   @change="
                     async (e) => {
@@ -300,7 +304,7 @@
                 }}</label
                 ><input
                   type="tel"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                   :value="editPhone"
                   @change="
                     async (e) => {
@@ -315,7 +319,7 @@
                 <input
                   type="checkbox"
                   id="icp-inline"
-                  class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  class="propeller-address-card__checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   :checked="editIcp === Enums.YesNo.Y"
                   @change="
                     async (e) => {
@@ -332,7 +336,7 @@
             <template v-if="!isNew">
               <button
                 type="button"
-                class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                 @click="async (event) => closeEditModal()"
                 :disabled="saving"
               >
@@ -343,7 +347,7 @@
             <template v-if="isNew && !!onCancel">
               <button
                 type="button"
-                class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                 @click="async (event) => closeEditModal()"
                 :disabled="saving"
               >
@@ -353,7 +357,7 @@
 
             <button
               type="submit"
-              class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+              class="propeller-address-card__submit-btn px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
               :disabled="saving"
             >
               <template v-if="saving">
@@ -371,15 +375,15 @@
 
     <template v-if="!inline && showEditModal">
       <div
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-10"
+        class="propeller-address-card__modal fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-10"
       >
-        <div class="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
+        <div class="propeller-address-card__modal-content bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
           <form @submit="async (e) => handleSaveEdit(e)">
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-xl font-bold">{{ formTitle }}</h3>
               <button
                 type="button"
-                class="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                class="propeller-address-card__modal-close text-gray-500 hover:text-gray-700 text-xl leading-none"
                 @click="async (event) => closeEditModal()"
               >
                 &times;
@@ -392,7 +396,7 @@
                     getLabel('gender', 'Gender')
                   }}</label
                   ><select
-                    class="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
                     :value="editGender"
                     @change="
                       async (e) => {
@@ -417,7 +421,7 @@
                   }}</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editCompany"
                     @change="
                       async (e) => {
@@ -433,7 +437,7 @@
                     >{{ getLabel('firstName', 'First Name') }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editFirstName"
                     @change="
                       async (e) => {
@@ -449,7 +453,7 @@
                   }}</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editMiddleName"
                     @change="
                       async (e) => {
@@ -463,7 +467,7 @@
                     >{{ getLabel('lastName', 'Last Name') }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editLastName"
                     @change="
                       async (e) => {
@@ -480,7 +484,7 @@
                     >{{ getLabel('street', 'Street') }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editStreet"
                     @change="
                       async (e) => {
@@ -495,7 +499,7 @@
                     >{{ getLabel('number', 'Number') }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editNumber"
                     @change="
                       async (e) => {
@@ -511,7 +515,7 @@
                   }}</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editNumberExtension"
                     @change="
                       async (e) => {
@@ -527,7 +531,7 @@
                     >{{ getLabel('postalCode', 'Postal Code') }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editPostalCode"
                     @change="
                       async (e) => {
@@ -542,7 +546,7 @@
                     >{{ getLabel('city', 'City') }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editCity"
                     @change="
                       async (e) => {
@@ -557,7 +561,7 @@
                 <label class="block text-sm font-medium mb-1"
                   >{{ getLabel('country', 'Country') }} *</label
                 ><select
-                  class="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
                   :value="editCountry"
                   @change="
                     async (e) => {
@@ -580,7 +584,7 @@
                     >{{ getLabel('email', 'Email') }} *</label
                   ><input
                     type="email"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editEmail"
                     @change="
                       async (e) => {
@@ -596,7 +600,7 @@
                   }}</label
                   ><input
                     type="tel"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-md border border-gray-300"
                     :value="editPhone"
                     @change="
                       async (e) => {
@@ -611,7 +615,7 @@
                   <input
                     type="checkbox"
                     id="icp-modal"
-                    class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    class="propeller-address-card__checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     :checked="editIcp === Enums.YesNo.Y"
                     @change="
                       async (e) => {
@@ -627,14 +631,14 @@
             <div class="flex justify-end gap-3 pt-4 mt-4 border-t">
               <button
                 type="button"
-                class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                 @click="async (event) => closeEditModal()"
                 :disabled="saving"
               >
                 {{ getLabel('cancel', 'Cancel') }}</button
               ><button
                 type="submit"
-                class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+                class="propeller-address-card__submit-btn px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
                 :disabled="saving"
               >
                 <template v-if="saving">
@@ -652,17 +656,17 @@
     </template>
 
     <template v-if="showDeleteConfirm">
-      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+      <div class="propeller-address-card__delete-modal fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="propeller-address-card__delete-modal-content bg-white p-6 rounded-lg max-w-sm w-full mx-4">
           <h3 class="text-xl font-bold mb-4">
             {{ getLabel('confirmDeleteTitle', 'Confirm Delete') }}
           </h3>
-          <p class="mb-6 text-gray-600">
+          <p class="propeller-address-card__delete-message mb-6 text-gray-600">
             {{ getLabel('confirmDeleteMessage', 'Are you sure you want to delete this address?') }}
           </p>
           <div class="flex justify-end gap-4">
             <button
-              class="px-4 py-2 border rounded hover:bg-gray-100"
+              class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-gray-100"
               @click="
                 async (event) => {
                   showDeleteConfirm = false;
@@ -671,7 +675,7 @@
             >
               {{ getLabel('cancel', 'Cancel') }}</button
             ><button
-              class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
+              class="propeller-address-card__confirm-btn px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
               @click="async (event) => confirmDelete()"
             >
               {{ getLabel('delete', 'Delete') }}

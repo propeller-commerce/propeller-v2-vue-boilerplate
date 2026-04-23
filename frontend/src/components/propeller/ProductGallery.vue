@@ -1,13 +1,13 @@
 <template>
-  <div :class="`product-gallery ${className || ''}`">
-    <div class="relative aspect-square bg-white overflow-hidden">
+  <div :class="`propeller-product-gallery ${className || ''}`">
+    <div class="propeller-product-gallery__stage relative aspect-square bg-card overflow-hidden">
       <template v-if="getImages().length === 0">
-        <div class="flex h-full w-full items-center justify-center bg-slate-50">
+        <div class="propeller-product-gallery__empty flex h-full w-full items-center justify-center bg-muted">
           <svg
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            class="h-24 w-24 text-slate-200"
+            class="propeller-product-gallery__empty-icon h-24 w-24 text-foreground-subtle"
           >
             <path
               strokeLinecap="round"
@@ -36,7 +36,7 @@
           <button
             type="button"
             @click="async (event) => selectImage(index)"
-            :class="`relative flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all bg-white ${
+            :class="`propeller-product-gallery__thumbnail relative flex-shrink-0 w-20 h-20 rounded-[var(--radius-container)] border-2 overflow-hidden transition-all bg-card ${
               selectedIndex === index
                 ? 'border-primary ring-2 ring-primary/20'
                 : 'border-transparent hover:border-border'
@@ -102,7 +102,7 @@
 
         <img
           alt="Product image fullscreen"
-          class="max-h-full max-w-full object-contain rounded-lg"
+          class="max-h-full max-w-full object-contain rounded-[var(--radius-container)]"
           :src="getMainImage()"
           @click="async (e) => e.stopPropagation()"
         />

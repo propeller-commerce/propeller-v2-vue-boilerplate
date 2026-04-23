@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-[70vh] py-12 bg-gray-50">
+  <div class="min-h-[70vh] py-12 bg-muted">
     <div class="container-width max-w-4xl">
       <!-- Header -->
       <div class="text-center mb-12">
@@ -8,63 +8,63 @@
             <path stroke-linecap="round" stroke-linejoin="round" :stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">Authorization Request Sent!</h1>
-        <p class="text-lg text-gray-600">Your request has been submitted. An authorization manager will review it shortly.</p>
-        <p v-if="route.params.cartId" class="text-sm text-gray-400 mt-2">Reference: {{ route.params.cartId }}</p>
+        <h1 class="text-4xl font-bold text-foreground mb-4">Authorization Request Sent!</h1>
+        <p class="text-lg text-muted-foreground">Your request has been submitted. An authorization manager will review it shortly.</p>
+        <p v-if="route.params.cartId" class="text-sm text-foreground-subtle mt-2">Reference: {{ route.params.cartId }}</p>
       </div>
 
       <!-- Cart items table -->
       <div v-if="cartItems.length > 0" class="space-y-8">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="text-xl font-bold text-gray-900">Cart Summary</h2>
+        <div class="bg-card rounded-[var(--radius-container)] shadow-sm border border-border overflow-hidden">
+          <div class="px-6 py-4 border-b border-border-subtle">
+            <h2 class="text-xl font-bold text-foreground">Cart Summary</h2>
           </div>
           <table class="w-full">
-            <thead class="bg-gray-50 border-b border-gray-100">
+            <thead class="bg-muted border-b border-border-subtle">
               <tr>
-                <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 w-2/3">Product</th>
-                <th class="px-6 py-3 text-center text-sm font-medium text-gray-500">Qty</th>
-                <th class="px-6 py-3 text-right text-sm font-medium text-gray-500">Total</th>
+                <th class="px-6 py-3 text-left text-sm font-medium text-muted-foreground w-2/3">Product</th>
+                <th class="px-6 py-3 text-center text-sm font-medium text-muted-foreground">Qty</th>
+                <th class="px-6 py-3 text-right text-sm font-medium text-muted-foreground">Total</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-              <tr v-for="item in cartItems" :key="item.itemId" class="hover:bg-gray-50/50">
+              <tr v-for="item in cartItems" :key="item.itemId" class="hover:bg-surface-hover">
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
                     <img
                       v-if="getItemImageUrl(item)"
                       :src="getItemImageUrl(item)"
                       :alt="getItemName(item)"
-                      class="w-12 h-12 object-contain rounded border border-gray-100 flex-shrink-0"
+                      class="w-12 h-12 object-contain rounded border border-border-subtle flex-shrink-0"
                     />
-                    <div v-else class="w-12 h-12 bg-gray-100 rounded border border-gray-100 flex-shrink-0 flex items-center justify-center">
-                      <svg class="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" :stroke-width="1.5">
+                    <div v-else class="w-12 h-12 bg-muted rounded border border-border-subtle flex-shrink-0 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-foreground-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" :stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
                       </svg>
                     </div>
                     <div>
-                      <p class="text-sm font-medium text-gray-900">{{ getItemName(item) }}</p>
-                      <p v-if="item.product?.sku" class="text-xs text-gray-400 mt-0.5">SKU: {{ item.product.sku }}</p>
+                      <p class="text-sm font-medium text-foreground">{{ getItemName(item) }}</p>
+                      <p v-if="item.product?.sku" class="text-xs text-foreground-subtle mt-0.5">SKU: {{ item.product.sku }}</p>
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-center text-sm text-gray-600">{{ item.quantity }}</td>
-                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900">{{ formatPrice(item.totalSumNet ?? 0) }}</td>
+                <td class="px-6 py-4 text-center text-sm text-muted-foreground">{{ item.quantity }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-foreground">{{ formatPrice(item.totalSumNet ?? 0) }}</td>
               </tr>
             </tbody>
           </table>
 
           <!-- Totals -->
-          <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-2">
-            <div class="flex justify-between text-sm text-gray-600">
+          <div class="px-6 py-4 bg-muted border-t border-border-subtle space-y-2">
+            <div class="flex justify-between text-sm text-muted-foreground">
               <span>Total excl. VAT:</span>
               <span>{{ formatPrice(totalExclVat) }}</span>
             </div>
-            <div v-if="totalVat > 0" class="flex justify-between text-sm text-gray-600">
+            <div v-if="totalVat > 0" class="flex justify-between text-sm text-muted-foreground">
               <span>VAT:</span>
               <span>{{ formatPrice(totalVat) }}</span>
             </div>
-            <div class="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-200">
+            <div class="flex justify-between text-base font-bold text-foreground pt-2 border-t border-border">
               <span>Total:</span>
               <span>{{ formatPrice(total) }}</span>
             </div>
@@ -74,11 +74,11 @@
 
       <!-- Actions -->
       <div class="flex justify-center pt-8">
-        <router-link to="/" class="px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/80 transition text-center">
+        <router-link to="/" class="px-8 py-3 bg-primary text-primary-foreground rounded-[var(--radius-container)] font-semibold hover:bg-primary/80 transition text-center">
           Continue Shopping
         </router-link>
       </div>
-      <div class="text-center text-gray-500 pt-6 text-sm">
+      <div class="text-center text-muted-foreground pt-6 text-sm">
         <p>You will be notified once your authorization request has been reviewed.</p>
       </div>
     </div>

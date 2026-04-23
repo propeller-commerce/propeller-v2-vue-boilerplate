@@ -2,7 +2,7 @@
   <template v-if="!!html">
     <div
       v-html="html"
-      :class="`product-short-description prose prose-slate max-w-none text-muted-foreground ${
+      :class="`propeller-product-short-description prose prose-slate max-w-none text-muted-foreground ${
         className || ''
       }`"
     ></div>

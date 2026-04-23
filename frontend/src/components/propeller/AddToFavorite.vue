@@ -1,6 +1,6 @@
 <template>
   <template v-if="user">
-    <div class="relative inline-block">
+    <div class="propeller-add-to-favorite relative inline-block" :data-favorited="isFavorited ? 'true' : 'false'">
       <button
         type="button"
         @click="async (event) => toggleModal()"
@@ -9,10 +9,10 @@
             ? getLabel('removeFromFavorites', 'Remove from favorites')
             : getLabel('addToFavorites', 'Add to favorites')
         "
-        :class="`inline-flex items-center justify-center rounded-md border p-2.5 transition-colors ${
+        :class="`propeller-add-to-favorite__btn inline-flex items-center justify-center rounded-[var(--radius-control)] border p-2.5 transition-colors ${
           isFavorited
             ? 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'
-            : 'border-gray-200 bg-white text-gray-400 hover:text-primary hover:border-primary/30 hover:bg-primary/5'
+            : 'border-border bg-card text-foreground-subtle hover:text-primary hover:border-primary/30 hover:bg-primary/5'
         } ${className || ''}`"
       >
         <template v-if="isFavorited">
@@ -53,16 +53,16 @@
       </button>
       <template v-if="showModal && _isMounted">
         <div
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          class="propeller-add-to-favorite__modal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         >
-          <div class="bg-white rounded-lg max-w-md w-full shadow-lg border">
-            <div class="flex justify-between items-center p-6 pb-4">
-              <h3 class="text-xl font-bold">
+          <div class="propeller-add-to-favorite__modal-content bg-card rounded-[var(--radius-container)] max-w-md w-full shadow-lg border">
+            <div class="propeller-add-to-favorite__modal-header flex justify-between items-center p-6 pb-4">
+              <h3 class="propeller-add-to-favorite__modal-title text-xl font-bold">
                 {{ getLabel('modalTitle', 'Favorite product?') }}
               </h3>
               <button
                 type="button"
-                class="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                class="propeller-add-to-favorite__modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-[var(--radius-control)] text-muted-foreground hover:text-muted-foreground hover:bg-muted"
                 @click="async (event) => closeModal()"
               >
                 <svg
@@ -81,13 +81,13 @@
                 </svg>
               </button>
             </div>
-            <div class="px-6 pb-6 space-y-4">
+            <div class="propeller-add-to-favorite__modal-body px-6 pb-6 space-y-4">
               <template v-if="getMemberLists().length > 0">
-                <div class="space-y-2">
+                <div class="propeller-add-to-favorite__member-lists space-y-2">
                   <template :key="list.id" v-for="(list, index) in getMemberLists()">
                     <button
                       type="button"
-                      class="flex items-center gap-2 py-2 w-full text-left hover:bg-gray-50 rounded-md px-1 transition-colors disabled:opacity-50"
+                      class="propeller-add-to-favorite__member-list-item flex items-center gap-2 py-2 w-full text-left hover:bg-surface-hover rounded-[var(--radius-control)] px-1 transition-colors disabled:opacity-50"
                       @click="async (event) => handleRemoveFromList(String(list.id))"
                       :disabled="removeLoading"
                     >
@@ -109,7 +109,7 @@
                     </button> </template
                   ><button
                     type="button"
-                    class="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
+                    class="propeller-add-to-favorite__submit-btn w-full py-2.5 px-4 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/80 rounded-[var(--radius-control)] transition-colors disabled:opacity-50"
                     @click="
                       async (event) => {
                         const memberLists = getMemberLists();
@@ -129,17 +129,17 @@
                     </template>
                   </button>
                 </div>
-                <div class="border-t border-gray-200"></div>
+                <div class="propeller-add-to-favorite__divider border-t border-border"></div>
               </template>
 
               <template v-if="getNonMemberLists().length > 0">
-                <div class="space-y-3">
+                <div class="propeller-add-to-favorite__add-form space-y-3">
                   <div class="space-y-1">
-                    <label class="text-xs text-gray-500">{{
+                    <label class="propeller-add-to-favorite__select-label text-xs text-gray-500">{{
                       getLabel('chooseList', 'Choose a favorites list*')
                     }}</label
                     ><select
-                      class="block w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
+                      class="propeller-add-to-favorite__select block w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
                       :value="selectedListId"
                       @change="
                         async (e) => {
@@ -156,7 +156,7 @@
                   </div>
                   <button
                     type="button"
-                    class="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
+                    class="propeller-add-to-favorite__submit-btn w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
                     @click="async (event) => handleAddToList()"
                     :disabled="!selectedListId || addLoading"
                   >
@@ -172,7 +172,7 @@
               </template>
 
               <template v-if="getMemberLists().length === 0 && getNonMemberLists().length === 0">
-                <div class="py-4 text-center text-gray-500 text-sm">
+                <div class="propeller-add-to-favorite__empty py-4 text-center text-gray-500 text-sm">
                   {{
                     getLabel(
                       'noLists',

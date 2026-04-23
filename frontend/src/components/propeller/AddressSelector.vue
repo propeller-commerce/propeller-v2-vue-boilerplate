@@ -1,8 +1,8 @@
 <template>
-  <div :class="className || ''">
+  <div :class="`propeller-address-selector ${className || ''}`">
     <button
       type="button"
-      class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+      class="propeller-address-selector__trigger inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
       @click="
         async (event) => {
           showModal = true;
@@ -26,16 +26,16 @@
     </button>
     <template v-if="showModal">
       <div
-        class="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto py-10"
+        class="propeller-address-selector__modal fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto py-10"
       >
-        <div class="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-bold">
+        <div class="propeller-address-selector__modal-content bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
+          <div class="propeller-address-selector__modal-header flex justify-between items-center mb-6">
+            <h3 class="propeller-address-selector__modal-title text-xl font-bold">
               {{ getLabel('modalTitle', 'Choose an address') }}
             </h3>
             <button
               type="button"
-              class="text-gray-500 hover:text-gray-700 text-xl leading-none"
+              class="propeller-address-selector__modal-close text-gray-500 hover:text-gray-700 text-xl leading-none"
               @click="
                 async (event) => {
                   showModal = false;
@@ -46,17 +46,18 @@
             </button>
           </div>
           <template v-if="getAddresses().length === 0">
-            <p class="text-gray-500 italic">
+            <p class="propeller-address-selector__empty text-gray-500 italic">
               {{ getLabel('noAddresses', 'No addresses found.') }}
             </p>
           </template>
 
           <template v-if="getAddresses().length > 0">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="propeller-address-selector__list grid grid-cols-2 gap-4">
               <template :key="address.id" v-for="(address, index) in getAddresses()">
                 <div
                   @click="async (event) => handleTileClick(address)"
-                  :class="`cursor-pointer rounded-lg transition-all ring-2 ${
+                  :data-selected="selectedAddress?.id === address.id ? 'true' : 'false'"
+                  :class="`propeller-address-selector__option cursor-pointer rounded-lg transition-all ring-2 ${
                     selectedAddress?.id === address.id
                       ? 'ring-primary'
                       : 'ring-transparent hover:ring-primary/40'
@@ -76,10 +77,10 @@
                 </div>
               </template>
             </div>
-            <div class="flex justify-end mt-6 pt-4 border-t border-gray-100">
+            <div class="propeller-address-selector__modal-actions flex justify-end mt-6 pt-4 border-t border-gray-100">
               <button
                 type="button"
-                class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                class="propeller-address-selector__confirm-btn inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 :disabled="!selectedAddress || isLoading"
                 @click="async (event) => handleConfirm()"
               >

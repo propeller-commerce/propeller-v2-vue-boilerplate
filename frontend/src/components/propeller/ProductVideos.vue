@@ -1,19 +1,22 @@
 <template>
-  <div :class="`product-videos ${className || ''}`">
+  <div :class="`propeller-product-videos ${className || ''}`">
     <template v-if="hasItems()">
-      <h3 class="text-base font-semibold text-foreground mb-3">
+      <h3 class="propeller-product-videos__title text-base font-semibold text-foreground mb-3">
         {{ getLabel('title', 'Videos') }}
       </h3>
     </template>
 
     <template v-if="hasItems()">
-      <div class="space-y-4">
+      <div class="propeller-product-videos__list space-y-4">
         <template :key="index" v-for="(video, index) in getVideoItems()">
-          <div class="rounded-lg overflow-hidden border border-border bg-black">
+          <div
+            class="propeller-product-videos__item rounded-lg overflow-hidden border border-border bg-black"
+            :data-embedded="!!getVideoUri(video) && isEmbeddable(getVideoUri(video)) ? 'true' : 'false'"
+          >
             <template v-if="!!getVideoUri(video)">
               <template v-if="isEmbeddable(getVideoUri(video))">
                 <div
-                  class="relative w-full"
+                  class="propeller-product-videos__embed relative w-full"
                   :style="{
                     paddingBottom: '56.25%',
                   }"
@@ -28,7 +31,7 @@
                       gyroscope;
                       picture-in-picture;
                     "
-                    class="absolute inset-0 w-full h-full"
+                    class="propeller-product-videos__iframe absolute inset-0 w-full h-full"
                     :src="getEmbedUrl(getVideoUri(video))"
                     :title="getVideoTitle(video)"
                     :allowFullScreen="true"
@@ -37,7 +40,7 @@
               </template>
 
               <template v-if="!isEmbeddable(getVideoUri(video))">
-                <video preload="metadata" class="w-full" :controls="true">
+                <video preload="metadata" class="propeller-product-videos__video w-full" :controls="true">
                   <source :src="getVideoUri(video)" />
                 </video>
               </template>
@@ -48,7 +51,7 @@
     </template>
 
     <template v-if="!hasItems()">
-      <p class="text-sm text-muted-foreground">
+      <p class="propeller-product-videos__empty text-sm text-muted-foreground">
         {{ getLabel('empty', 'No videos') }}
       </p>
     </template>

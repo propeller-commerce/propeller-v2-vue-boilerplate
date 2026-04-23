@@ -1,33 +1,36 @@
 <template>
-  <div :class="containerClass">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+  <div :class="`propeller-delivery-date ${containerClass}`">
+    <div class="propeller-delivery-date__grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
       <template :key="index" v-for="(dateStr, index) in upcomingDates">
         <div
           @click="async (event) => handleSelect(dateStr)"
-          :class="`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${
+          :data-selected="selectedDate === dateStr ? 'true' : 'false'"
+          :class="`propeller-delivery-date__option cursor-pointer border border-border rounded-[var(--radius-container)] p-3 text-center transition-all ${
             selectedDate === dateStr
               ? 'border-secondary bg-secondary/5 shadow-sm'
               : 'hover:border-secondary/30'
           }`"
         >
-          <div class="font-semibold">{{ formatDisplay(dateStr) }}</div>
+          <div class="propeller-delivery-date__option-label font-semibold">{{ formatDisplay(dateStr) }}</div>
         </div>
       </template>
       <template v-if="showDatePicker">
         <div
           @click="async (event) => openModal()"
-          :class="`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${
+          :data-selected="isCustomDateSelected ? 'true' : 'false'"
+          data-custom="true"
+          :class="`propeller-delivery-date__option propeller-delivery-date__option--custom cursor-pointer border border-border rounded-[var(--radius-container)] p-3 text-center transition-all ${
             isCustomDateSelected
               ? 'border-secondary bg-secondary/5 shadow-sm'
               : 'hover:border-secondary/30'
           }`"
         >
           <template v-if="isCustomDateSelected">
-            <div class="font-semibold">{{ formatDisplay(selectedDate) }}</div>
+            <div class="propeller-delivery-date__option-label font-semibold">{{ formatDisplay(selectedDate) }}</div>
           </template>
 
           <template v-if="!isCustomDateSelected">
-            <div class="font-semibold">
+            <div class="propeller-delivery-date__option-label font-semibold">
               {{ getLabel('pickDate', 'Other date...') }}
             </div>
           </template>
@@ -36,17 +39,17 @@
     </div>
     <template v-if="modalOpen">
       <div
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        class="propeller-delivery-date__modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         @click="async (event) => handleBackdropClick(event)"
       >
-        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold">
+        <div class="propeller-delivery-date__modal-content bg-card rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+          <div class="propeller-delivery-date__modal-header flex justify-between items-center mb-4">
+            <h3 class="propeller-delivery-date__modal-title text-lg font-semibold">
               {{ getLabel('modalTitle', 'Select a delivery date') }}
             </h3>
             <button
               type="button"
-              class="text-gray-400 hover:text-gray-600 transition-colors"
+              class="propeller-delivery-date__modal-close text-foreground-subtle hover:text-muted-foreground transition-colors"
               @click="async (event) => closeModal()"
             >
               <svg
@@ -62,15 +65,15 @@
           </div>
           <input
             type="date"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
+            class="propeller-delivery-date__input w-full border border-input rounded-[var(--radius-container)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
             :min="minDate"
             :value="customDateValue"
             @change="async (event) => handleCustomDateChange(event.target.value)"
           />
-          <div class="flex justify-end gap-3 mt-4">
+          <div class="propeller-delivery-date__modal-actions flex justify-end gap-3 mt-4">
             <button
               type="button"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              class="propeller-delivery-date__cancel-btn px-4 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-[var(--radius-container)] hover:bg-accent transition-colors"
               @click="async (event) => closeModal()"
             >
               {{ getLabel('cancel', 'Cancel') }}

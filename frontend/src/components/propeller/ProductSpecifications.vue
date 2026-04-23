@@ -1,13 +1,17 @@
 <template>
   <template v-if="!loading && hasPublicAttributes()">
-    <div :class="`product-specifications ${className || ''}`">
+    <div
+      :class="`propeller-product-specifications ${className || ''}`"
+      :data-layout="layout === 'list' ? 'list' : 'table'"
+      :data-grouped="grouping ? 'true' : 'false'"
+    >
       <template v-if="!grouping">
         <template v-if="layout !== 'list'">
           <div class="overflow-hidden rounded-lg border border-border">
             <table class="w-full text-sm">
               <tbody class="divide-y divide-border">
                 <template :key="i" v-for="(attr, i) in getAttributes()">
-                  <tr class="odd:bg-white even:bg-muted/20">
+                  <tr class="propeller-product-specifications__row odd:bg-card even:bg-muted/20">
                     <td class="px-4 py-2 font-medium text-foreground w-1/2">
                       {{ getAttributeLabel(attr) }}
                     </td>
@@ -49,7 +53,7 @@
                 <table class="w-full text-sm">
                   <tbody class="divide-y divide-border">
                     <template :key="i" v-for="(attr, i) in getAttributesByGroup(group)">
-                      <tr class="odd:bg-white even:bg-muted/20">
+                      <tr class="propeller-product-specifications__row odd:bg-card even:bg-muted/20">
                         <td class="px-4 py-2 font-medium text-foreground w-1/2">
                           {{ getAttributeLabel(attr) }}
                         </td>

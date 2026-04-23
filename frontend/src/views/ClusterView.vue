@@ -32,7 +32,10 @@
 
             <template v-if="cluster">
               <ProductPrice
-                :price="(selectedProduct?.price ?? (cluster as any).defaultProduct?.price)"
+                :price="
+                  selectedProduct?.price ??
+                  (cluster as any).defaultProduct?.price
+                "
                 :includeTax="priceStore.includeTax"
               />
 
@@ -49,7 +52,7 @@
                 />
               </div>
 
-              <div v-if="(selectedProduct as any)?.inventory" class="mt-4">
+              <div v-if="(selectedProduct as any)?.inventory" class="my-4">
                 <ItemStock
                   :inventory="(selectedProduct as any).inventory"
                   :showAvailability="false"
@@ -58,7 +61,10 @@
 
               <!-- ClusterConfigurator -->
               <div
-                v-if="(cluster as any).products?.length > 1 && (cluster as any).config"
+                v-if="
+                  (cluster as any).products?.length > 1 &&
+                  (cluster as any).config
+                "
                 class="mt-6 mb-6 pb-6 border-b border-gray-200"
               >
                 <ClusterConfigurator
@@ -66,7 +72,11 @@
                   :products="(cluster as any).products"
                   :config="(cluster as any).config"
                   :defaultProduct="(cluster as any).defaultProduct"
-                  :onConfigurationChange="(product: any) => { selectedProduct = product }"
+                  :onConfigurationChange="
+                    (product: any) => {
+                      selectedProduct = product;
+                    }
+                  "
                 />
               </div>
 
@@ -86,12 +96,17 @@
                 :graphqlClient="graphqlClient"
                 :user="authStore.user"
                 :product="selectedProduct"
-                :cluster="(cluster as any)"
+                :cluster="cluster as any"
                 :beforeAddToCart="validateClusterOptions"
-                :childItems="Object.values(selectedOptionProducts).map((p: any) => p.productId)"
+                :childItems="
+                  Object.values(selectedOptionProducts).map(
+                    (p: any) => p.productId,
+                  )
+                "
                 :cartId="cartStore.cartId || undefined"
                 :language="languageStore.language"
                 :companyId="companyStore.companyId || undefined"
+                :className="'flex items-center w-full gap-2'"
                 :createCart="true"
                 :showModal="true"
                 :configuration="configuration"
@@ -142,52 +157,62 @@
         :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
         :onProceedToCheckout="() => router.push('/checkout')"
         :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
-        :onProductClick="(p: any) => router.push(configuration.urls.getProductUrl(p, languageStore.language))"
-        :onClusterClick="(c: any) => router.push(configuration.urls.getClusterUrl(c, languageStore.language))"
+        :onProductClick="
+          (p: any) =>
+            router.push(
+              configuration.urls.getProductUrl(p, languageStore.language),
+            )
+        "
+        :onClusterClick="
+          (c: any) =>
+            router.push(
+              configuration.urls.getClusterUrl(c, languageStore.language),
+            )
+        "
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Enums } from 'propeller-sdk-v2'
-import { useAuthStore } from '@/stores/auth'
-import { useCartStore } from '@/stores/cart'
-import { useCompanyStore } from '@/stores/company'
-import { usePriceStore } from '@/stores/price'
-import { useLanguageStore } from '@/stores/language'
-import { graphqlClient } from '@/lib/api'
-import { configuration } from '@/lib/config'
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { Enums } from "propeller-sdk-v2";
+import { useAuthStore } from "@/stores/auth";
+import { useCartStore } from "@/stores/cart";
+import { useCompanyStore } from "@/stores/company";
+import { usePriceStore } from "@/stores/price";
+import { useLanguageStore } from "@/stores/language";
+import { graphqlClient } from "@/lib/api";
+import { configuration } from "@/lib/config";
 
-import Breadcrumbs from '@/components/propeller/Breadcrumbs.vue'
-import ProductGallery from '@/components/propeller/ProductGallery.vue'
-import ClusterInfo from '@/components/propeller/ClusterInfo.vue'
-import ClusterOptions from '@/components/propeller/ClusterOptions.vue'
-import ClusterConfigurator from '@/components/propeller/ClusterConfigurator.vue'
-import ProductPrice from '@/components/propeller/ProductPrice.vue'
-import ProductBulkPrices from '@/components/propeller/ProductBulkPrices.vue'
-import ProductShortDescription from '@/components/propeller/ProductShortDescription.vue'
-import ItemStock from '@/components/propeller/ItemStock.vue'
-import ProductTabs from '@/components/propeller/ProductTabs.vue'
-import ProductSlider from '@/components/propeller/ProductSlider.vue'
-import AddToCart from '@/components/propeller/AddToCart.vue'
-import AddToFavorite from '@/components/propeller/AddToFavorite.vue'
+import Breadcrumbs from "@/components/propeller/Breadcrumbs.vue";
+import ProductGallery from "@/components/propeller/ProductGallery.vue";
+import ClusterInfo from "@/components/propeller/ClusterInfo.vue";
+import ClusterOptions from "@/components/propeller/ClusterOptions.vue";
+import ClusterConfigurator from "@/components/propeller/ClusterConfigurator.vue";
+import ProductPrice from "@/components/propeller/ProductPrice.vue";
+import ProductBulkPrices from "@/components/propeller/ProductBulkPrices.vue";
+import ProductShortDescription from "@/components/propeller/ProductShortDescription.vue";
+import ItemStock from "@/components/propeller/ItemStock.vue";
+import ProductTabs from "@/components/propeller/ProductTabs.vue";
+import ProductSlider from "@/components/propeller/ProductSlider.vue";
+import AddToCart from "@/components/propeller/AddToCart.vue";
+import AddToFavorite from "@/components/propeller/AddToFavorite.vue";
 
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-const cartStore = useCartStore()
-const companyStore = useCompanyStore()
-const priceStore = usePriceStore()
-const languageStore = useLanguageStore()
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+const cartStore = useCartStore();
+const companyStore = useCompanyStore();
+const priceStore = usePriceStore();
+const languageStore = useLanguageStore();
 
-const clusterId = computed(() => parseInt(route.params.clusterId as string))
-const cluster = ref<any>(null)
-const selectedProduct = ref<any>(null)
-const selectedOptionProducts = ref<Record<number, any>>({})
-const showClusterErrors = ref(false)
+const clusterId = computed(() => parseInt(route.params.clusterId as string));
+const cluster = ref<any>(null);
+const selectedProduct = ref<any>(null);
+const selectedOptionProducts = ref<Record<number, any>>({});
+const showClusterErrors = ref(false);
 
 const crossUpsellSliders = [
   Enums.CrossupsellType.ACCESSORIES,
@@ -195,48 +220,61 @@ const crossUpsellSliders = [
   Enums.CrossupsellType.RELATED,
   Enums.CrossupsellType.OPTIONS,
   Enums.CrossupsellType.PARTS,
-]
+];
 
-const displayProduct = computed(() => selectedProduct.value || cluster.value?.defaultProduct || null)
+const displayProduct = computed(
+  () => selectedProduct.value || cluster.value?.defaultProduct || null,
+);
 
-const displayImages = computed(() =>
-  displayProduct.value?.media?.images?.items?.flatMap(
-    (img: any) => img.imageVariants?.map((v: any) => v.url).filter(Boolean) ?? []
-  ) ?? []
-)
+const displayImages = computed(
+  () =>
+    displayProduct.value?.media?.images?.items?.flatMap(
+      (img: any) =>
+        img.imageVariants?.map((v: any) => v.url).filter(Boolean) ?? [],
+    ) ?? [],
+);
 
 function handleClusterLoaded(loadedCluster: any) {
-  cluster.value = loadedCluster
+  cluster.value = loadedCluster;
   if (loadedCluster.defaultProduct) {
-    selectedProduct.value = loadedCluster.defaultProduct
+    selectedProduct.value = loadedCluster.defaultProduct;
   }
 }
 
 function handleOptionSelect(product: any) {
   const option = cluster.value?.options?.find((opt: any) =>
-    opt.products?.some((p: any) => p.productId === product.productId)
-  )
+    opt.products?.some((p: any) => p.productId === product.productId),
+  );
   if (option) {
-    selectedOptionProducts.value = { ...selectedOptionProducts.value, [option.id]: product }
+    selectedOptionProducts.value = {
+      ...selectedOptionProducts.value,
+      [option.id]: product,
+    };
   }
 }
 
 function validateClusterOptions(): boolean {
-  if (!cluster.value?.options) return true
+  if (!cluster.value?.options) return true;
   const hasUnfilled = cluster.value.options.some(
-    (opt: any) => opt.hidden !== 'Y' && opt.isRequired === 'Y' && !(opt.id in selectedOptionProducts.value)
-  )
+    (opt: any) =>
+      opt.hidden !== "Y" &&
+      opt.isRequired === "Y" &&
+      !(opt.id in selectedOptionProducts.value),
+  );
   if (hasUnfilled) {
-    showClusterErrors.value = true
-    return false
+    showClusterErrors.value = true;
+    return false;
   }
-  return true
+  return true;
 }
 
-watch(() => route.params.clusterId, () => {
-  cluster.value = null
-  selectedProduct.value = null
-  selectedOptionProducts.value = {}
-  showClusterErrors.value = false
-})
+watch(
+  () => route.params.clusterId,
+  () => {
+    cluster.value = null;
+    selectedProduct.value = null;
+    selectedOptionProducts.value = {};
+    showClusterErrors.value = false;
+  },
+);
 </script>

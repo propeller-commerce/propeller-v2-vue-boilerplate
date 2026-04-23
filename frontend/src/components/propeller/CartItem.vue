@@ -1,15 +1,17 @@
 <template>
   <div
-    :class="`flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${
+    :class="`propeller-cart-item flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${
       className || ''
     }`"
+    :data-bundle="isBundleItem() ? 'true' : 'false'"
+    :data-loading="loading ? 'true' : 'false'"
   >
     <div
-      class="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-50 flex items-center justify-center overflow-hidden relative"
+      class="propeller-cart-item__media w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-50 flex items-center justify-center overflow-hidden relative"
     >
       <template v-if="!!getProductImageUrl()">
         <img
-          class="w-full h-full object-contain p-1"
+          class="propeller-cart-item__image w-full h-full object-contain p-1"
           :src="getProductImageUrl()"
           :alt="getProductName()"
         />
@@ -20,7 +22,7 @@
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          class="w-8 h-8 text-gray-300"
+          class="propeller-cart-item__image-placeholder w-8 h-8 text-gray-300"
           :strokeWidth="1.5"
         >
           <path
@@ -31,13 +33,13 @@
         </svg>
       </template>
     </div>
-    <div class="flex-1 min-w-0">
+    <div class="propeller-cart-item__body flex-1 min-w-0">
       <template v-if="!isBundleItem() && showSku !== false && !!getProductSku()">
-        <p class="font-mono text-xs text-gray-400">{{ getProductSku() }}</p>
+        <p class="propeller-cart-item__sku font-mono text-xs text-gray-400">{{ getProductSku() }}</p>
       </template>
 
       <template v-if="isBundleItem()">
-        <span class="font-semibold text-sm md:text-base text-gray-900 line-clamp-2">{{
+        <span class="propeller-cart-item__title font-semibold text-sm md:text-base text-gray-900 line-clamp-2">{{
           getBundleName()
         }}</span>
       </template>
@@ -45,14 +47,14 @@
       <template v-if="!isBundleItem()">
         <template v-if="titleLinkable !== false">
           <a
-            class="font-semibold text-sm md:text-base text-gray-900 hover:text-foreground transition-colors line-clamp-2"
+            class="propeller-cart-item__title font-semibold text-sm md:text-base text-gray-900 hover:text-foreground transition-colors line-clamp-2"
             :href="getProductUrl()"
             >{{ getProductName() }}</a
           >
         </template>
 
         <template v-if="titleLinkable === false">
-          <span class="font-semibold text-sm md:text-base text-gray-900 line-clamp-2">{{
+          <span class="propeller-cart-item__title font-semibold text-sm md:text-base text-gray-900 line-clamp-2">{{
             getProductName()
           }}</span>
         </template>
@@ -65,9 +67,9 @@
       </template>
 
       <template v-if="isBundleItem()">
-        <div class="mt-3 space-y-1.5 border-l-2 border-border pl-3">
+        <div class="propeller-cart-item__bundle mt-3 space-y-1.5 border-l-2 border-border pl-3">
           <template v-if="!!getBundleLeaderName()">
-            <div class="flex flex-wrap gap-x-2 text-sm text-gray-700">
+            <div class="propeller-cart-item__bundle-leader flex flex-wrap gap-x-2 text-sm text-gray-700">
               <span class="font-semibold text-foreground">{{ getBundleLeaderName() }}</span>
               <template v-if="!!getBundleLeaderPrice()">
                 <div class="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"></div>
@@ -77,7 +79,7 @@
           </template>
 
           <template :key="idx" v-for="(bundleItem, idx) in getBundleNonLeaders()">
-            <div class="flex flex-wrap gap-x-2 text-sm text-gray-700">
+            <div class="propeller-cart-item__bundle-item flex flex-wrap gap-x-2 text-sm text-gray-700">
               <span class="font-medium">{{ getBundleItemName(bundleItem) }}</span>
               <template v-if="!!getBundleItemPrice(bundleItem)">
                 <div class="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"></div>
@@ -93,12 +95,12 @@
       <template
         v-if="!!cartItem.clusterId && !!cartItem.childItems && cartItem.childItems.length > 0"
       >
-        <div class="mt-3 space-y-1.5 border-l-2 border-gray-200 pl-3">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+        <div class="propeller-cart-item__options mt-3 space-y-1.5 border-l-2 border-gray-200 pl-3">
+          <p class="propeller-cart-item__options-label text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
             {{ getLabel('includedOptions', 'Included Options:') }}
           </p>
           <template :key="idx" v-for="(child, idx) in cartItem.childItems || []">
-            <div class="flex flex-wrap gap-x-2 text-sm text-gray-700">
+            <div class="propeller-cart-item__option flex flex-wrap gap-x-2 text-sm text-gray-700">
               <span class="font-medium">{{ child.product.names?.[0]?.value || 'Option' }}</span
               ><span class="text-gray-400 hidden sm:inline">-</span
               ><span class="text-gray-400 text-xs self-center">{{ child.product.sku }}</span>
@@ -110,12 +112,12 @@
       </template>
 
       <template v-if="showCartItemNotesField === true">
-        <div class="mt-3">
-          <label class="text-xs font-medium text-gray-500 block mb-1">{{
+        <div class="propeller-cart-item__notes mt-3">
+          <label class="propeller-cart-item__notes-label text-xs font-medium text-gray-500 block mb-1">{{
             getLabel('notes', 'Notes')
           }}</label
           ><textarea
-            class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent resize-none"
+            class="propeller-cart-item__notes-input w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent resize-none"
             :value="notes"
             @change="async (e) => handleNoteChange(e.target.value)"
             :placeholder="getLabel('notesPlaceholder', 'Add a note for this item...')"
@@ -125,17 +127,17 @@
       </template>
 
       <template v-if="getVisibleCrossupsells().length > 0">
-        <div class="mt-3 pt-3 border-t border-gray-200">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+        <div class="propeller-cart-item__crossupsells mt-3 pt-3 border-t border-gray-200">
+          <p class="propeller-cart-item__crossupsells-label text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             {{ getLabel('crossupsellTitle', 'You might also like') }}
           </p>
           <div class="flex flex-col gap-2">
             <template :key="idx" v-for="(item, idx) in getVisibleCrossupsells()">
               <div
-                class="flex items-center gap-2 p-2 rounded-md border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                class="propeller-cart-item__crossupsell flex items-center gap-2 p-2 rounded-md border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors"
               >
                 <a
-                  class="flex items-center gap-2 flex-1 min-w-0"
+                  class="propeller-cart-item__crossupsell-link flex items-center gap-2 flex-1 min-w-0"
                   :href="getCrossupsellUrl(item)"
                   @click="
                     async (e) => {
@@ -148,25 +150,25 @@
                 >
                   <template v-if="!!getCrossupsellImageUrl(item)">
                     <img
-                      class="w-10 h-10 object-contain rounded flex-shrink-0"
+                      class="propeller-cart-item__crossupsell-image w-10 h-10 object-contain rounded flex-shrink-0"
                       :src="getCrossupsellImageUrl(item)"
                       :alt="getCrossupsellName(item)"
                     />
                   </template>
 
                   <div class="min-w-0">
-                    <span class="text-xs font-medium text-gray-700 line-clamp-2">{{
+                    <span class="propeller-cart-item__crossupsell-title text-xs font-medium text-gray-700 line-clamp-2">{{
                       getCrossupsellName(item)
                     }}</span>
                     <template v-if="!!getCrossupsellPrice(item)">
-                      <span class="text-xs font-bold text-foreground block">{{
+                      <span class="propeller-cart-item__crossupsell-price text-xs font-bold text-foreground block">{{
                         getCrossupsellPrice(item)
                       }}</span>
                     </template>
                   </div></a
                 ><button
                   type="button"
-                  class="flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md bg-primary text-white hover:bg-primary/80 transition-colors disabled:opacity-50"
+                  class="propeller-cart-item__crossupsell-btn flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md bg-primary text-white hover:bg-primary/80 transition-colors disabled:opacity-50"
                   :title="getLabel('addToCart', 'Add to cart')"
                   :disabled="addingCrossupsellId === getCrossupsellProductId(item)"
                   @click="
@@ -209,32 +211,32 @@
       </template>
     </div>
     <div
-      class="w-full md:w-auto flex items-center gap-3 md:gap-4 border-t md:border-t-0 border-gray-100 pt-2 md:pt-0 flex-shrink-0"
+      class="propeller-cart-item__footer w-full md:w-auto flex items-center gap-3 md:gap-4 border-t md:border-t-0 border-gray-100 pt-2 md:pt-0 flex-shrink-0"
     >
       <template v-if="isBundleItem() && !!getBundlePrice()">
-        <p class="text-sm md:text-base font-bold text-foreground whitespace-nowrap">
+        <p class="propeller-cart-item__price text-sm md:text-base font-bold text-foreground whitespace-nowrap">
           {{ getBundlePrice() }}
         </p>
       </template>
 
       <template v-if="!isBundleItem()">
-        <p class="text-sm md:text-base font-bold text-foreground whitespace-nowrap">
+        <p class="propeller-cart-item__price text-sm md:text-base font-bold text-foreground whitespace-nowrap">
           {{ getFormattedPrice() }}
         </p>
       </template>
 
       <template v-if="enableIncrementDecrement !== false">
-        <div class="flex items-center border border-gray-300 rounded-md bg-white h-9">
+        <div class="propeller-cart-item__stepper flex items-center border border-gray-300 rounded-md bg-white h-9">
           <button
             type="button"
-            class="px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
+            class="propeller-cart-item__decrement px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
             @click="async (event) => handleQuantityChange(quantity - 1)"
             :disabled="quantity <= 1 || loading"
           >
             -</button
           ><input
             type="number"
-            class="w-10 text-center text-sm bg-transparent border-x border-gray-300 h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            class="propeller-cart-item__quantity w-10 text-center text-sm bg-transparent border-x border-gray-300 h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             :min="1"
             :value="quantity"
             @change="
@@ -245,7 +247,7 @@
             "
           /><button
             type="button"
-            class="px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
+            class="propeller-cart-item__increment px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
             @click="async (event) => handleQuantityChange(quantity + 1)"
             :disabled="loading"
           >
@@ -257,7 +259,7 @@
       <template v-if="enableIncrementDecrement === false">
         <input
           type="number"
-          class="w-14 h-9 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          class="propeller-cart-item__quantity w-14 h-9 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           :min="1"
           :value="quantity"
           @change="
@@ -270,12 +272,12 @@
       </template>
 
       <template v-if="loading">
-        <span class="text-xs text-gray-400">{{ getLabel('updating', 'Updating...') }}</span>
+        <span class="propeller-cart-item__updating text-xs text-gray-400">{{ getLabel('updating', 'Updating...') }}</span>
       </template>
 
       <button
         type="button"
-        class="h-8 w-8 p-0 ml-auto inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+        class="propeller-cart-item__delete h-8 w-8 p-0 ml-auto inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
         @click="async (event) => handleDelete()"
         :disabled="deleting"
       >

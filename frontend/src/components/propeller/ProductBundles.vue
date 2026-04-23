@@ -1,8 +1,11 @@
 <template>
   <template v-if="isMounted && !isLoading && bundles.length > 0">
-    <div :class="className || 'mb-12'">
+    <div :class="`propeller-product-bundles ${className || 'mb-12'}`">
       <template :key="bundle.id || bundleIdx" v-for="(bundle, bundleIdx) in bundles">
-        <div class="border border-gray-200 rounded-xl bg-white shadow-sm mb-6 p-6">
+        <div
+          class="propeller-product-bundles__bundle border border-gray-200 rounded-xl bg-white shadow-sm mb-6 p-6"
+          :data-layout="getLayout()"
+        >
           <div class="flex flex-col lg:flex-row items-center gap-6">
             <template
               v-if="
@@ -12,12 +15,12 @@
                 bundle.items.length > 0
               "
             >
-              <div class="flex flex-wrap items-center justify-center gap-2 flex-1">
+              <div class="propeller-product-bundles__items flex flex-wrap items-center justify-center gap-2 flex-1">
                 <template :key="item.productId + '-' + idx" v-for="(item, idx) in bundle.items">
-                  <div class="flex items-center gap-2">
+                  <div class="propeller-product-bundles__item flex items-center gap-2">
                     <template v-if="idx > 0">
                       <div
-                        class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center"
+                        class="propeller-product-bundles__plus flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center"
                       >
                         <svg
                           fill="none"
@@ -37,21 +40,21 @@
 
                     <div class="flex flex-col items-center text-center w-40">
                       <div
-                        class="w-32 h-32 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 mb-2"
+                        class="propeller-product-bundles__item-media w-32 h-32 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 mb-2"
                       >
                         <template v-if="getProductImage(item.product)">
                           <img
-                            class="w-full h-full object-contain p-2"
+                            class="propeller-product-bundles__item-image w-full h-full object-contain p-2"
                             :src="getProductImage(item.product)"
                             :alt="getProductName(item.product)"
                           />
                         </template>
                       </div>
-                      <div class="text-sm font-medium text-gray-600 leading-tight mb-1">
+                      <div class="propeller-product-bundles__item-name text-sm font-medium text-gray-600 leading-tight mb-1">
                         {{ getProductName(item.product) || 'Product ' + item.productId }}
                       </div>
                       <template v-if="!getHidePrices() && item.price">
-                        <div class="text-sm font-semibold text-gray-900">
+                        <div class="propeller-product-bundles__item-price text-sm font-semibold text-gray-900">
                           {{ formatPrice(getItemPrice(item))
                           }}<span class="text-xs font-normal text-gray-500 ml-1">
                             <template v-if="getIncludeTax()">
@@ -71,7 +74,7 @@
             </template>
 
             <div
-              class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center"
+              class="propeller-product-bundles__equals flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center"
             >
               <svg
                 fill="none"
@@ -87,18 +90,18 @@
                 ></path>
               </svg>
             </div>
-            <div class="flex-shrink-0 w-full lg:w-72 pl-0 lg:pl-6">
-              <h3 class="text-xl font-bold text-gray-700 mb-1">
+            <div class="propeller-product-bundles__summary flex-shrink-0 w-full lg:w-72 pl-0 lg:pl-6">
+              <h3 class="propeller-product-bundles__title text-xl font-bold text-gray-700 mb-1">
                 {{ bundle.name || getLabel('title', 'Combo deal') }}
               </h3>
               <template v-if="bundle.description">
-                <p class="text-sm text-gray-600 mb-3">
+                <p class="propeller-product-bundles__description text-sm text-gray-600 mb-3">
                   {{ bundle.description }}
                 </p>
               </template>
 
               <template v-if="bundle.condition">
-                <p class="text-xs text-gray-500 mb-3">
+                <p class="propeller-product-bundles__condition text-xs text-gray-500 mb-3">
                   <template v-if="bundle.condition === Enums.BundleCondition.ALL">
                     {{ getLabel('condition_ALL', 'Discount on all items') }}
                   </template>
@@ -110,15 +113,15 @@
               </template>
 
               <template v-if="!getHidePrices()">
-                <div class="mb-3">
+                <div class="propeller-product-bundles__pricing mb-3">
                   <template v-if="hasDiscount(bundle)">
-                    <span class="text-gray-400 line-through text-sm">{{
+                    <span class="propeller-product-bundles__original-price text-gray-400 line-through text-sm">{{
                       formatPrice(getOriginalPrice(bundle))
                     }}</span>
                   </template>
 
                   <div class="flex items-baseline gap-2">
-                    <span class="text-2xl font-bold text-gray-900">{{
+                    <span class="propeller-product-bundles__price text-2xl font-bold text-gray-900">{{
                       formatPrice(getBundlePrice(bundle))
                     }}</span
                     ><span class="text-xs text-gray-500">
@@ -133,7 +136,7 @@
                   </div>
                   <template v-if="hasDiscount(bundle)">
                     <div
-                      class="mt-2 inline-block bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-md"
+                      class="propeller-product-bundles__savings mt-2 inline-block bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-md"
                     >
                       {{ getLabel('youSave', 'Your savings:')
                       }}{{ formatPrice(getOriginalPrice(bundle) - getBundlePrice(bundle)) }}
@@ -141,9 +144,10 @@
                   </template>
                 </div>
                 <button
-                  class="w-full px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                  class="propeller-product-bundles__submit w-full px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
                   @click="async (event) => handleAddToCart(bundle)"
                   :disabled="addingBundleId === bundle.id"
+                  :data-loading="addingBundleId === bundle.id ? 'true' : 'false'"
                 >
                   <template v-if="addingBundleId === bundle.id">
                     {{ getLabel('adding', 'Adding...') }}
@@ -156,7 +160,7 @@
               </template>
 
               <template v-if="getHidePrices()">
-                <div class="text-center text-sm text-gray-500 py-2">
+                <div class="propeller-product-bundles__login-prompt text-center text-sm text-gray-500 py-2">
                   {{ getLabel('loginToSeePrices', 'Log in to see prices and add to cart') }}
                 </div>
               </template>
@@ -166,14 +170,15 @@
       </template>
       <template v-if="toastVisible">
         <div
-          :class="`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${
+          :class="`propeller-product-bundles__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${
             toastType === 'success'
               ? 'bg-green-50 border border-green-200'
               : 'bg-red-50 border border-red-200'
           }`"
+          :data-toast-type="toastType"
         >
           <div
-            :class="`flex-shrink-0 w-5 h-5 mt-0.5 ${
+            :class="`propeller-product-bundles__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${
               toastType === 'success' ? 'text-green-500' : 'text-red-500'
             }`"
           >
@@ -194,7 +199,7 @@
             </template>
           </div>
           <p
-            :class="`flex-1 text-sm font-medium ${
+            :class="`propeller-product-bundles__toast-message flex-1 text-sm font-medium ${
               toastType === 'success' ? 'text-green-800' : 'text-red-800'
             }`"
           >
@@ -203,7 +208,7 @@
           <button
             type="button"
             @click="async (event) => dismissToast()"
-            :class="`flex-shrink-0 rounded focus:outline-none ${
+            :class="`propeller-product-bundles__toast-close flex-shrink-0 rounded focus:outline-none ${
               toastType === 'success'
                 ? 'text-green-400 hover:text-green-600'
                 : 'text-red-400 hover:text-red-600'
@@ -223,25 +228,25 @@
       </template>
 
       <template v-if="modalVisible">
-        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div class="fixed inset-0 bg-gray-500/20" @click="async (event) => closeModal()"></div>
-          <div class="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
-            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+        <div class="propeller-product-bundles__modal fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div class="propeller-product-bundles__modal-backdrop fixed inset-0 bg-gray-500/20" @click="async (event) => closeModal()"></div>
+          <div class="propeller-product-bundles__modal-content relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
+            <div class="propeller-product-bundles__modal-header flex items-center gap-3 px-6 py-4 border-b border-gray-100">
               <svg
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                class="h-5 w-5 flex-shrink-0 text-green-500"
+                class="propeller-product-bundles__modal-success-icon h-5 w-5 flex-shrink-0 text-green-500"
                 :strokeWidth="2"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
               </svg>
-              <h3 class="flex-1 text-base font-semibold text-gray-900">
+              <h3 class="propeller-product-bundles__modal-title flex-1 text-base font-semibold text-gray-900">
                 {{ getLabel('modalTitle', 'Added to cart') }}
               </h3>
               <button
                 type="button"
-                class="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
+                class="propeller-product-bundles__modal-close flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
                 @click="async (event) => closeModal()"
               >
                 <svg
@@ -259,8 +264,8 @@
                 </svg>
               </button>
             </div>
-            <div class="px-6 py-5">
-              <div class="flex items-start gap-4">
+            <div class="propeller-product-bundles__modal-body px-6 py-5">
+              <div class="propeller-product-bundles__modal-product flex items-start gap-4">
                 <template
                   v-if="
                     lastAddedBundle &&
@@ -270,7 +275,7 @@
                   "
                 >
                   <img
-                    class="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                    class="propeller-product-bundles__modal-image w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
                     :src="
                       lastAddedBundle?.items?.[0]
                         ? getProductImage(lastAddedBundle.items[0].product)
@@ -289,7 +294,7 @@
                   "
                 >
                   <div
-                    class="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50"
+                    class="propeller-product-bundles__modal-image-placeholder w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50"
                   >
                     <svg
                       fill="none"
@@ -308,14 +313,14 @@
                 </template>
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900">
+                  <p class="propeller-product-bundles__modal-name text-sm font-medium text-gray-900">
                     {{ lastAddedBundle?.name || getLabel('title', 'Bundle') }}
                   </p>
                 </div>
                 <div class="flex-shrink-0 text-right">
-                  <p class="text-xs text-gray-500">{{ getLabel('quantity', 'Quantity') }}: 1</p>
+                  <p class="propeller-product-bundles__modal-quantity text-xs text-gray-500">{{ getLabel('quantity', 'Quantity') }}: 1</p>
                   <template v-if="!getHidePrices() && lastAddedBundle">
-                    <p class="text-sm font-semibold text-gray-900 mt-0.5">
+                    <p class="propeller-product-bundles__modal-price text-sm font-semibold text-gray-900 mt-0.5">
                       {{ formatPrice(getBundlePrice(lastAddedBundle)) }}
                     </p>
                   </template>
@@ -324,12 +329,12 @@
               <template
                 v-if="lastAddedBundle && lastAddedBundle.items && lastAddedBundle.items.length > 0"
               >
-                <div class="mt-3 ml-20 space-y-1 border-l-2 border-secondary/10 pl-2">
+                <div class="propeller-product-bundles__modal-children mt-3 ml-20 space-y-1 border-l-2 border-secondary/10 pl-2">
                   <template
                     :key="item.productId + '-' + idx"
                     v-for="(item, idx) in lastAddedBundle?.items"
                   >
-                    <div class="flex justify-between items-center text-xs text-gray-600">
+                    <div class="propeller-product-bundles__modal-child flex justify-between items-center text-xs text-gray-600">
                       <span class="line-clamp-1">{{
                         getProductName(item.product) || 'Product'
                       }}</span>
@@ -343,16 +348,16 @@
                 </div>
               </template>
             </div>
-            <div class="flex gap-3 px-6 py-4 border-t border-gray-100">
+            <div class="propeller-product-bundles__modal-actions flex gap-3 px-6 py-4 border-t border-gray-100">
               <button
                 type="button"
-                class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                class="propeller-product-bundles__modal-continue flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 @click="async (event) => closeModal()"
               >
                 {{ getLabel('continueShopping', 'Continue shopping') }}</button
               ><button
                 type="button"
-                class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                class="propeller-product-bundles__modal-checkout flex-1 inline-flex justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 @click="
                   async (event) => {
                     closeModal();

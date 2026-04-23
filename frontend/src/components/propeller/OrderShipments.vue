@@ -32,7 +32,7 @@
                   <td class="px-4 py-3">
                     <template v-if="!!shipment.status">
                       <span
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        class="propeller-order-shipments__status inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                         >{{ shipment.status }}</span
                       >
                     </template>
@@ -76,9 +76,9 @@
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
         @click="async (event) => closeModal()"
       >
-        <div class="absolute inset-0 bg-black/50"></div>
+        <div class="propeller-order-shipments__modal-backdrop absolute inset-0 bg-black/50"></div>
         <div
-          class="relative z-10 w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-xl"
+          class="propeller-order-shipments__modal-content relative z-10 w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-xl"
           @click="async (e) => e.stopPropagation()"
         >
           <div class="flex items-center justify-between px-6 py-4 border-b">
@@ -110,7 +110,7 @@
                 <p class="mt-0.5">
                   <template v-if="!!activeShipment?.status">
                     <span
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      class="propeller-order-shipments__status inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                       >{{ activeShipment?.status }}</span
                     >
                   </template>

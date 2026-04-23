@@ -1,30 +1,33 @@
 <template>
-  <nav aria-label="Breadcrumb" :class="`breadcrumbs ${className || ''}`">
-    <ol class="flex flex-wrap items-center text-sm text-muted-foreground">
+  <nav aria-label="Breadcrumb" :class="`propeller-breadcrumbs ${className || ''}`">
+    <ol class="propeller-breadcrumbs__list flex flex-wrap items-center text-sm text-muted-foreground">
       <template v-if="showHome !== false">
-        <li class="flex items-center">
-          <a class="hover:text-foreground transition-colors" :href="homeUrl || '/'">{{
+        <li class="propeller-breadcrumbs__item flex items-center" data-home="true">
+          <a class="propeller-breadcrumbs__link hover:text-foreground transition-colors" :href="homeUrl || '/'">{{
             getLabel('home', 'Home')
           }}</a>
         </li>
       </template>
 
       <template :key="cat.categoryId || index" v-for="(cat, index) in getDisplayItems()">
-        <li class="flex items-center">
+        <li
+          class="propeller-breadcrumbs__item flex items-center"
+          :data-current="isCurrentItem(index) ? 'true' : 'false'"
+        >
           <template v-if="showSeparatorBefore(index)">
-            <span aria-hidden="true" class="mx-2 select-none text-muted-foreground/40">{{
+            <span aria-hidden="true" class="propeller-breadcrumbs__separator mx-2 select-none text-muted-foreground/40">{{
               getLabel('separator', '/')
             }}</span>
           </template>
 
           <template v-if="isCurrentItem(index)">
-            <a class="hover:text-foreground transition-colors" :href="getCategoryUrl(cat, index)">{{
+            <a class="propeller-breadcrumbs__link propeller-breadcrumbs__link--current hover:text-foreground transition-colors" :href="getCategoryUrl(cat, index)">{{
               getCategoryName(cat)
             }}</a>
           </template>
 
           <template v-if="!isCurrentItem(index)">
-            <a class="hover:text-foreground transition-colors" :href="getCategoryUrl(cat, index)">{{
+            <a class="propeller-breadcrumbs__link hover:text-foreground transition-colors" :href="getCategoryUrl(cat, index)">{{
               getCategoryName(cat)
             }}</a>
           </template>

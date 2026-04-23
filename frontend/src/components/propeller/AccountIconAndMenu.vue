@@ -1,27 +1,34 @@
 <template>
-  <div class="relative" @click.stop>
+  <div
+    class="propeller-account-menu relative"
+    data-account-menu
+    :data-variant="isSidebar ? 'sidebar' : 'dropdown'"
+    :data-authenticated="user ? 'true' : 'false'"
+    @click.stop
+  >
     <template v-if="isSidebar">
-      <div class="flex flex-col">
+      <div class="propeller-account-menu__sidebar flex flex-col">
         <template v-if="!!user">
-          <div class="px-4 py-3 border-b border-gray-200">
-            <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+          <div class="propeller-account-menu__user px-4 py-3 border-b border-border">
+            <p class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
               {{ getLabel('signedInAs', 'Signed in as') }}
             </p>
-            <p class="font-medium text-gray-900 truncate">
+            <p class="propeller-account-menu__user-name font-medium text-foreground truncate">
               {{ getUserName() }}
             </p>
           </div>
-          <nav class="py-2">
-            <ul class="space-y-0.5">
+          <nav class="propeller-account-menu__nav py-2">
+            <ul class="propeller-account-menu__list space-y-0.5">
               <template :key="link.href" v-for="(link, index) in getMenuLinks()">
-                <li>
+                <li class="propeller-account-menu__item">
                   <button
                     type="button"
                     @click="async (event) => handleMenuItemClick(link.href)"
-                    :class="`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    :data-active="isActiveLink(link.href) ? 'true' : 'false'"
+                    :class="`propeller-account-menu__link flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
                       isActiveLink(link.href)
                         ? 'bg-secondary/5 text-secondary border-l-2 border-secondary'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
                     }`"
                   >
                     {{ link.label }}
@@ -30,10 +37,10 @@
               </template>
             </ul>
           </nav>
-          <div class="px-4 py-3 border-t border-gray-200">
+          <div class="propeller-account-menu__logout-wrapper px-4 py-3 border-t border-border">
             <button
               type="button"
-              class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
+              class="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-[var(--radius-control)] transition-colors"
               @click="async (event) => handleLogoutClick()"
             >
               {{ getLabel('logoutLabel', 'Log Out') }}
@@ -48,7 +55,8 @@
         type="button"
         @click="handleIconClick"
         :aria-label="getLabel('accountLabel', 'Account')"
-        :class="`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${
+        :data-open="menuOpen ? 'true' : 'false'"
+        :class="`propeller-account-menu__trigger inline-flex items-center gap-2 px-3 py-2 rounded-[var(--radius-control)] text-sm font-medium transition-colors text-white hover:bg-white/10${
           iconClassName ? ' ' + iconClassName : ''
         }`"
       >
@@ -56,7 +64,7 @@
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
-          class="w-5 h-5"
+          class="propeller-account-menu__icon w-5 h-5"
           :strokeWidth="1.5"
         >
           <path
@@ -67,11 +75,11 @@
         </svg>
         <template v-if="isMounted">
           <template v-if="user">
-            <span class="hidden md:block font-normal"> Hi, {{ getUserName() }}</span>
+            <span class="propeller-account-menu__greeting hidden md:block font-normal"> Hi, {{ getUserName() }}</span>
           </template>
 
           <template v-if="!user">
-            <span class="hidden md:block font-normal">{{
+            <span class="propeller-account-menu__greeting hidden md:block font-normal">{{
               getLabel('accountLabel', 'Account')
             }}</span>
           </template>
@@ -80,27 +88,27 @@
 
       <template v-if="menuOpen">
         <div
-          :class="`absolute right-0 top-full mt-1 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-[9999]${
+          :class="`propeller-account-menu__popover absolute right-0 top-full mt-1 w-80 bg-card text-foreground rounded-[var(--radius-container)] shadow-lg border border-border py-4 px-5 z-[9999]${
             menuClassName ? ' ' + menuClassName : ''
           }`"
         >
           <template v-if="isMounted">
             <template v-if="!!user">
-              <div class="pb-3 mb-3 border-b border-gray-200">
-                <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+              <div class="propeller-account-menu__user pb-3 mb-3 border-b border-border">
+                <p class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
                   {{ getLabel('signedInAs', 'Signed in as') }}
                 </p>
-                <p class="font-medium text-gray-900 truncate">
+                <p class="propeller-account-menu__user-name font-medium text-foreground truncate">
                   {{ getUserName() }}
                 </p>
               </div>
-              <nav>
-                <ul class="space-y-0.5">
+              <nav class="propeller-account-menu__nav">
+                <ul class="propeller-account-menu__list space-y-0.5">
                   <template :key="link.href" v-for="(link, index) in getMenuLinks()">
-                    <li>
+                    <li class="propeller-account-menu__item">
                       <button
                         type="button"
-                        class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        class="propeller-account-menu__link flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-[var(--radius-control)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                         @click="async (event) => handleMenuItemClick(link.href)"
                       >
                         {{ link.label }}
@@ -109,10 +117,10 @@
                   </template>
                 </ul>
               </nav>
-              <div class="mt-3 pt-3 border-t border-gray-200">
+              <div class="propeller-account-menu__logout-wrapper mt-3 pt-3 border-t border-border">
                 <button
                   type="button"
-                  class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
+                  class="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-[var(--radius-control)] transition-colors"
                   @click="async (event) => handleLogoutClick()"
                 >
                   {{ getLabel('logoutLabel', 'Log Out') }}
@@ -144,16 +152,16 @@
               </template>
 
               <template v-if="accountHeaderLoginForm === false">
-                <div class="text-center py-4">
-                  <h4 class="text-lg font-semibold mb-2">
+                <div class="propeller-account-menu__login-cta text-center py-4">
+                  <h4 class="propeller-account-menu__login-title text-lg font-semibold mb-2">
                     {{ getMenuTitle() }}
                   </h4>
-                  <p class="text-sm text-gray-500 mb-4">
+                  <p class="propeller-account-menu__login-subtitle text-sm text-muted-foreground mb-4">
                     {{ getLabel('loginSubtitle', 'Login to access your account') }}
                   </p>
                   <button
                     type="button"
-                    class="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
+                    class="propeller-account-menu__login-btn w-full inline-flex justify-center items-center px-4 py-2 rounded-[var(--radius-control)] bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
                     @click="
                       async (event) => {
                         closeMenu();

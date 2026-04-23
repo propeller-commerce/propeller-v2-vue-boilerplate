@@ -1,12 +1,13 @@
 <template>
   <div
-    :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${
+    :class="`propeller-product-card group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${
       isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'
     } ${className || ''}`"
+    :data-layout="isRow() ? 'row' : 'grid'"
   >
     <template v-if="showImage !== false">
       <div
-        :class="`relative overflow-hidden bg-gray-50 ${
+        :class="`propeller-product-card__media relative overflow-hidden bg-gray-50 ${
           isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'
         }`"
       >
@@ -17,14 +18,14 @@
         >
           <template v-if="!!getProductImageUrl()">
             <img
-              class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+              class="propeller-product-card__image h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
               :src="getProductImageUrl()"
               :alt="getProductName()"
             />
           </template>
 
           <template v-if="!getProductImageUrl()">
-            <div class="flex h-full w-full items-center justify-center text-gray-200">
+            <div class="propeller-product-card__image-placeholder flex h-full w-full items-center justify-center text-gray-200">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-16 w-16">
                 <path
                   strokeLinecap="round"
@@ -39,10 +40,10 @@
         <template
           v-if="!!imageLabels && imageLabels.length > 0 && computedImageLabels().length > 0"
         >
-          <div class="pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
+          <div class="propeller-product-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
             <template :key="index" v-for="(label, index) in computedImageLabels()">
               <span
-                class="inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-white shadow-sm"
+                class="propeller-product-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-white shadow-sm"
                 >{{ label }}</span
               >
             </template>
@@ -58,7 +59,8 @@
                 ? getLabel('removeFromFavorites', 'Remove from favourites')
                 : getLabel('addToFavorites', 'Add to favourites')
             "
-            :class="`absolute right-2 top-2 rounded-full border bg-white p-1.5 shadow-sm transition-colors ${
+            :data-favorite="isFavorite ? 'true' : 'false'"
+            :class="`propeller-product-card__favorite-btn absolute right-2 top-2 rounded-full border bg-white p-1.5 shadow-sm transition-colors ${
               isFavorite
                 ? 'border-red-200 text-red-500'
                 : 'border-gray-100 text-gray-300 hover:text-red-400'
@@ -83,17 +85,17 @@
     </template>
 
     <template v-if="isRow()">
-      <div class="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+      <div class="propeller-product-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
         <div class="flex flex-col gap-0.5 flex-1 min-w-0">
           <template v-if="showSku !== false && !!getProductSku()">
-            <div class="font-mono text-xs text-gray-400">
+            <div class="propeller-product-card__sku font-mono text-xs text-gray-400">
               {{ getProductSku() }}
             </div>
           </template>
 
           <template v-if="showName !== false">
             <a
-              class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
+              class="propeller-product-card__title text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
               :href="getProductUrl()"
               @click="async (e) => handleProductClick(e)"
               >{{ getProductName() }}</a
@@ -101,28 +103,28 @@
           </template>
 
           <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
-            <div class="flex flex-col gap-0.5">
+            <div class="propeller-product-card__labels flex flex-col gap-0.5">
               <template :key="index" v-for="(item, index) in computedTextLabels()">
-                <div class="text-xs text-gray-500">{{ item.value }}</div>
+                <div class="propeller-product-card__label text-xs text-gray-500">{{ item.value }}</div>
               </template>
             </div>
           </template>
 
           <template v-if="showManufacturer && !!getProductManufacturer()">
-            <div class="text-xs text-gray-500">
+            <div class="propeller-product-card__manufacturer text-xs text-gray-500">
               {{ getProductManufacturer() }}
             </div>
           </template>
 
           <template v-if="showShortDescription && !!getProductShortDescription()">
-            <p class="line-clamp-2 text-xs text-gray-500">
+            <p class="propeller-product-card__description line-clamp-2 text-xs text-gray-500">
               {{ getProductShortDescription() }}
             </p>
           </template>
         </div>
       </div>
       <div
-        class="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100"
+        class="propeller-product-card__footer w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100"
       >
         <template v-if="props.showStock && !!props.product.inventory">
           <ItemStock
@@ -134,14 +136,16 @@
         </template>
 
         <template v-if="showPrice !== false && !!product?.price">
-          <ProductPriceDisplay
-            :price="product.price"
-            :includeTax="props.includeTax !== undefined ? !!props.includeTax : includeTax"
-            priceSize="text-sm"
-          />
+          <div class="propeller-product-card__price">
+            <ProductPriceDisplay
+              :price="product.price"
+              :includeTax="props.includeTax !== undefined ? !!props.includeTax : includeTax"
+              priceSize="text-sm"
+            />
+          </div>
         </template>
 
-        <div class="flex-shrink-0 ml-auto">
+        <div class="propeller-product-card__cta flex-shrink-0 ml-auto">
           <AddToCart
             :graphqlClient="props.graphqlClient"
             :user="props.user"
@@ -169,16 +173,16 @@
     </template>
 
     <template v-if="!isRow()">
-      <div class="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+      <div class="propeller-product-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
         <template v-if="showSku !== false && !!getProductSku()">
-          <div class="font-mono text-xs text-gray-400">
+          <div class="propeller-product-card__sku font-mono text-xs text-gray-400">
             {{ getProductSku() }}
           </div>
         </template>
 
         <template v-if="showName !== false">
           <a
-            class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
+            class="propeller-product-card__title text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
             :href="getProductUrl()"
             @click="async (e) => handleProductClick(e)"
             >{{ getProductName() }}</a
@@ -186,9 +190,9 @@
         </template>
 
         <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
-          <div class="flex flex-col gap-0.5">
+          <div class="propeller-product-card__labels flex flex-col gap-0.5">
             <template :key="index" v-for="(item, index) in computedTextLabels()">
-              <div class="text-xs text-gray-500">{{ item.value }}</div>
+              <div class="propeller-product-card__label text-xs text-gray-500">{{ item.value }}</div>
             </template>
           </div>
         </template>
@@ -203,19 +207,19 @@
         </template>
 
         <template v-if="showManufacturer && !!getProductManufacturer()">
-          <div class="text-xs text-gray-500">
+          <div class="propeller-product-card__manufacturer text-xs text-gray-500">
             {{ getProductManufacturer() }}
           </div>
         </template>
 
         <template v-if="showShortDescription && !!getProductShortDescription()">
-          <p class="line-clamp-2 text-xs text-gray-500">
+          <p class="propeller-product-card__description line-clamp-2 text-xs text-gray-500">
             {{ getProductShortDescription() }}
           </p>
         </template>
 
         <template v-if="showPrice !== false && !!product?.price">
-          <div class="mt-auto pt-1">
+          <div class="propeller-product-card__price mt-auto pt-1">
             <ProductPriceDisplay
               :price="product.price"
               :includeTax="props.includeTax !== undefined ? !!props.includeTax : includeTax"
@@ -226,7 +230,7 @@
       </div>
 
       <template v-if="props.allowAddToCart !== false">
-        <div class="px-3 pb-3 sm:px-4 sm:pb-4">
+        <div class="propeller-product-card__cta px-3 pb-3 sm:px-4 sm:pb-4">
           <AddToCart
             :graphqlClient="props.graphqlClient"
             :user="props.user"

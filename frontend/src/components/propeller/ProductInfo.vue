@@ -1,9 +1,12 @@
 <template>
-  <div :class="`product-info ${className || ''}`">
+  <div
+    :class="`propeller-product-info ${className || ''}`"
+    :data-loading="loading ? 'true' : 'false'"
+  >
     <template v-if="loading && !product">
-      <div class="animate-pulse space-y-3">
-        <div class="h-4 bg-slate-100 rounded w-1/4"></div>
-        <div class="h-8 bg-slate-100 rounded w-3/4"></div>
+      <div class="propeller-product-info__skeleton animate-pulse space-y-3">
+        <div class="propeller-product-info__skeleton-line h-4 bg-muted rounded w-1/4"></div>
+        <div class="propeller-product-info__skeleton-line h-8 bg-muted rounded w-3/4"></div>
       </div>
     </template>
 

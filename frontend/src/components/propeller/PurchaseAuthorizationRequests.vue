@@ -1,8 +1,8 @@
 <template>
-  <div :class="`purchase-authorization-requests ${className || ''}`">
+  <div :class="`propeller-purchase-authorization-requests ${className || ''}`">
     <template v-if="isAuthManager">
-      <div class="space-y-4">
-        <h2 class="text-xl font-semibold">
+      <div class="propeller-purchase-authorization-requests__content space-y-4">
+        <h2 class="propeller-purchase-authorization-requests__title text-xl font-semibold">
           {{ getLabel('title', 'Authorization Requests') }}
         </h2>
         <template v-if="loading">
@@ -78,20 +78,20 @@
         </template>
 
         <template v-if="!!selectedCart">
-          <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div class="fixed inset-0 bg-gray-500/20" @click="async (event) => closeModal()"></div>
+          <div class="propeller-purchase-authorization-requests__modal fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div class="propeller-purchase-authorization-requests__modal-backdrop fixed inset-0 bg-gray-500/20" @click="async (event) => closeModal()"></div>
             <div
-              class="relative w-full max-w-2xl bg-white rounded-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+              class="propeller-purchase-authorization-requests__modal-content relative w-full max-w-2xl bg-white rounded-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
             >
               <div
-                class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0"
+                class="propeller-purchase-authorization-requests__modal-header flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0"
               >
-                <h3 class="text-base font-semibold text-gray-900">
+                <h3 class="propeller-purchase-authorization-requests__modal-title text-base font-semibold text-gray-900">
                   {{ getLabel('modalTitle', 'Authorization Request') }}
                 </h3>
                 <button
                   type="button"
-                  class="text-gray-400 hover:text-gray-600 focus:outline-none"
+                  class="propeller-purchase-authorization-requests__modal-close text-gray-400 hover:text-gray-600 focus:outline-none"
                   @click="async (event) => closeModal()"
                 >
                   <svg
@@ -120,7 +120,7 @@
               <template v-if="!modalLoading">
                 <div class="overflow-y-auto flex-1 px-6 py-5 space-y-6">
                   <div>
-                    <h4 class="text-sm font-semibold text-gray-700 mb-2">
+                    <h4 class="propeller-purchase-authorization-requests__modal-section-title text-sm font-semibold text-gray-700 mb-2">
                       {{ getLabel('requesterInfo', 'Requester') }}
                     </h4>
                     <p class="text-sm font-medium">
@@ -131,7 +131,7 @@
                     </p>
                   </div>
                   <div>
-                    <h4 class="text-sm font-semibold text-gray-700 mb-2">
+                    <h4 class="propeller-purchase-authorization-requests__modal-section-title text-sm font-semibold text-gray-700 mb-2">
                       {{ getLabel('itemsTitle', 'Items') }}
                     </h4>
                     <div class="overflow-x-auto rounded border border-border">
@@ -201,16 +201,16 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
+                <div class="propeller-purchase-authorization-requests__modal-actions flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
                   <button
                     type="button"
-                    class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    class="propeller-purchase-authorization-requests__modal-cancel flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     @click="async (event) => closeModal()"
                   >
                     {{ getLabel('cancel', 'Cancel') }}</button
                   ><button
                     type="button"
-                    class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="propeller-purchase-authorization-requests__modal-accept flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     @click="async (event) => handleAcceptRequest()"
                     :disabled="acceptLoading"
                   >

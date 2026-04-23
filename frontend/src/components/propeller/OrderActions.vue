@@ -1,9 +1,9 @@
 <template>
-  <div :class="className">
-    <div class="flex flex-row items-center gap-3 flex-shrink-0">
+  <div :class="`propeller-order-actions ${className || ''}`">
+    <div class="propeller-order-actions__actions flex flex-row items-center gap-3 flex-shrink-0">
       <button
         type="button"
-        class="text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+        class="propeller-order-actions__pdf-btn text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
         @click="async (event) => handleDownloadPDF()"
         :disabled="downloading"
       >
@@ -16,7 +16,7 @@
         </template></button
       ><button
         type="button"
-        class="text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+        class="propeller-order-actions__reorder-btn text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
         @click="async (event) => handleReorder()"
         :disabled="reordering"
       >
@@ -31,15 +31,16 @@
     </div>
     <template v-if="toastVisible">
       <div
-        :class="`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${
+        :class="`propeller-order-actions__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-[var(--radius-container)] shadow-lg p-4 ${
           toastType === 'success'
-            ? 'bg-green-50 border border-green-200'
-            : 'bg-red-50 border border-red-200'
+            ? 'bg-success/10 border border-success'
+            : 'bg-destructive/10 border border-destructive'
         }`"
+        :data-toast-type="toastType"
       >
         <div
-          :class="`flex-shrink-0 w-5 h-5 mt-0.5 ${
-            toastType === 'success' ? 'text-green-500' : 'text-red-500'
+          :class="`propeller-order-actions__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${
+            toastType === 'success' ? 'text-success' : 'text-destructive'
           }`"
         >
           <template v-if="toastType === 'success'">
@@ -59,8 +60,8 @@
           </template>
         </div>
         <p
-          :class="`flex-1 text-sm font-medium ${
-            toastType === 'success' ? 'text-green-800' : 'text-red-800'
+          :class="`propeller-order-actions__toast-message flex-1 text-sm font-medium ${
+            toastType === 'success' ? 'text-success' : 'text-destructive'
           }`"
         >
           {{ toastMessage }}
@@ -68,10 +69,10 @@
         <button
           type="button"
           @click="async (event) => dismissToast()"
-          :class="`flex-shrink-0 rounded focus:outline-none ${
+          :class="`propeller-order-actions__toast-close flex-shrink-0 rounded focus:outline-none ${
             toastType === 'success'
-              ? 'text-green-400 hover:text-green-600'
-              : 'text-red-400 hover:text-red-600'
+              ? 'text-success hover:text-success'
+              : 'text-destructive hover:text-destructive'
           }`"
         >
           <svg

@@ -8,7 +8,7 @@
         <template v-for="(label, i) in stepLabels" :key="label">
           <div v-if="i > 0" class="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
           <div :class="['flex items-center gap-2', currentStep === i + 1 ? 'text-primary font-bold' : currentStep > i + 1 ? 'text-secondary' : 'text-muted-foreground']">
-            <div :class="['w-8 h-8 rounded-full flex items-center justify-center border-2 text-sm', currentStep === i + 1 ? 'border-primary bg-primary text-white' : currentStep > i + 1 ? 'border-secondary bg-secondary/10 text-secondary' : 'border-muted-foreground/30']">
+            <div :class="['w-8 h-8 rounded-full flex items-center justify-center border-2 text-sm', currentStep === i + 1 ? 'border-primary bg-primary text-primary-foreground' : currentStep > i + 1 ? 'border-secondary bg-secondary/10 text-secondary' : 'border-muted-foreground/30']">
               <svg v-if="currentStep > i + 1" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
@@ -21,12 +21,12 @@
 
       <div class="flex flex-col lg:flex-row gap-8">
         <div class="lg:w-2/3 space-y-6">
-          <div v-if="error" class="bg-destructive/10 border border-destructive/20 p-4 rounded-md text-destructive text-sm font-medium">
+          <div v-if="error" class="bg-destructive/10 border border-destructive/20 p-4 rounded-[var(--radius-control)] text-destructive text-sm font-medium">
             {{ error }}
           </div>
 
           <!-- Step 1: Invoice Address -->
-          <div :class="['bg-white rounded-lg shadow border', currentStep === 1 ? 'ring-2 ring-primary border-primary' : 'opacity-80']">
+          <div :class="['bg-card rounded-[var(--radius-container)] shadow border', currentStep === 1 ? 'ring-2 ring-primary border-primary' : 'opacity-80']">
             <div
               class="p-6 cursor-pointer"
               @click="currentStep > 1 && (currentStep = 1)"
@@ -69,7 +69,7 @@
                   <input
                     type="checkbox"
                     v-model="sameAsInvoice"
-                    class="rounded border-gray-300 text-primary focus:ring-primary"
+                    class="rounded border-input text-primary focus:ring-primary"
                   />
                   Delivery address same as invoice address
                 </label>
@@ -77,7 +77,7 @@
               <button
                 v-if="cart?.invoiceAddress?.street"
                 @click="currentStep = 2"
-                class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition"
+                class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] hover:bg-primary/90 transition"
               >
                 Confirm Invoice Address
               </button>
@@ -85,7 +85,7 @@
           </div>
 
           <!-- Step 2: Delivery Address -->
-          <div :class="['bg-white rounded-lg shadow border', currentStep === 2 ? 'ring-2 ring-primary border-primary' : 'opacity-80']">
+          <div :class="['bg-card rounded-[var(--radius-container)] shadow border', currentStep === 2 ? 'ring-2 ring-primary border-primary' : 'opacity-80']">
             <div
               class="p-6 cursor-pointer"
               @click="currentStep > 2 && (currentStep = 2)"
@@ -115,8 +115,8 @@
                   :countries="COUNTRIES"
                 />
                 <div class="flex items-center gap-4">
-                  <button @click="currentStep = 1" class="px-6 py-2 border rounded-lg hover:bg-gray-50 transition">Back</button>
-                  <button @click="currentStep = 3" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition">Confirm Delivery Address</button>
+                  <button @click="currentStep = 1" class="px-6 py-2 border rounded-[var(--radius-container)] hover:bg-surface-hover transition">Back</button>
+                  <button @click="currentStep = 3" class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] hover:bg-primary/90 transition">Confirm Delivery Address</button>
                   <AddressSelector
                     v-if="authStore.isAuthenticated"
                     :user="authStore.user as Contact | Customer | null"
@@ -146,7 +146,7 @@
           <!-- Step 3: Payment & Delivery (normal mode only) -->
           <div
             v-if="!isQuoteMode"
-            :class="['bg-white rounded-lg shadow border', currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80']"
+            :class="['bg-card rounded-[var(--radius-container)] shadow border', currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80']"
           >
             <div
               class="p-6 cursor-pointer"
@@ -192,8 +192,8 @@
                 />
               </div>
               <div class="flex gap-4 pt-4">
-                <button @click="currentStep = 2" class="px-6 py-2 border rounded-lg hover:bg-gray-50 transition">Back</button>
-                <button @click="handleStep3Continue" :disabled="loading" class="bg-primary text-white px-6 py-2 rounded-lg disabled:opacity-50 hover:bg-primary/90 transition">
+                <button @click="currentStep = 2" class="px-6 py-2 border rounded-[var(--radius-container)] hover:bg-surface-hover transition">Back</button>
+                <button @click="handleStep3Continue" :disabled="loading" class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] disabled:opacity-50 hover:bg-primary/90 transition">
                   {{ loading ? 'Saving...' : 'Continue to Review' }}
                 </button>
               </div>
@@ -201,37 +201,37 @@
           </div>
 
           <!-- Step 3 (quote) / Step 4 (normal): Review -->
-          <div :class="['bg-white rounded-lg shadow border', currentStep === reviewStep ? 'ring-2 ring-primary border-primary' : 'opacity-80']">
+          <div :class="['bg-card rounded-[var(--radius-container)] shadow border', currentStep === reviewStep ? 'ring-2 ring-primary border-primary' : 'opacity-80']">
             <div class="p-6">
               <h2 class="text-lg font-semibold">{{ reviewStep }}. {{ isQuoteMode ? 'Quote Details' : 'Review & Place Order' }}</h2>
             </div>
             <div v-if="currentStep === reviewStep" class="px-6 pb-6 space-y-6">
               <template v-if="isQuoteMode">
                 <div class="space-y-2">
-                  <label class="text-sm font-medium text-gray-700" for="quote-reference">Reference</label>
+                  <label class="text-sm font-medium text-muted-foreground" for="quote-reference">Reference</label>
                   <input
                     id="quote-reference"
                     type="text"
                     v-model="quoteReference"
                     placeholder="Your reference (optional)"
                     maxlength="255"
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
                 <div class="space-y-2">
-                  <label class="text-sm font-medium text-gray-700" for="quote-notes">Notes</label>
+                  <label class="text-sm font-medium text-muted-foreground" for="quote-notes">Notes</label>
                   <textarea
                     id="quote-notes"
                     v-model="quoteNotes"
                     placeholder="Additional notes for your quote request (optional)"
                     rows="4"
                     maxlength="255"
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                    class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                   />
                 </div>
                 <div class="flex gap-4 pt-2">
-                  <button @click="currentStep = 2" class="px-6 py-2 border rounded-lg hover:bg-gray-50 transition">Back</button>
-                  <button @click="handlePlaceOrder(quoteReference || undefined, quoteNotes || undefined)" :disabled="loading" class="bg-primary text-white px-6 py-2 rounded-lg disabled:opacity-50 hover:bg-primary/90 transition">
+                  <button @click="currentStep = 2" class="px-6 py-2 border rounded-[var(--radius-container)] hover:bg-surface-hover transition">Back</button>
+                  <button @click="handlePlaceOrder(quoteReference || undefined, quoteNotes || undefined)" :disabled="loading" class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] disabled:opacity-50 hover:bg-primary/90 transition">
                     {{ loading ? 'Submitting...' : 'Place Quote Request' }}
                   </button>
                 </div>
