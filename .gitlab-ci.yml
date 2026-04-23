@@ -46,6 +46,36 @@ deploy:dev:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
+# STAGING (staging branch)
+
+buildFrontend:staging:
+  stage: build
+  needs: ["getSource"]
+  script:
+    - devbox run build-frontend-staging
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+
+# buildCMS:staging:
+#   stage: build
+#   needs: ["getSource"]
+#   script:
+#     - devbox run build-cms-staging
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "staging"
+
+deploy:staging:
+  stage: deploy
+  #needs: ["buildFrontend:staging", "buildCMS:staging"]
+  needs: ["buildFrontend:staging"]
+  variables:
+    USER_PROD: "vueboilerplatestage"
+  script:
+    #- sudo -u ${USER_PROD} bash -c "cd /home/${USER_PROD}/public_html; devbox run deploy-prod"
+    - sudo -u ${USER_PROD} bash -c "cd /home/${USER_PROD}/public_html; devbox run deploy-frontend-staging"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+
 # PROD (master branch)
 
 buildFrontend:prod:
