@@ -21,7 +21,7 @@
           class="w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-gray-500"
           :placeholder="placeholder"
           :value="searchTerm"
-          @change="async (e) => handleInputChange(e.target.value)"
+          @input="async (e) => handleInputChange((e.target as HTMLInputElement).value)"
         />
         <template v-if="isLoading">
           <div class="absolute right-3 top-1/2 transform -translate-y-1/2">

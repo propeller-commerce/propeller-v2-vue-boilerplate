@@ -4,9 +4,15 @@ import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  const graphqlEndpoint = env.VITE_GRAPHQL_ENDPOINT || 'https://api.staging.helice.cloud/v2/graphql'
+  // .env lives one level up from frontend/
+  const env = loadEnv(mode, resolve(__dirname, '..'), '')
+  const graphqlEndpoint = env.VITE_GRAPHQL_ENDPOINT || 'https://api.helice.cloud/v2/graphql'
   const apiKey = env.VITE_API_KEY || ''
+  const orderEditorApiKey = env.VITE_ORDER_EDITOR_API_KEY || ''
+
+  const endpointUrl = new URL(graphqlEndpoint)
+  const proxyTarget = endpointUrl.origin
+  const proxyRewritePath = endpointUrl.pathname
 
   return {
     plugins: [
@@ -29,12 +35,23 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api/graphql': {
-          target: 'https://api.staging.helice.cloud',
+          target: proxyTarget,
           changeOrigin: true,
-          rewrite: (path) => '/v2/graphql',
+          rewrite: () => proxyRewritePath,
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq) => {
               proxyReq.setHeader('apikey', apiKey)
+              proxyReq.setHeader('Content-Type', 'application/json')
+            })
+          },
+        },
+        '/api/order-editor': {
+          target: proxyTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace('/api/order-editor', ''),
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.setHeader('apikey', orderEditorApiKey)
               proxyReq.setHeader('Content-Type', 'application/json')
             })
           },

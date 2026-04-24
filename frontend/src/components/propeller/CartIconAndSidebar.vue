@@ -225,11 +225,11 @@
                     <template v-if="!isBundleItem(item)">
                       <div>
                         <div class="flex justify-between items-start gap-2">
-                          <a
+                          <router-link
                             class="text-sm font-medium leading-tight text-gray-900 hover:text-secondary transition-colors line-clamp-2"
-                            :href="getItemProductUrl(item)"
+                            :to="getItemProductUrl(item)"
                             @click="async (event) => closeSidebar()"
-                            >{{ getItemName(item) }}</a
+                            >{{ getItemName(item) }}</router-link
                           ><span class="font-semibold text-sm text-gray-900 whitespace-nowrap">
                             &euro;{{ item.totalSumNet.toFixed(2) }}</span
                           >

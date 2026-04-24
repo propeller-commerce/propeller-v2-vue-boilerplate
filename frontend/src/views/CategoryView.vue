@@ -3,7 +3,7 @@
     <div class="container-width">
       <Breadcrumbs
         v-if="category"
-        :categoryPath="(category as any).categoryPath || []"
+        :categoryPath="(category as Category).categoryPath || []"
         :language="languageStore.language"
         :configuration="configuration"
         :showCurrent="true"

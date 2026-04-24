@@ -110,8 +110,8 @@
                   :onCartCreated="onCartCreated"
                   :afterAddToCart="afterAddToCart"
                   :showModal="showModal"
-                  :allowIncrDecr="showIncrDecr !== false"
-                  :enableStockValidation="stockValidation"
+                  :allowIncrDecr="props.showIncrDecr !== false"
+                  :enableStockValidation="props.stockValidation"
                   :language="language"
                   :onProceedToCheckout="onProceedToCheckout"
                   :onRequestQuoteClick="onRequestQuoteClick"
@@ -336,6 +336,8 @@ const props = withDefaults(defineProps<ProductSliderProps>(), {
 });
 
 const langRef = computed(() => props.language || 'NL');
+const userRef = computed(() => props.user ?? null);
+const companyRef = computed(() => props.companyId);
 const sliderRef = ref<HTMLElement | null>(null);
 
 const {
@@ -351,6 +353,9 @@ const {
 } = useProductSlider({
   graphqlClient: props.graphqlClient,
   language: langRef,
+  user: userRef,
+  companyId: companyRef,
+  taxZone: props.taxZone,
   configuration: props.configuration,
 });
 

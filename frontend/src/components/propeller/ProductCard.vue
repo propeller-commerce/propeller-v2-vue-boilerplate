@@ -10,9 +10,9 @@
           isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'
         }`"
       >
-        <a
+        <router-link
           class="block h-full w-full"
-          :href="getProductUrl()"
+          :to="getProductUrl()"
           @click="async (e) => handleProductClick(e)"
         >
           <template v-if="!!getProductImageUrl()">
@@ -35,7 +35,7 @@
               </svg>
             </div>
           </template>
-        </a>
+        </router-link>
         <template
           v-if="!!imageLabels && imageLabels.length > 0 && computedImageLabels().length > 0"
         >
@@ -92,11 +92,11 @@
           </template>
 
           <template v-if="showName !== false">
-            <a
+            <router-link
               class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
-              :href="getProductUrl()"
+              :to="getProductUrl()"
               @click="async (e) => handleProductClick(e)"
-              >{{ getProductName() }}</a
+              >{{ getProductName() }}</router-link
             >
           </template>
 
@@ -177,11 +177,11 @@
         </template>
 
         <template v-if="showName !== false">
-          <a
+          <router-link
             class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
-            :href="getProductUrl()"
+            :to="getProductUrl()"
             @click="async (e) => handleProductClick(e)"
-            >{{ getProductName() }}</a
+            >{{ getProductName() }}</router-link
           >
         </template>
 

@@ -18,13 +18,16 @@
       <ProductSlider
         :graphqlClient="graphqlClient"
         :user="authStore.user as Contact | Customer"
-        :productIds="[1531, 5400, 5404, 1620, 5395, 5396]"
-        :cartId="cartStore.cartId || undefined"
+        :productIds="[140, 64, 1382, 142, 146, 145]"
         :taxZone="configuration.taxZone"
+        :cartId="cartStore.cartId || undefined"
+        :createCart="true"
+        :showModal="true"
         :language="languageStore.language"
         :includeTax="priceStore.includeTax"
         :configuration="configuration"
-        :onCartCreated="(cart: any) => cartStore.setCart(cart)"
+        :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+        :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
         title="Featured Products"
       />
     </div>
@@ -40,7 +43,7 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient, productService } from '@/lib/api'
 import { configuration } from '@/lib/config'
 import ProductSlider from '@/components/propeller/ProductSlider.vue'
-import type { Cluster, Contact, Customer, Product } from 'propeller-sdk-v2'
+import type { Cart, Cluster, Contact, Customer, Product } from 'propeller-sdk-v2'
 
 const authStore = useAuthStore()
 const cartStore = useCartStore()

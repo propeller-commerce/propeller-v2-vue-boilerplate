@@ -194,10 +194,10 @@
               </template>
 
               <div class="flex-1 min-w-0">
-                <a
+                <router-link
                   class="text-sm font-medium text-secondary leading-tight hover:underline line-clamp-2"
-                  :href="getProductUrl()"
-                  >{{ getModalName() }}</a
+                  :to="getProductUrl()"
+                  >{{ getModalName() }}</router-link
                 >
                 <template v-if="!!getModalSku()">
                   <p class="text-xs text-gray-400 mt-0.5">SKU: {{ getModalSku() }}</p>
