@@ -71,6 +71,7 @@
           >
             <OrderSummary
               :order="order"
+              :countries="COUNTRIES"
               title="Order Summary"
               :showReference="true"
               :showNotes="true"
@@ -114,19 +115,18 @@
                     </th>
                   </tr>
                 </thead>
-                <tbody>
-                  <OrderItemCard
-                    v-for="item in parentItems"
-                    :key="item.id"
-                    :orderItem="item"
-                    :childItems="childMap.get(item.id) || []"
-                    :titleLinkable="true"
-                    :showImage="true"
-                    :showSku="true"
-                    :showQuantity="true"
-                    :showPrice="true"
-                  />
-                </tbody>
+
+                <OrderItemCard
+                  v-for="item in parentItems"
+                  :key="item.id"
+                  :orderItem="item"
+                  :childItems="childMap.get(item.id) || []"
+                  :titleLinkable="true"
+                  :showImage="true"
+                  :showSku="true"
+                  :showQuantity="true"
+                  :showPrice="true"
+                />
               </table>
             </div>
 
@@ -243,6 +243,7 @@ import { useOrders } from "@/composables/useOrders";
 import type { AnyUser } from "@/composables/shared/utils/userIdentity";
 import OrderSummary from "@/components/propeller/OrderSummary.vue";
 import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
+import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const route = useRoute();
 const authStore = useAuthStore();

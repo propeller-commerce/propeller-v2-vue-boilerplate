@@ -120,19 +120,12 @@ import { useAddress } from '@/composables/useAddress'
 import type { AddressInput } from '@/composables/useAddress'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import AddressCard from '@/components/propeller/AddressCard.vue'
+import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 
-const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-]
-
+// COUNTRIES imported from shared utils
 const showAddModal = ref(false)
 const addModalType = ref<Enums.AddressType>(Enums.AddressType.invoice)
 

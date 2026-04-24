@@ -289,8 +289,8 @@ const productSlug = computed(() => {
   return props.orderItem?.product?.slugs?.[0]?.value || "";
 });
 const productUrl = computed(() => {
-  if (productId && productSlug) {
-    return "/product/" + productId + "/" + productSlug;
+  if (productId.value && productSlug.value) {
+    return "/product/" + productId.value + "/" + productSlug.value;
   }
   return "";
 });

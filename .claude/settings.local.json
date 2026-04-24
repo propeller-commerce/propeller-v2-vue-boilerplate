@@ -18,7 +18,10 @@
       "Read(//c/workspace/**)",
       "Read(//c//**)",
       "Bash(npx vue-tsc *)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Read(//c/Users/tinka/.claude/projects/c--workspace-vue-boilerplate/**)",
+      "Read(//c/Users/tinka/.claude/projects//**)",
+      "Bash(awk '/const COUNTRIES = \\\\[/,/\\\\];/' c:/workspace/nextDemo/app/checkout/page.tsx)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

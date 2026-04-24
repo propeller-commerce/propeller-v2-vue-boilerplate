@@ -480,6 +480,7 @@ import CartOverview from "@/components/propeller/CartOverview.vue";
 import ItemsOverview from "@/components/propeller/ItemsOverview.vue";
 import AddressCard from "@/components/propeller/AddressCard.vue";
 import AddressSelector from "@/components/propeller/AddressSelector.vue";
+import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const router = useRouter();
 const route = useRoute();
@@ -524,15 +525,7 @@ const quoteReference = ref("");
 const quoteNotes = ref("");
 const orderPlaced = ref(false);
 
-const COUNTRIES = [
-  { code: "NL", name: "Netherlands" },
-  { code: "BE", name: "Belgium" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "UK", name: "United Kingdom" },
-  { code: "US", name: "United States" },
-];
-
+// COUNTRIES imported from shared utils
 let lastInitCart: any = null;
 
 async function initializeCheckout() {

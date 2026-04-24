@@ -215,16 +215,9 @@ import OrderSummary from "@/components/propeller/OrderSummary.vue";
 import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
 import QuoteActions from "@/components/propeller/QuoteActions.vue";
 import OrderTotals from "@/components/propeller/OrderTotals.vue";
+import { COUNTRIES } from "@/composables/shared/utils/countries";
 
-const COUNTRIES = [
-  { code: "NL", name: "Netherlands" },
-  { code: "BE", name: "Belgium" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "UK", name: "United Kingdom" },
-  { code: "US", name: "United States" },
-];
-
+// COUNTRIES imported from shared utils
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();

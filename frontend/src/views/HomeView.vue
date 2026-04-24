@@ -25,6 +25,18 @@
         :includeTax="priceStore.includeTax"
         :configuration="configuration"
         :onCartCreated="(cart: any) => cartStore.setCart(cart)"
+        :onProductClick="
+          (p: Product) =>
+            router.push(
+              configuration.urls.getProductUrl(p, languageStore.language),
+            )
+        "
+        :onClusterClick="
+          (c: Cluster) =>
+            router.push(
+              configuration.urls.getClusterUrl(c, languageStore.language),
+            )
+        "
         title="Featured Products"
       />
     </div>
@@ -33,6 +45,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { usePriceStore } from '@/stores/price'
@@ -42,6 +55,7 @@ import { configuration } from '@/lib/config'
 import ProductSlider from '@/components/propeller/ProductSlider.vue'
 import type { Cluster, Contact, Customer, Product } from 'propeller-sdk-v2'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const priceStore = usePriceStore()

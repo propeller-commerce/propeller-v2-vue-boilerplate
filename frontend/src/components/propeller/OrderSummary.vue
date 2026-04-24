@@ -256,6 +256,7 @@ import type { Order } from "propeller-sdk-v2";
 import { computed } from "vue";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
+import { getCountryName as _getCountryName } from "../../composables/shared/utils/countries";
 
 export interface OrderSummaryProps {
   /** The order object from propeller-sdk-v2 */
@@ -441,12 +442,7 @@ function getLabel(
 function getCountryName(
   code: string,
 ): ReturnType<OrderSummaryState["getCountryName"]> {
-  if (!code) return "";
-  const list = props.countries || [];
-  for (let i = 0; i < list.length; i++) {
-    if (list[i].code === code) return list[i].name;
-  }
-  return code;
+  return _getCountryName(code, props.countries);
 }
 function formatOrderDate(
   dateString: string,

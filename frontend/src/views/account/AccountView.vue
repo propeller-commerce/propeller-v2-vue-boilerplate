@@ -27,17 +27,11 @@ import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
 import UserDetails from '@/components/propeller/UserDetails.vue'
 import type { Company, Contact, Customer } from 'propeller-sdk-v2'
+import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
 
-const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-]
+// COUNTRIES imported from shared utils
 </script>

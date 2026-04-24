@@ -179,6 +179,7 @@
 import { onMounted, ref } from 'vue';
 
 import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
+import { getCountryName as _getCountryName } from '../../composables/shared/utils/countries';
 
 export interface UserDetailsProps {
   /** The currently logged in user (Contact or Customer) */
@@ -308,12 +309,7 @@ function getAddressLine2(addr: Address): ReturnType<UserDetailsState['getAddress
   return parts.join(' ');
 }
 function getCountryName(code: string): ReturnType<UserDetailsState['getCountryName']> {
-  if (!code) return '';
-  const list = props.countries || [];
-  for (let i = 0; i < list.length; i++) {
-    if (list[i].code === code) return list[i].name;
-  }
-  return code;
+  return _getCountryName(code, props.countries);
 }
 function shouldShowCompanyInfo(): ReturnType<UserDetailsState['shouldShowCompanyInfo']> {
   return props.showCompanyInfo !== false && isContact();
