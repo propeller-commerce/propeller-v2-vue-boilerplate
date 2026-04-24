@@ -97,8 +97,8 @@
                 v-if="authStore.user"
                 :graphqlClient="graphqlClient"
                 :user="authStore.user as Contact | Customer"
-                :product="product as Product"
-                :language="languageStore.language"
+                :productId="product.productId"
+                :onFavoriteChanged="() => authStore.refreshUser()"
               />
             </div>
           </div>

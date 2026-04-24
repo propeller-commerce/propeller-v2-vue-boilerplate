@@ -222,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import {
   FavoriteList,
@@ -293,6 +293,10 @@ const addLoading = ref<AddToFavoriteState["addLoading"]>(false);
 const removeLoading = ref<AddToFavoriteState["removeLoading"]>(false);
 const _isMounted = ref<AddToFavoriteState["_isMounted"]>(false);
 
+onMounted(() => {
+  _isMounted.value = true;
+});
+
 const isFavorited = computed(() => {
   return memberListIds.value.size > 0;
 });
@@ -306,7 +310,9 @@ const itemId = computed(() => {
 watch(
   () => [props.user, props.productId, props.clusterId],
   () => {
-    if (!props.user || !itemId) return;
+    if (!props.user || !itemId.value) return;
+    const currentItemId = itemId.value;
+    const currentIsProduct = isProduct.value;
     const userLists = (props.user as any)?.favoriteLists?.items as
       | FavoriteList[]
       | undefined;
@@ -327,16 +333,16 @@ watch(
             }[];
           }
         | undefined;
-      if (isProduct) {
-        if (productsRef?.items?.some((item) => item.productId === itemId)) {
+      if (currentIsProduct) {
+        if (productsRef?.items?.some((item) => item.productId === currentItemId)) {
           memberIds.add(String(list.id));
         }
       } else {
         const inProducts = productsRef?.items?.some(
-          (item) => item.clusterId === itemId,
+          (item) => item.clusterId === currentItemId,
         );
         const inClusters = clustersRef?.items?.some(
-          (item) => item.clusterId === itemId,
+          (item) => item.clusterId === currentItemId,
         );
         if (inProducts || inClusters) {
           memberIds.add(String(list.id));

@@ -121,7 +121,7 @@
                 :graphqlClient="graphqlClient"
                 :user="authStore.user"
                 :clusterId="clusterId"
-                :language="languageStore.language"
+                :onFavoriteChanged="() => authStore.refreshUser()"
               />
             </div>
           </div>
