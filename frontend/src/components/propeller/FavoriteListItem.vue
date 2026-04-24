@@ -2,11 +2,13 @@
   <div
     @click="async (e) => handleItemClick(e)"
     :data-type="isProduct() ? 'product' : 'cluster'"
-    :class="`propeller-favorite-list-item flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${
+    :class="`propeller-favorite-list-item flex flex-row items-center gap-4 rounded-[var(--radius-container)] border border-border bg-card p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${
       className || ''
     }`"
   >
-    <div class="propeller-favorite-list-item__media relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
+    <div
+      class="propeller-favorite-list-item__media relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-[var(--radius-control)] bg-surface-hover p-1"
+    >
       <template v-if="titleLinkable !== false">
         <a
           class="block h-full w-full"
@@ -14,12 +16,23 @@
           @click="async (e) => handleItemClick(e)"
         >
           <template v-if="!!getImageUrl()">
-            <img class="propeller-favorite-list-item__image h-full w-full object-contain" :src="getImageUrl()" :alt="getName()" />
+            <img
+              class="propeller-favorite-list-item__image h-full w-full object-contain"
+              :src="getImageUrl()"
+              :alt="getName()"
+            />
           </template>
 
           <template v-if="!getImageUrl()">
-            <div class="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-gray-200">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-8 w-8">
+            <div
+              class="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle"
+            >
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                class="h-8 w-8"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -35,12 +48,23 @@
       <template v-if="titleLinkable === false">
         <div class="block h-full w-full">
           <template v-if="!!getImageUrl()">
-            <img class="propeller-favorite-list-item__image h-full w-full object-contain" :src="getImageUrl()" :alt="getName()" />
+            <img
+              class="propeller-favorite-list-item__image h-full w-full object-contain"
+              :src="getImageUrl()"
+              :alt="getName()"
+            />
           </template>
 
           <template v-if="!getImageUrl()">
-            <div class="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-gray-200">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-8 w-8">
+            <div
+              class="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle"
+            >
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                class="h-8 w-8"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -53,14 +77,19 @@
         </div>
       </template>
     </div>
-    <div class="propeller-favorite-list-item__body flex flex-col gap-0.5 min-w-0 flex-1">
+    <div
+      class="propeller-favorite-list-item__body flex flex-col gap-0.5 min-w-0 flex-1"
+    >
       <template v-if="showSku !== false && !!getSku()">
-        <span class="propeller-favorite-list-item__sku font-mono text-xs text-gray-400">{{ getSku() }}</span>
+        <span
+          class="propeller-favorite-list-item__sku font-mono text-xs text-foreground-subtle"
+          >{{ getSku() }}</span
+        >
       </template>
 
       <template v-if="titleLinkable !== false">
         <a
-          class="propeller-favorite-list-item__title text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-secondary line-clamp-1"
+          class="propeller-favorite-list-item__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-secondary line-clamp-1"
           :href="getItemUrl()"
           @click="async (e) => handleItemClick(e)"
           >{{ getName() }}</a
@@ -68,12 +97,15 @@
       </template>
 
       <template v-if="titleLinkable === false">
-        <span class="propeller-favorite-list-item__title text-sm font-medium leading-tight text-gray-900 line-clamp-1">{{
-          getName()
-        }}</span>
+        <span
+          class="propeller-favorite-list-item__title text-sm font-medium leading-tight text-foreground line-clamp-1"
+          >{{ getName() }}</span
+        >
       </template>
     </div>
-    <template v-if="showStockComponent && isProduct() && !!getProduct().inventory">
+    <template
+      v-if="showStockComponent && isProduct() && !!getProduct().inventory"
+    >
       <div class="flex-shrink-0">
         <ItemStock
           :inventory="getProduct().inventory"
@@ -85,34 +117,48 @@
     </template>
 
     <template v-if="showStockComponent && !isProduct()">
-      <template v-if="getCluster()?.defaultProduct?.inventory?.totalQuantity !== undefined">
+      <template
+        v-if="
+          getCluster()?.defaultProduct?.inventory?.totalQuantity !== undefined
+        "
+      >
         <div class="propeller-favorite-list-item__stock flex-shrink-0">
-          <template v-if="(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5">
+          <template
+            v-if="
+              (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5
+            "
+          >
             <span
-              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-green-600 bg-green-50"
+              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-success bg-success/10"
               data-stock="in"
-              >{{ getLabel('inStock', 'In stock') }}</span
+              >{{ getLabel("inStock", "In stock") }}</span
             >
           </template>
 
           <template
             v-if="
-              (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 0 &&
+              (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) >
+                0 &&
               (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) <= 5
             "
           >
             <span
-              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-amber-600 bg-amber-50"
+              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-warning bg-warning/10"
               data-stock="low"
-              >{{ getLabel('lowStock', 'Low stock') }}</span
+              >{{ getLabel("lowStock", "Low stock") }}</span
             >
           </template>
 
-          <template v-if="(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) === 0">
+          <template
+            v-if="
+              (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) ===
+              0
+            "
+          >
             <span
-              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-red-600 bg-red-50"
+              class="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-destructive bg-destructive/10"
               data-stock="out"
-              >{{ getLabel('outOfStock', 'Out of stock') }}</span
+              >{{ getLabel("outOfStock", "Out of stock") }}</span
             >
           </template>
         </div>
@@ -120,13 +166,19 @@
     </template>
 
     <template v-if="!!getItemPrice()">
-      <span class="propeller-favorite-list-item__price text-base font-bold text-gray-900 whitespace-nowrap flex-shrink-0">{{
-        getItemPrice()
-      }}</span>
+      <span
+        class="propeller-favorite-list-item__price text-base font-bold text-foreground whitespace-nowrap flex-shrink-0"
+        >{{ getItemPrice() }}</span
+      >
     </template>
 
-    <div class="propeller-favorite-list-item__actions flex items-center gap-2 flex-shrink-0" @click="async (e) => e.stopPropagation()">
-      <template v-if="allowAddToCart !== false && isProduct() && !!graphqlClient">
+    <div
+      class="propeller-favorite-list-item__actions flex items-center gap-2 flex-shrink-0"
+      @click="async (e) => e.stopPropagation()"
+    >
+      <template
+        v-if="allowAddToCart !== false && isProduct() && !!graphqlClient"
+      >
         <AddToCart
           :graphqlClient="graphqlClient"
           :user="user || null"
@@ -149,17 +201,17 @@
 
       <template v-if="!isProduct()">
         <a
-          class="propeller-favorite-list-item__view-cluster inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-secondary/90 whitespace-nowrap"
+          class="propeller-favorite-list-item__view-cluster inline-flex items-center justify-center rounded-[var(--radius-control)] bg-secondary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-secondary/90 whitespace-nowrap"
           :href="getItemUrl()"
           @click="async (e) => handleItemClick(e)"
-          >{{ getLabel('viewCluster', 'View cluster') }}</a
+          >{{ getLabel("viewCluster", "View cluster") }}</a
         >
       </template>
 
       <template v-if="showDelete !== false">
         <button
           type="button"
-          class="propeller-favorite-list-item__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+          class="propeller-favorite-list-item__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-[var(--radius-control)] text-foreground-subtle hover:text-destructive hover:bg-destructive/10 transition-colors"
           @click="async (event) => handleDelete()"
           :title="getLabel('delete', 'Remove from list')"
         >
@@ -194,12 +246,17 @@ import {
   Cart,
   CartMainItem,
   CartChildItemInput,
-} from 'propeller-sdk-v2';
-import AddToCart from './AddToCart.vue';
-import ItemStock from './ItemStock.vue';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { getProductImageUrl as _getProductImageUrl, getClusterImageUrl as _getClusterImageUrl, getProductSku as _getProductSku, getClusterSku as _getClusterSku } from '../../composables/shared/utils/productHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+} from "propeller-sdk-v2";
+import AddToCart from "./AddToCart.vue";
+import ItemStock from "./ItemStock.vue";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import {
+  getProductImageUrl as _getProductImageUrl,
+  getClusterImageUrl as _getClusterImageUrl,
+  getProductSku as _getProductSku,
+  getClusterSku as _getClusterSku,
+} from "../../composables/shared/utils/productHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface FavoriteListItemProps {
   /** Product or Cluster to be listed as a favorite list item */
@@ -269,7 +326,7 @@ export interface FavoriteListItemProps {
     childItems?: CartChildItemInput[],
     notes?: string,
     price?: number,
-    showModal?: boolean
+    showModal?: boolean,
   ) => Cart;
 
   /** Called after every successful add-to-cart */
@@ -324,60 +381,68 @@ const props = withDefaults(defineProps<FavoriteListItemProps>(), {
   showStock: false,
 });
 
-function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
-  return 'productId' in props.item;
+function isProduct(): ReturnType<FavoriteListItemState["isProduct"]> {
+  return "productId" in props.item;
 }
-function getProduct(): ReturnType<FavoriteListItemState['getProduct']> {
+function getProduct(): ReturnType<FavoriteListItemState["getProduct"]> {
   return props.item as Product;
 }
-function getCluster(): ReturnType<FavoriteListItemState['getCluster']> {
+function getCluster(): ReturnType<FavoriteListItemState["getCluster"]> {
   return props.item as Cluster;
 }
-function getName(): ReturnType<FavoriteListItemState['getName']> {
+function getName(): ReturnType<FavoriteListItemState["getName"]> {
   if (isProduct()) {
-    return getProduct()?.names?.[0]?.value || 'Product';
+    return getProduct()?.names?.[0]?.value || "Product";
   }
   return (
-    getCluster()?.names?.[0]?.value || getCluster()?.defaultProduct?.names?.[0]?.value || 'Cluster'
+    getCluster()?.names?.[0]?.value ||
+    getCluster()?.defaultProduct?.names?.[0]?.value ||
+    "Cluster"
   );
 }
-function getSku(): ReturnType<FavoriteListItemState['getSku']> {
+function getSku(): ReturnType<FavoriteListItemState["getSku"]> {
   if (isProduct()) return _getProductSku(getProduct());
   return _getClusterSku(getCluster());
 }
-function getImageUrl(): ReturnType<FavoriteListItemState['getImageUrl']> {
+function getImageUrl(): ReturnType<FavoriteListItemState["getImageUrl"]> {
   if (isProduct()) return _getProductImageUrl(getProduct());
   return _getClusterImageUrl(getCluster());
 }
-function getItemUrl(): ReturnType<FavoriteListItemState['getItemUrl']> {
+function getItemUrl(): ReturnType<FavoriteListItemState["getItemUrl"]> {
   if (isProduct()) {
-    return props.configuration?.urls?.getProductUrl?.(props.item) || '';
+    return props.configuration?.urls?.getProductUrl?.(props.item) || "";
   }
-  return props.configuration?.urls?.getClusterUrl?.(props.item) || '';
+  return props.configuration?.urls?.getClusterUrl?.(props.item) || "";
 }
-function getItemId(): ReturnType<FavoriteListItemState['getItemId']> {
+function getItemId(): ReturnType<FavoriteListItemState["getItemId"]> {
   if (isProduct()) {
-    return String(getProduct()?.productId || '');
+    return String(getProduct()?.productId || "");
   }
-  return String(getCluster()?.clusterId || '');
+  return String(getCluster()?.clusterId || "");
 }
-function getItemPrice(): ReturnType<FavoriteListItemState['getItemPrice']> {
-  const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : false;
+function getItemPrice(): ReturnType<FavoriteListItemState["getItemPrice"]> {
+  const useTax: boolean =
+    props.includeTax !== undefined ? !!props.includeTax : false;
   let priceObj: any = null;
   if (isProduct()) {
     priceObj = getProduct()?.price;
   } else {
     priceObj = getCluster()?.defaultProduct?.price;
   }
-  if (!priceObj) return '';
+  if (!priceObj) return "";
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
-  if (!value && value !== 0) return '';
-  return _formatPrice(Number(value), { symbol: '€' });
+  if (!value && value !== 0) return "";
+  return _formatPrice(Number(value), { symbol: "€" });
 }
-function getLabel(key: string, fallback: string): ReturnType<FavoriteListItemState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<FavoriteListItemState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function handleItemClick(e: any): ReturnType<FavoriteListItemState['handleItemClick']> {
+function handleItemClick(
+  e: any,
+): ReturnType<FavoriteListItemState["handleItemClick"]> {
   if (props.onItemClick) {
     e.preventDefault();
     props.onItemClick(props.item);
@@ -386,7 +451,7 @@ function handleItemClick(e: any): ReturnType<FavoriteListItemState['handleItemCl
     window.location.href = getItemUrl();
   }
 }
-function handleDelete(): ReturnType<FavoriteListItemState['handleDelete']> {
+function handleDelete(): ReturnType<FavoriteListItemState["handleDelete"]> {
   if (props.onDelete) {
     props.onDelete(getItemId());
   }

@@ -5,6 +5,7 @@
       <div class="mb-6">
         <Breadcrumbs
           :categoryPath="(selectedProduct as any)?.categoryPath || []"
+          :currentCategory="(selectedProduct as any)?.category || undefined"
           :language="languageStore.language"
           :configuration="configuration"
           :showCurrent="true"
@@ -14,7 +15,7 @@
       <!-- Main Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
         <!-- Gallery -->
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-card rounded-[var(--radius-container)] shadow p-6">
           <ProductGallery :images="displayImages" />
         </div>
 
@@ -65,7 +66,7 @@
                   (cluster as any).products?.length > 1 &&
                   (cluster as any).config
                 "
-                class="mt-6 mb-6 pb-6 border-b border-gray-200"
+                class="mt-6 mb-6 pb-6 border-b border-border"
               >
                 <ClusterConfigurator
                   :clusterId="clusterId"

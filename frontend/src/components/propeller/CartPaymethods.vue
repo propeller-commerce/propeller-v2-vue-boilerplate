@@ -1,25 +1,33 @@
 <template>
   <div :class="`propeller-cart-paymethods ${containerClass}`">
     <template v-if="payMethods.length > 0">
-      <div class="propeller-cart-paymethods__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div
+        class="propeller-cart-paymethods__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+      >
         <template :key="method.code" v-for="(method, index) in payMethods">
           <div
             @click="async (event) => handleSelect(method)"
             :data-selected="selectedCode === method.code ? 'true' : 'false'"
-            :class="`propeller-cart-paymethods__method cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
+            :class="`propeller-cart-paymethods__method cursor-pointer border border-border rounded-[var(--radius-container)] p-4 flex flex-col gap-2 transition-all ${
               selectedCode === method.code
                 ? 'border-secondary bg-secondary/5 shadow-sm'
                 : 'hover:border-secondary/30'
             }`"
           >
-            <div class="propeller-cart-paymethods__method-row flex justify-between items-center">
+            <div
+              class="propeller-cart-paymethods__method-row flex justify-between items-center"
+            >
               <div class="flex items-center gap-2">
-                <span class="propeller-cart-paymethods__method-name font-medium">{{ method.name || method.code }}</span>
+                <span
+                  class="propeller-cart-paymethods__method-name font-medium"
+                  >{{ method.name || method.code }}</span
+                >
               </div>
               <template v-if="method.price > 0">
-                <span class="propeller-cart-paymethods__method-price text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{{
-                  formatMethodPrice(method.price)
-                }}</span>
+                <span
+                  class="propeller-cart-paymethods__method-price text-xs bg-surface-hover text-muted-foreground px-2 py-1 rounded-full"
+                  >{{ formatMethodPrice(method.price) }}</span
+                >
               </template>
             </div>
           </div>
@@ -28,19 +36,19 @@
     </template>
 
     <template v-if="payMethods.length === 0">
-      <p class="propeller-cart-paymethods__empty text-gray-500 italic">
-        {{ getLabel('noMethods', 'No payment methods available.') }}
+      <p class="propeller-cart-paymethods__empty text-muted-foreground italic">
+        {{ getLabel("noMethods", "No payment methods available.") }}
       </p>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from "vue";
 
-import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import { Cart, CartPaymethod, Contact, Customer } from "propeller-sdk-v2";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface CartPaymethodsProps {
   /** Shopping cart object from which the payment methods will be displayed */
@@ -79,13 +87,15 @@ interface CartPaymethodsState {
 const props = withDefaults(defineProps<CartPaymethodsProps>(), {
   showOnAccountForGuests: false,
 });
-const selectedCode = ref<CartPaymethodsState['selectedCode']>('');
+const selectedCode = ref<CartPaymethodsState["selectedCode"]>("");
 
 const containerClass = computed(() => {
-  return props.paymentsContainerClass || 'cart-paymethods';
+  return props.paymentsContainerClass || "cart-paymethods";
 });
 const showOnAccountForGuests = computed(() => {
-  return props.showOnAccountForGuests !== undefined ? props.showOnAccountForGuests : false;
+  return props.showOnAccountForGuests !== undefined
+    ? props.showOnAccountForGuests
+    : false;
 });
 const isGuest = computed(() => {
   return !props.user;
@@ -107,29 +117,38 @@ watch(
     if (!selectedCode.value && props.cart?.paymentData?.method) {
       selectedCode.value = props.cart.paymentData.method as string;
       if (props.onPaymethodSelect) {
-        const match = payMethods.value.find((m: CartPaymethod) => m.code === selectedCode.value);
+        const match = payMethods.value.find(
+          (m: CartPaymethod) => m.code === selectedCode.value,
+        );
         if (match) props.onPaymethodSelect(match);
       }
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 function isOnAccountMethod(
-  method: CartPaymethod
-): ReturnType<CartPaymethodsState['isOnAccountMethod']> {
-  const code = (method.code || '').toLowerCase();
-  return code === 'on_account' || code === 'onaccount' || code === 'on-account';
+  method: CartPaymethod,
+): ReturnType<CartPaymethodsState["isOnAccountMethod"]> {
+  const code = (method.code || "").toLowerCase();
+  return code === "on_account" || code === "onaccount" || code === "on-account";
 }
-function getLabel(key: string, fallback: string): ReturnType<CartPaymethodsState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<CartPaymethodsState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function formatMethodPrice(price: number): ReturnType<CartPaymethodsState['formatMethodPrice']> {
+function formatMethodPrice(
+  price: number,
+): ReturnType<CartPaymethodsState["formatMethodPrice"]> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return _formatPrice(price || 0, { symbol: '€' });
+  return _formatPrice(price || 0, { symbol: "€" });
 }
-function handleSelect(method: CartPaymethod): ReturnType<CartPaymethodsState['handleSelect']> {
+function handleSelect(
+  method: CartPaymethod,
+): ReturnType<CartPaymethodsState["handleSelect"]> {
   selectedCode.value = method.code;
   if (props.onPaymethodSelect) {
     props.onPaymethodSelect(method);

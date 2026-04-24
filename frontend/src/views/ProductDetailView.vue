@@ -24,16 +24,17 @@
         <div class="mb-6">
           <Breadcrumbs
             :categoryPath="(product.categoryPath as Category[]) || []"
+            :currentCategory="(product as any).category || undefined"
             :language="languageStore.language"
             :configuration="configuration"
-            :showCurrent="true"
+            :currentLabel="productName"
           />
         </div>
 
         <!-- Main Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <!-- Gallery -->
-          <div class="bg-white rounded-lg shadow p-6">
+          <div class="bg-card rounded-[var(--radius-container)] shadow p-6">
             <ProductGallery :images="images" />
           </div>
 
@@ -224,6 +225,7 @@ import {
   imageVariantFiltersLarge,
   imageSearchFiltersGrid,
 } from "@/lib/config";
+import { getLanguageString } from "@/composables/shared/utils/languageResolver";
 import {
   ProductPrice as SDKProductPrice,
   type Category,
@@ -264,6 +266,12 @@ const images = computed(
       (img: any) =>
         img.imageVariants?.map((v: any) => v.url).filter(Boolean) ?? [],
     ) ?? [],
+);
+
+const productName = computed(() =>
+  product.value
+    ? getLanguageString(product.value.names, languageStore.language, "")
+    : "",
 );
 
 async function loadProduct() {

@@ -1,10 +1,12 @@
 <template>
-  <div :class="`propeller-purchase-authorization-configurator ${className || ''}`">
+  <div
+    :class="`propeller-purchase-authorization-configurator ${className || ''}`"
+  >
     <template v-if="isAuthManager">
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">
-            {{ getLabel('title', 'Purchase Authorization Settings') }}
+            {{ getLabel("title", "Purchase Authorization Settings") }}
           </h2>
           <template v-if="allowContactCreate !== false">
             <button
@@ -12,7 +14,7 @@
               class="propeller-purchase-authorization-configurator__add-btn flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-[var(--radius-container)] hover:bg-primary/80 transition text-sm font-medium"
               @click="async (event) => openAddContactModal()"
             >
-              {{ getLabel('addContact', 'Add contact') }}
+              {{ getLabel("addContact", "Add contact") }}
             </button>
           </template>
         </div>
@@ -25,39 +27,58 @@
         </template>
 
         <template v-if="!loading">
-          <div class="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
+          <div
+            class="overflow-x-auto rounded-[var(--radius-container)] border border-border bg-card shadow-sm"
+          >
             <table class="w-full text-sm">
-              <thead class="bg-muted/50 border-b border-border">
+              <thead class="bg-surface-hover/50 border-b border-border">
                 <tr>
-                  <th class="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {{ getLabel('colId', 'ID') }}
+                  <th
+                    class="text-left px-4 py-3 font-medium text-muted-foreground"
+                  >
+                    {{ getLabel("colId", "ID") }}
                   </th>
-                  <th class="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {{ getLabel('colName', 'Name') }}
+                  <th
+                    class="text-left px-4 py-3 font-medium text-muted-foreground"
+                  >
+                    {{ getLabel("colName", "Name") }}
                   </th>
-                  <th class="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {{ getLabel('colRole', 'Role') }}
+                  <th
+                    class="text-left px-4 py-3 font-medium text-muted-foreground"
+                  >
+                    {{ getLabel("colRole", "Role") }}
                   </th>
-                  <th class="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {{ getLabel('colLimit', 'Limit') }}
+                  <th
+                    class="text-left px-4 py-3 font-medium text-muted-foreground"
+                  >
+                    {{ getLabel("colLimit", "Limit") }}
                   </th>
-                  <th class="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {{ getLabel('colActions', 'Actions') }}
+                  <th
+                    class="text-left px-4 py-3 font-medium text-muted-foreground"
+                  >
+                    {{ getLabel("colActions", "Actions") }}
                   </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border">
-                <template :key="contact.contactId" v-for="(contact, index) in getContacts()">
-                  <tr class="hover:bg-muted/30 transition-colors">
+                <template
+                  :key="contact.contactId"
+                  v-for="(contact, index) in getContacts()"
+                >
+                  <tr class="hover:bg-surface-hover/30 transition-colors">
                     <td class="px-4 py-3 text-muted-foreground">
                       {{ contact.contactId }}
                     </td>
                     <td class="px-4 py-3">
                       <div class="font-medium">
                         {{
-                          [contact.firstName, contact.middleName, contact.lastName]
+                          [
+                            contact.firstName,
+                            contact.middleName,
+                            contact.lastName,
+                          ]
                             .filter(Boolean)
-                            .join(' ')
+                            .join(" ")
                         }}
                       </div>
                       <div class="text-xs text-muted-foreground mt-0.5">
@@ -69,22 +90,30 @@
                         class="border border-input rounded-[var(--radius-control)] px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         :value="getRowRole(contact.contactId)"
                         :disabled="isCurrentUser(contact.contactId)"
-                        @change="async (e) => handleRoleChange(contact.contactId, e.target.value)"
+                        @change="
+                          async (e) =>
+                            handleRoleChange(contact.contactId, e.target.value)
+                        "
                       >
                         <option value="">
-                          {{ getLabel('selectRole', '— Select role —') }}
+                          {{ getLabel("selectRole", "— Select role —") }}
                         </option>
                         <option :value="Enums.PurchaseRole.PURCHASER">
-                          {{ getLabel('rolePurchaser', 'Purchaser') }}
+                          {{ getLabel("rolePurchaser", "Purchaser") }}
                         </option>
-                        <option :value="Enums.PurchaseRole.AUTHORIZATION_MANAGER">
-                          {{ getLabel('roleManager', 'Authorization Manager') }}
+                        <option
+                          :value="Enums.PurchaseRole.AUTHORIZATION_MANAGER"
+                        >
+                          {{ getLabel("roleManager", "Authorization Manager") }}
                         </option>
                       </select>
                     </td>
                     <td class="px-4 py-3">
                       <template
-                        v-if="getRowRole(contact.contactId) === Enums.PurchaseRole.PURCHASER"
+                        v-if="
+                          getRowRole(contact.contactId) ===
+                          Enums.PurchaseRole.PURCHASER
+                        "
                       >
                         <input
                           type="number"
@@ -94,7 +123,11 @@
                           :value="getRowLimit(contact.contactId) ?? ''"
                           :disabled="isCurrentUser(contact.contactId)"
                           @change="
-                            async (e) => handleLimitChange(contact.contactId, e.target.value)
+                            async (e) =>
+                              handleLimitChange(
+                                contact.contactId,
+                                e.target.value,
+                              )
                           "
                           :placeholder="getLabel('limitPlaceholder', '0.00')"
                         />
@@ -102,12 +135,19 @@
                     </td>
                     <td class="px-4 py-3">
                       <div class="flex items-center gap-2">
-                        <template v-if="hasPac(contact.contactId) && isRowDirty(contact.contactId)">
+                        <template
+                          v-if="
+                            hasPac(contact.contactId) &&
+                            isRowDirty(contact.contactId)
+                          "
+                        >
                           <button
                             type="button"
                             class="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-[var(--radius-control)] hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             :disabled="isRowLoading(contact.contactId)"
-                            @click="async (event) => handleSave(contact.contactId)"
+                            @click="
+                              async (event) => handleSave(contact.contactId)
+                            "
                           >
                             <template v-if="isRowLoading(contact.contactId)">
                               <span
@@ -115,7 +155,7 @@
                               ></span>
                             </template>
 
-                            {{ getLabel('save', 'Save') }}
+                            {{ getLabel("save", "Save") }}
                           </button>
                         </template>
 
@@ -124,9 +164,12 @@
                             type="button"
                             class="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-[var(--radius-control)] hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             :disabled="
-                              isRowLoading(contact.contactId) || !getRowRole(contact.contactId)
+                              isRowLoading(contact.contactId) ||
+                              !getRowRole(contact.contactId)
                             "
-                            @click="async (event) => handleCreate(contact.contactId)"
+                            @click="
+                              async (event) => handleCreate(contact.contactId)
+                            "
                           >
                             <template v-if="isRowLoading(contact.contactId)">
                               <span
@@ -134,18 +177,21 @@
                               ></span>
                             </template>
 
-                            {{ getLabel('create', 'Create') }}
+                            {{ getLabel("create", "Create") }}
                           </button>
                         </template>
 
                         <template v-if="hasPac(contact.contactId)">
                           <button
                             type="button"
-                            class="text-xs border border-border px-3 py-1.5 rounded-[var(--radius-control)] hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="text-xs border border-border px-3 py-1.5 rounded-[var(--radius-control)] hover:bg-surface-hover transition disabled:opacity-50 disabled:cursor-not-allowed"
                             :disabled="
-                              isRowLoading(contact.contactId) || isCurrentUser(contact.contactId)
+                              isRowLoading(contact.contactId) ||
+                              isCurrentUser(contact.contactId)
                             "
-                            @click="async (event) => handleDelete(contact.contactId)"
+                            @click="
+                              async (event) => handleDelete(contact.contactId)
+                            "
                           >
                             <template v-if="isRowLoading(contact.contactId)">
                               <span
@@ -153,7 +199,7 @@
                               ></span>
                             </template>
 
-                            {{ getLabel('delete', 'Delete') }}
+                            {{ getLabel("delete", "Delete") }}
                           </button>
                         </template>
                       </div>
@@ -168,21 +214,21 @@
             <div class="flex items-center justify-center gap-3 pt-2">
               <button
                 type="button"
-                class="text-sm px-3 py-1.5 border border-border rounded-[var(--radius-control)] hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
+                class="text-sm px-3 py-1.5 border border-border rounded-[var(--radius-control)] hover:bg-surface-hover transition disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="currentPage <= 1"
                 @click="async (event) => handlePageChange(currentPage - 1)"
               >
-                {{ getLabel('previous', 'Previous') }}</button
+                {{ getLabel("previous", "Previous") }}</button
               ><span class="text-sm text-muted-foreground"
-                >{{ getLabel('page', 'Page') }}{{ currentPage }}{{ getLabel('of', 'of')
-                }}{{ getTotalPages() }}</span
+                >{{ getLabel("page", "Page") }}{{ currentPage
+                }}{{ getLabel("of", "of") }}{{ getTotalPages() }}</span
               ><button
                 type="button"
-                class="text-sm px-3 py-1.5 border border-border rounded-[var(--radius-control)] hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
+                class="text-sm px-3 py-1.5 border border-border rounded-[var(--radius-control)] hover:bg-surface-hover transition disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="currentPage >= getTotalPages()"
                 @click="async (event) => handlePageChange(currentPage + 1)"
               >
-                {{ getLabel('next', 'Next') }}
+                {{ getLabel("next", "Next") }}
               </button>
             </div>
           </template>
@@ -200,7 +246,7 @@
           >
             <div class="flex items-center justify-between">
               <h3 class="text-lg font-semibold">
-                {{ getLabel('addContactTitle', 'Add Contact') }}
+                {{ getLabel("addContactTitle", "Add Contact") }}
               </h3>
               <button
                 type="button"
@@ -212,18 +258,18 @@
             </div>
             <div>
               <label class="block text-sm font-medium mb-1">{{
-                getLabel('companyName', 'Company')
+                getLabel("companyName", "Company")
               }}</label
               ><input
                 type="text"
-                class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-muted cursor-not-allowed"
+                class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-surface-hover cursor-not-allowed"
                 :readOnly="true"
                 :value="company?.name ?? ''"
               />
             </div>
             <div>
               <label class="block text-sm font-medium mb-1">{{
-                getLabel('gender', 'Gender')
+                getLabel("gender", "Gender")
               }}</label
               ><select
                 class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -238,22 +284,22 @@
                 "
               >
                 <option value="">
-                  {{ getLabel('selectGender', '— Select —') }}
+                  {{ getLabel("selectGender", "— Select —") }}
                 </option>
                 <option :value="Enums.Gender.M">
-                  {{ getLabel('genderM', 'Male') }}
+                  {{ getLabel("genderM", "Male") }}
                 </option>
                 <option :value="Enums.Gender.F">
-                  {{ getLabel('genderF', 'Female') }}
+                  {{ getLabel("genderF", "Female") }}
                 </option>
                 <option :value="Enums.Gender.U">
-                  {{ getLabel('genderU', 'Unspecified') }}
+                  {{ getLabel("genderU", "Unspecified") }}
                 </option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium mb-1"
-                >{{ getLabel('email', 'Email') }} * </label
+                >{{ getLabel("email", "Email") }} * </label
               ><input
                 type="email"
                 class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -271,7 +317,7 @@
             <div class="grid grid-cols-3 gap-3">
               <div>
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('firstName', 'First name')
+                  getLabel("firstName", "First name")
                 }}</label
                 ><input
                   type="text"
@@ -289,7 +335,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('middleName', 'Middle')
+                  getLabel("middleName", "Middle")
                 }}</label
                 ><input
                   type="text"
@@ -307,7 +353,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('lastName', 'Last name')
+                  getLabel("lastName", "Last name")
                 }}</label
                 ><input
                   type="text"
@@ -325,7 +371,9 @@
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1">{{ getLabel('phone', 'Phone') }}</label
+              <label class="block text-sm font-medium mb-1">{{
+                getLabel("phone", "Phone")
+              }}</label
               ><input
                 type="tel"
                 class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -341,19 +389,19 @@
               />
             </div>
             <template v-if="!!addContactError">
-              <p class="text-sm text-red-600">{{ addContactError }}</p>
+              <p class="text-sm text-destructive">{{ addContactError }}</p>
             </template>
 
             <div class="flex justify-end gap-3 pt-2">
               <button
                 type="button"
-                class="px-4 py-2 text-sm border border-border rounded-md hover:bg-muted transition"
+                class="px-4 py-2 text-sm border border-border rounded-[var(--radius-control)] hover:bg-surface-hover transition"
                 @click="async (event) => closeAddContactModal()"
               >
-                {{ getLabel('cancel', 'Cancel') }}</button
+                {{ getLabel("cancel", "Cancel") }}</button
               ><button
                 type="button"
-                class="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                class="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-[var(--radius-control)] hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 :disabled="addContactLoading || !addContactForm.email"
                 @click="async (event) => handleAddContactSubmit()"
               >
@@ -363,7 +411,7 @@
                   ></span>
                 </template>
 
-                {{ getLabel('addContactSubmit', 'Add Contact') }}
+                {{ getLabel("addContactSubmit", "Add Contact") }}
               </button>
             </div>
           </div>
@@ -374,8 +422,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { usePurchaseAuthorizationConfigurator } from '../../composables/usePurchaseAuthorization';
+import { computed } from "vue";
+import { usePurchaseAuthorizationConfigurator } from "../../composables/usePurchaseAuthorization";
 
 import {
   Contact,
@@ -385,8 +433,8 @@ import {
   RegisterContactInput,
   Enums,
   PurchaseAuthorizationConfigCreateInput,
-} from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+} from "propeller-sdk-v2";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface PurchaseAuthorizationConfiguratorProps {
   /** GraphQL client for the Propeller SDK */
@@ -414,7 +462,9 @@ export interface PurchaseAuthorizationConfiguratorProps {
   afterContactCreate?: (contact: Contact) => void;
 
   /** Override: fires instead of the default PurchaseAuthorizationConfigCreateInput() call */
-  onPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfigCreateInput) => void;
+  onPurchaseAuthorizationCreate?: (
+    pac: PurchaseAuthorizationConfigCreateInput,
+  ) => void;
 
   /** Fires after a PAC is created. If not provided, refreshes contacts list. */
   afterPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfig) => void;
@@ -444,20 +494,45 @@ export interface PurchaseAuthorizationConfiguratorProps {
   pageOffset?: number;
 }
 
-const props = withDefaults(defineProps<PurchaseAuthorizationConfiguratorProps>(), {
-  allowContactCreate: true,
-});
+const props = withDefaults(
+  defineProps<PurchaseAuthorizationConfiguratorProps>(),
+  {
+    allowContactCreate: true,
+  },
+);
 
-const userRef    = computed(() => props.user ?? null);
+const userRef = computed(() => props.user ?? null);
 const companyRef = computed(() => props.companyId as number);
 
 const {
-  company, loading, contacts, totalPages, currentPage, isAuthManager,
-  rowEdits, pacMap, actionLoading, showAddContactModal, addContactForm,
-  addContactLoading, addContactError,
-  hasPac, isCurrentUser, isRowDirty, getRowRole, getRowLimit, isRowLoading,
-  loadCompany, handleRoleChange, handleLimitChange, handleCreate, handleSave,
-  handleDelete, handlePageChange, openAddContactModal, closeAddContactModal,
+  company,
+  loading,
+  contacts,
+  totalPages,
+  currentPage,
+  isAuthManager,
+  rowEdits,
+  pacMap,
+  actionLoading,
+  showAddContactModal,
+  addContactForm,
+  addContactLoading,
+  addContactError,
+  hasPac,
+  isCurrentUser,
+  isRowDirty,
+  getRowRole,
+  getRowLimit,
+  isRowLoading,
+  loadCompany,
+  handleRoleChange,
+  handleLimitChange,
+  handleCreate,
+  handleSave,
+  handleDelete,
+  handlePageChange,
+  openAddContactModal,
+  closeAddContactModal,
   handleAddContactSubmit,
 } = usePurchaseAuthorizationConfigurator({
   graphqlClient: props.graphqlClient,

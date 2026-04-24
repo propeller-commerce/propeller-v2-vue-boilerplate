@@ -1,5 +1,8 @@
 <template>
-  <div class="propeller-cart-icon relative" :data-sidebar-open="sidebarOpen ? 'true' : 'false'">
+  <div
+    class="propeller-cart-icon relative"
+    :data-sidebar-open="sidebarOpen ? 'true' : 'false'"
+  >
     <div
       class="propeller-cart-icon__trigger-wrapper relative"
       @mouseenter="
@@ -17,7 +20,7 @@
         type="button"
         @click="async (event) => handleIconClick()"
         :aria-label="getLabel('cartIconLabel', 'Shopping cart')"
-        :class="`propeller-cart-icon__trigger relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${
+        :class="`propeller-cart-icon__trigger relative inline-flex items-center justify-center p-2 rounded-[var(--radius-control)] transition-colors text-foreground${
           iconClassName ? ' ' + iconClassName : ''
         }`"
       >
@@ -34,23 +37,32 @@
             d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
           ></path>
         </svg>
-        <template v-if="isMounted && showBadge !== false && getTotalItems() > 0">
+        <template
+          v-if="isMounted && showBadge !== false && getTotalItems() > 0"
+        >
           <span
-            class="propeller-cart-icon__badge absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold pointer-events-none"
+            class="propeller-cart-icon__badge absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold pointer-events-none"
             >{{ getTotalItems() }}</span
           >
         </template>
       </button>
       <template v-if="showTotals && isHovered">
         <div
-          class="propeller-cart-icon__popover absolute top-full right-0 mt-1 z-40 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap"
+          class="propeller-cart-icon__popover absolute top-full right-0 mt-1 z-40 bg-card border border-border rounded-[var(--radius-container)] shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap"
         >
           <div class="flex justify-between gap-4">
-            <span class="propeller-cart-icon__popover-label text-gray-500">{{ getLabel('totalLabel', 'Total') }}</span
-            ><span class="propeller-cart-icon__popover-total font-semibold text-gray-900">{{ getTotalPrice() }}</span>
+            <span
+              class="propeller-cart-icon__popover-label text-muted-foreground"
+              >{{ getLabel("totalLabel", "Total") }}</span
+            ><span
+              class="propeller-cart-icon__popover-total font-semibold text-foreground"
+              >{{ getTotalPrice() }}</span
+            >
           </div>
-          <div class="propeller-cart-icon__popover-count text-xs text-gray-400 mt-0.5">
-            {{ getTotalItems() }}{{ getLabel('itemsLabel', 'item(s)') }}
+          <div
+            class="propeller-cart-icon__popover-count text-xs text-foreground-subtle mt-0.5"
+          >
+            {{ getTotalItems() }}{{ getLabel("itemsLabel", "item(s)") }}
           </div>
         </div>
       </template>
@@ -68,19 +80,21 @@
       aria-modal="true"
       :aria-label="getSidebarTitle()"
       :data-open="sidebarOpen ? 'true' : 'false'"
-      :class="`propeller-cart-icon__sidebar fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${
+      :class="`propeller-cart-icon__sidebar fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-card shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-border${
         sidebarOpen ? ' translate-x-0' : ' translate-x-full'
       }${sidebarClassName ? ' ' + sidebarClassName : ''}`"
     >
       <div class="flex flex-col h-full">
         <template v-if="isMounted">
-          <div class="propeller-cart-icon__sidebar-header flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <div
+            class="propeller-cart-icon__sidebar-header flex items-center justify-between px-5 py-4 border-b border-border"
+          >
             <div class="flex items-center gap-2">
               <svg
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                class="w-5 h-5 text-gray-700"
+                class="w-5 h-5 text-muted-foreground"
                 :strokeWidth="1.5"
               >
                 <path
@@ -89,7 +103,9 @@
                   d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
                 ></path>
               </svg>
-              <h2 class="propeller-cart-icon__sidebar-title text-base font-semibold text-gray-900">
+              <h2
+                class="propeller-cart-icon__sidebar-title text-base font-semibold text-foreground"
+              >
                 {{ getSidebarTitle() }}
               </h2>
               <span
@@ -99,7 +115,7 @@
             </div>
             <button
               type="button"
-              class="propeller-cart-icon__sidebar-close p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              class="propeller-cart-icon__sidebar-close p-1 rounded-[var(--radius-control)] text-foreground-subtle hover:text-muted-foreground hover:bg-surface-hover transition-colors"
               @click="async (event) => closeSidebar()"
               :aria-label="getLabel('closeLabel', 'Close')"
             >
@@ -110,11 +126,17 @@
                 class="w-5 h-5"
                 :strokeWidth="2"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                ></path>
               </svg>
             </button>
           </div>
-          <div class="propeller-cart-icon__sidebar-body flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div
+            class="propeller-cart-icon__sidebar-body flex-1 overflow-y-auto px-5 py-4 space-y-4"
+          >
             <template v-if="getItems().length === 0">
               <div
                 class="propeller-cart-icon__empty flex flex-col items-center justify-center h-full text-center space-y-4 py-16"
@@ -123,7 +145,7 @@
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  class="propeller-cart-icon__empty-icon w-12 h-12 text-gray-200"
+                  class="propeller-cart-icon__empty-icon w-12 h-12 text-foreground-subtle"
                   :strokeWidth="1.5"
                 >
                   <path
@@ -132,24 +154,29 @@
                     d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
                   ></path>
                 </svg>
-                <p class="propeller-cart-icon__empty-message text-sm text-gray-500">
-                  {{ getLabel('emptyCart', 'Your cart is empty.') }}
+                <p
+                  class="propeller-cart-icon__empty-message text-sm text-muted-foreground"
+                >
+                  {{ getLabel("emptyCart", "Your cart is empty.") }}
                 </p>
                 <button
                   type="button"
                   class="propeller-cart-icon__empty-action text-sm text-secondary hover:underline"
                   @click="async (event) => closeSidebar()"
                 >
-                  {{ getLabel('continueShopping', 'Continue Shopping') }}
+                  {{ getLabel("continueShopping", "Continue Shopping") }}
                 </button>
               </div>
             </template>
 
             <template v-if="getItems().length > 0">
               <template :key="item.itemId" v-for="(item, index) in getItems()">
-                <div class="propeller-cart-icon__item flex gap-3" :data-bundle="isBundleItem(item) ? 'true' : 'false'">
+                <div
+                  class="propeller-cart-icon__item flex gap-3"
+                  :data-bundle="isBundleItem(item) ? 'true' : 'false'"
+                >
                   <div
-                    class="propeller-cart-icon__item-media w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center"
+                    class="propeller-cart-icon__item-media w-20 h-20 flex-shrink-0 bg-surface-hover rounded-[var(--radius-control)] overflow-hidden border border-border-subtle flex items-center justify-center"
                   >
                     <template v-if="!!getItemImageUrl(item)">
                       <img
@@ -164,7 +191,7 @@
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
-                        class="w-8 h-8 text-gray-300"
+                        class="w-8 h-8 text-foreground-subtle"
                         :strokeWidth="1.5"
                       >
                         <path
@@ -175,51 +202,71 @@
                       </svg>
                     </template>
                   </div>
-                  <div class="propeller-cart-icon__item-body flex-1 min-w-0 flex flex-col justify-between py-1">
+                  <div
+                    class="propeller-cart-icon__item-body flex-1 min-w-0 flex flex-col justify-between py-1"
+                  >
                     <template v-if="isBundleItem(item)">
                       <div>
                         <div class="flex justify-between items-start gap-2">
                           <span
-                            class="propeller-cart-icon__item-title text-sm font-medium leading-tight text-gray-900 line-clamp-2"
+                            class="propeller-cart-icon__item-title text-sm font-medium leading-tight text-foreground line-clamp-2"
                             >{{ getBundleName(item) }}</span
                           >
                           <template v-if="!!getBundlePrice(item)">
-                            <span class="propeller-cart-icon__item-price font-semibold text-sm text-gray-900 whitespace-nowrap">{{
-                              getBundlePrice(item)
-                            }}</span>
+                            <span
+                              class="propeller-cart-icon__item-price font-semibold text-sm text-foreground whitespace-nowrap"
+                              >{{ getBundlePrice(item) }}</span
+                            >
                           </template>
                         </div>
-                        <div class="propeller-cart-icon__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
+                        <div
+                          class="propeller-cart-icon__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2"
+                        >
                           <template v-if="!!getBundleLeaderName(item)">
-                            <div class="propeller-cart-icon__item-bundle-leader flex justify-between items-center text-xs">
-                              <span class="font-medium text-gray-800">{{
+                            <div
+                              class="propeller-cart-icon__item-bundle-leader flex justify-between items-center text-xs"
+                            >
+                              <span class="font-medium text-muted-foreground">{{
                                 getBundleLeaderName(item)
                               }}</span>
                               <template v-if="!!getBundleLeaderPrice(item)">
-                                <span class="text-gray-500 whitespace-nowrap ml-2">{{
-                                  getBundleLeaderPrice(item)
-                                }}</span>
+                                <span
+                                  class="text-muted-foreground whitespace-nowrap ml-2"
+                                  >{{ getBundleLeaderPrice(item) }}</span
+                                >
                               </template>
                             </div>
                           </template>
 
                           <template
                             :key="idx"
-                            v-for="(bundleItem, idx) in getBundleNonLeaders(item)"
+                            v-for="(bundleItem, idx) in getBundleNonLeaders(
+                              item,
+                            )"
                           >
-                            <div class="propeller-cart-icon__item-bundle-item flex justify-between items-center text-xs text-gray-600">
-                              <span class="line-clamp-1">{{ getBundleItemName(bundleItem) }}</span>
+                            <div
+                              class="propeller-cart-icon__item-bundle-item flex justify-between items-center text-xs text-muted-foreground"
+                            >
+                              <span class="line-clamp-1">{{
+                                getBundleItemName(bundleItem)
+                              }}</span>
                               <template v-if="!!getBundleItemPrice(bundleItem)">
-                                <span class="text-gray-400 whitespace-nowrap ml-2">{{
-                                  getBundleItemPrice(bundleItem)
-                                }}</span>
+                                <span
+                                  class="text-foreground-subtle whitespace-nowrap ml-2"
+                                  >{{ getBundleItemPrice(bundleItem) }}</span
+                                >
                               </template>
                             </div>
                           </template>
                         </div>
                       </div>
-                      <div class="propeller-cart-icon__item-qty flex items-center text-xs text-gray-400 mt-1">
-                        <span>{{ getLabel('qty', 'Qty') }}: {{ item.quantity }}</span>
+                      <div
+                        class="propeller-cart-icon__item-qty flex items-center text-xs text-foreground-subtle mt-1"
+                      >
+                        <span
+                          >{{ getLabel("qty", "Qty") }}:
+                          {{ item.quantity }}</span
+                        >
                       </div>
                     </template>
 
@@ -227,25 +274,37 @@
                       <div>
                         <div class="flex justify-between items-start gap-2">
                           <a
-                            class="propeller-cart-icon__item-title text-sm font-medium leading-tight text-gray-900 hover:text-secondary transition-colors line-clamp-2"
+                            class="propeller-cart-icon__item-title text-sm font-medium leading-tight text-foreground hover:text-secondary transition-colors line-clamp-2"
                             :href="getItemProductUrl(item)"
                             @click="async (event) => closeSidebar()"
                             >{{ getItemName(item) }}</a
-                          ><span class="propeller-cart-icon__item-price font-semibold text-sm text-gray-900 whitespace-nowrap">
+                          ><span
+                            class="propeller-cart-icon__item-price font-semibold text-sm text-foreground whitespace-nowrap"
+                          >
                             &euro;{{ item.totalSumNet.toFixed(2) }}</span
                           >
                         </div>
-                        <p class="propeller-cart-icon__item-sku text-xs text-gray-400 mt-0.5">
-                          SKU: {{ item.product?.sku || 'N/A' }}
+                        <p
+                          class="propeller-cart-icon__item-sku text-xs text-foreground-subtle mt-0.5"
+                        >
+                          SKU: {{ item.product?.sku || "N/A" }}
                         </p>
                         <template v-if="getItemChildItems(item).length > 0">
-                          <div class="propeller-cart-icon__item-options mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
-                            <template :key="idx" v-for="(child, idx) in getItemChildItems(item)">
-                              <div class="propeller-cart-icon__item-option flex justify-between items-center text-xs text-gray-600">
+                          <div
+                            class="propeller-cart-icon__item-options mt-1.5 space-y-1 border-l-2 border-border-subtle pl-2"
+                          >
+                            <template
+                              :key="idx"
+                              v-for="(child, idx) in getItemChildItems(item)"
+                            >
+                              <div
+                                class="propeller-cart-icon__item-option flex justify-between items-center text-xs text-muted-foreground"
+                              >
                                 <span class="line-clamp-1">{{
-                                  child.product.names?.[0]?.value || 'Option'
+                                  child.product.names?.[0]?.value || "Option"
                                 }}</span
-                                ><span class="text-gray-400 whitespace-nowrap ml-2"
+                                ><span
+                                  class="text-foreground-subtle whitespace-nowrap ml-2"
                                   >&euro;{{ child.totalSum.toFixed(2) }}</span
                                 >
                               </div>
@@ -253,8 +312,13 @@
                           </div>
                         </template>
                       </div>
-                      <div class="propeller-cart-icon__item-qty flex items-center text-xs text-gray-400">
-                        <span>{{ getLabel('qty', 'Qty') }}: {{ item.quantity }}</span>
+                      <div
+                        class="propeller-cart-icon__item-qty flex items-center text-xs text-foreground-subtle"
+                      >
+                        <span
+                          >{{ getLabel("qty", "Qty") }}:
+                          {{ item.quantity }}</span
+                        >
                       </div>
                     </template>
                   </div>
@@ -264,36 +328,50 @@
           </div>
 
           <template v-if="getItems().length > 0">
-            <div class="propeller-cart-icon__sidebar-footer px-5 py-4 border-t border-gray-200 space-y-3 bg-gray-50">
-              <div class="propeller-cart-icon__total-row flex justify-between items-center">
-                <span class="propeller-cart-icon__total-label text-sm font-medium text-gray-700">{{
-                  getLabel('total', 'Total')
-                }}</span
-                ><span class="propeller-cart-icon__total-value text-base font-bold text-gray-900">{{ getTotalPrice() }}</span>
+            <div
+              class="propeller-cart-icon__sidebar-footer px-5 py-4 border-t border-border space-y-3 bg-surface-hover"
+            >
+              <div
+                class="propeller-cart-icon__total-row flex justify-between items-center"
+              >
+                <span
+                  class="propeller-cart-icon__total-label text-sm font-medium text-muted-foreground"
+                  >{{ getLabel("total", "Total") }}</span
+                ><span
+                  class="propeller-cart-icon__total-value text-base font-bold text-foreground"
+                  >{{ getTotalPrice() }}</span
+                >
               </div>
-              <template v-if="showCheckoutButton() && !showRequestAuthorizationButton()">
+              <template
+                v-if="showCheckoutButton() && !showRequestAuthorizationButton()"
+              >
                 <button
                   type="button"
-                  class="propeller-cart-icon__checkout-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
+                  class="propeller-cart-icon__checkout-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-[var(--radius-control)] bg-secondary text-primary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors"
                   @click="async (event) => handleCheckoutClick()"
                 >
-                  {{ getLabel('checkoutButton', 'Checkout') }}
+                  {{ getLabel("checkoutButton", "Checkout") }}
                 </button>
               </template>
 
               <template v-if="showRequestAuthorizationButton()">
                 <button
                   type="button"
-                  class="propeller-cart-icon__authorization-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="propeller-cart-icon__authorization-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-[var(--radius-control)] bg-secondary text-primary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   @click="async (event) => handleRequestAuthorizationClick()"
                   :disabled="requestLoading"
                 >
                   <template v-if="requestLoading">
-                    {{ getLabel('requestingAuthorization', 'Requesting...') }}
+                    {{ getLabel("requestingAuthorization", "Requesting...") }}
                   </template>
 
                   <template v-if="!requestLoading">
-                    {{ getLabel('requestAuthorizationButton', 'Request Authorization') }}
+                    {{
+                      getLabel(
+                        "requestAuthorizationButton",
+                        "Request Authorization",
+                      )
+                    }}
                   </template>
                 </button>
               </template>
@@ -308,7 +386,7 @@
               >
                 <button
                   type="button"
-                  class="propeller-cart-icon__quote-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
+                  class="propeller-cart-icon__quote-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-[var(--radius-control)] border border-secondary bg-card text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
                   @click="
                     async (event) => {
                       closeSidebar();
@@ -316,17 +394,17 @@
                     }
                   "
                 >
-                  {{ getLabel('requestQuoteButton', 'Request a Quote') }}
+                  {{ getLabel("requestQuoteButton", "Request a Quote") }}
                 </button>
               </template>
 
               <template v-if="cartPageButton !== false">
                 <button
                   type="button"
-                  class="propeller-cart-icon__view-cart-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  class="propeller-cart-icon__view-cart-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-[var(--radius-control)] border border-input bg-card text-muted-foreground text-sm font-medium hover:bg-surface-hover transition-colors"
                   @click="async (event) => handleCartPageClick()"
                 >
-                  {{ getLabel('cartPageButton', 'View Cart Details') }}
+                  {{ getLabel("cartPageButton", "View Cart Details") }}
                 </button>
               </template>
             </div>
@@ -338,7 +416,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from "vue";
 
 import {
   Cart,
@@ -349,10 +427,10 @@ import {
   Customer,
   Enums,
   GraphQLClient,
-} from 'propeller-sdk-v2';
-import { useCart } from '../../composables/useCart';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+} from "propeller-sdk-v2";
+import { useCart } from "../../composables/useCart";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface CartIconAndSidebarProps {
   /**
@@ -497,10 +575,10 @@ const props = withDefaults(defineProps<CartIconAndSidebarProps>(), {
   cartPageButton: true,
   showCartSidebarOnClick: true,
 });
-const isMounted = ref<CartIconAndSidebarState['isMounted']>(false);
-const sidebarOpen = ref<CartIconAndSidebarState['sidebarOpen']>(false);
-const isHovered = ref<CartIconAndSidebarState['isHovered']>(false);
-const requestLoading = ref<CartIconAndSidebarState['requestLoading']>(false);
+const isMounted = ref<CartIconAndSidebarState["isMounted"]>(false);
+const sidebarOpen = ref<CartIconAndSidebarState["sidebarOpen"]>(false);
+const isHovered = ref<CartIconAndSidebarState["isHovered"]>(false);
+const requestLoading = ref<CartIconAndSidebarState["requestLoading"]>(false);
 
 const userRef = computed(() => props.user ?? null);
 const companyRef = computed(() => props.companyId);
@@ -511,8 +589,10 @@ const { requestAuthorization } = useCart({
   cartId: cartIdRef,
   companyId: companyRef,
   configuration: {
-    imageSearchFiltersGrid: props.configuration?.imageSearchFiltersGrid ?? ({} as any),
-    imageVariantFiltersSmall: props.configuration?.imageVariantFiltersSmall ?? ({} as any),
+    imageSearchFiltersGrid:
+      props.configuration?.imageSearchFiltersGrid ?? ({} as any),
+    imageVariantFiltersSmall:
+      props.configuration?.imageVariantFiltersSmall ?? ({} as any),
   },
 });
 
@@ -524,158 +604,201 @@ function getCartItems(): CartMainItem[] {
   const cart = props.cart as any;
   return cart?.items ?? cart?.mainItems?.items ?? [];
 }
-function getTotalItems(): ReturnType<CartIconAndSidebarState['getTotalItems']> {
+function getTotalItems(): ReturnType<CartIconAndSidebarState["getTotalItems"]> {
   return getCartItems().reduce((sum, item) => sum + (item.quantity || 0), 0);
 }
-function getTotalPrice(): ReturnType<CartIconAndSidebarState['getTotalPrice']> {
+function getTotalPrice(): ReturnType<CartIconAndSidebarState["getTotalPrice"]> {
   const total = props.cart?.total?.totalNet;
-  return _formatPrice(total ?? 0, { symbol: '€' });
+  return _formatPrice(total ?? 0, { symbol: "€" });
 }
-function getItems(): ReturnType<CartIconAndSidebarState['getItems']> {
+function getItems(): ReturnType<CartIconAndSidebarState["getItems"]> {
   return getCartItems().filter((item: CartMainItem) => item && item.product);
 }
-function getItemName(item: CartMainItem): ReturnType<CartIconAndSidebarState['getItemName']> {
-  return item.product?.names?.[0]?.value || 'Unnamed Product';
+function getItemName(
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getItemName"]> {
+  return item.product?.names?.[0]?.value || "Unnamed Product";
 }
 function getItemImageUrl(
-  item: CartMainItem
-): ReturnType<CartIconAndSidebarState['getItemImageUrl']> {
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getItemImageUrl"]> {
   const url = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-  return url && url.startsWith('http') ? url : '';
+  return url && url.startsWith("http") ? url : "";
 }
 function getItemProductUrl(
-  item: CartMainItem
-): ReturnType<CartIconAndSidebarState['getItemProductUrl']> {
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getItemProductUrl"]> {
   const product = item.product;
-  if (!product) return '#';
+  if (!product) return "#";
   if (product.class === Enums.ProductClass.PRODUCT) {
-    const slug = product.slugs?.[0]?.value || '';
+    const slug = product.slugs?.[0]?.value || "";
     return `/product/${product.productId}/${slug}`;
   } else if (product.class === Enums.ProductClass.CLUSTER) {
-    const slug = product.slugs?.[0]?.value || '';
+    const slug = product.slugs?.[0]?.value || "";
     return `/cluster/${product.clusterId || product.productId}/${slug}`;
   }
-  return '#';
+  return "#";
 }
-function handleIconClick(): ReturnType<CartIconAndSidebarState['handleIconClick']> {
+function handleIconClick(): ReturnType<
+  CartIconAndSidebarState["handleIconClick"]
+> {
   if (props.showCartSidebarOnClick !== false) {
     sidebarOpen.value = true;
   } else {
     if (props.onCartIconClick) props.onCartIconClick(props.cart as Cart);
   }
 }
-function openSidebar(): ReturnType<CartIconAndSidebarState['openSidebar']> {
+function openSidebar(): ReturnType<CartIconAndSidebarState["openSidebar"]> {
   sidebarOpen.value = true;
 }
-function closeSidebar(): ReturnType<CartIconAndSidebarState['closeSidebar']> {
+function closeSidebar(): ReturnType<CartIconAndSidebarState["closeSidebar"]> {
   sidebarOpen.value = false;
 }
-function handleCheckoutClick(): ReturnType<CartIconAndSidebarState['handleCheckoutClick']> {
+function handleCheckoutClick(): ReturnType<
+  CartIconAndSidebarState["handleCheckoutClick"]
+> {
   sidebarOpen.value = false;
-  if (props.onCheckoutButtonClick) props.onCheckoutButtonClick(props.cart as Cart);
+  if (props.onCheckoutButtonClick)
+    props.onCheckoutButtonClick(props.cart as Cart);
 }
-function handleCartPageClick(): ReturnType<CartIconAndSidebarState['handleCartPageClick']> {
+function handleCartPageClick(): ReturnType<
+  CartIconAndSidebarState["handleCartPageClick"]
+> {
   sidebarOpen.value = false;
-  if (props.onCartPageButtonClick) props.onCartPageButtonClick(props.cart as Cart);
+  if (props.onCartPageButtonClick)
+    props.onCartPageButtonClick(props.cart as Cart);
 }
-function getLabel(key: string, fallback: string): ReturnType<CartIconAndSidebarState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<CartIconAndSidebarState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function getSidebarTitle(): ReturnType<CartIconAndSidebarState['getSidebarTitle']> {
-  return props.cartSidebarTitle || props.labels?.['cartSidebarTitle'] || 'Shopping cart';
+function getSidebarTitle(): ReturnType<
+  CartIconAndSidebarState["getSidebarTitle"]
+> {
+  return (
+    props.cartSidebarTitle ||
+    props.labels?.["cartSidebarTitle"] ||
+    "Shopping cart"
+  );
 }
 function getItemChildItems(
-  item: CartMainItem
-): ReturnType<CartIconAndSidebarState['getItemChildItems']> {
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getItemChildItems"]> {
   const children = item.childItems;
   if (!children || !Array.isArray(children)) return [];
   return children;
 }
-function isBundleItem(item: CartMainItem): ReturnType<CartIconAndSidebarState['isBundleItem']> {
+function isBundleItem(
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["isBundleItem"]> {
   return !!item.bundle;
 }
-function getBundleName(item: CartMainItem): ReturnType<CartIconAndSidebarState['getBundleName']> {
-  return item.bundle?.name || 'Bundle';
+function getBundleName(
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getBundleName"]> {
+  return item.bundle?.name || "Bundle";
 }
-function getBundlePrice(item: CartMainItem): ReturnType<CartIconAndSidebarState['getBundlePrice']> {
+function getBundlePrice(
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getBundlePrice"]> {
   const price = item.bundle?.price?.net;
-  if (price === undefined || price === null) return '';
-  return _formatPrice(Number(price), { symbol: '€' });
+  if (price === undefined || price === null) return "";
+  return _formatPrice(Number(price), { symbol: "€" });
 }
 function getBundleLeaderName(
-  item: CartMainItem
-): ReturnType<CartIconAndSidebarState['getBundleLeaderName']> {
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getBundleLeaderName"]> {
   const items = item.bundle?.items;
-  if (!items) return '';
+  if (!items) return "";
   const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
-  if (!leader) return '';
-  return leader.product.names?.[0]?.value || 'Product';
+  if (!leader) return "";
+  return leader.product.names?.[0]?.value || "Product";
 }
 function getBundleLeaderPrice(
-  item: CartMainItem
-): ReturnType<CartIconAndSidebarState['getBundleLeaderPrice']> {
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getBundleLeaderPrice"]> {
   const items = item.bundle?.items;
-  if (!items) return '';
+  if (!items) return "";
   const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
-  if (!leader) return '';
+  if (!leader) return "";
   const price = leader.price?.net;
-  if (price === undefined || price === null) return '';
-  return _formatPrice(Number(price), { symbol: '€' });
+  if (price === undefined || price === null) return "";
+  return _formatPrice(Number(price), { symbol: "€" });
 }
 function getBundleNonLeaders(
-  item: CartMainItem
-): ReturnType<CartIconAndSidebarState['getBundleNonLeaders']> {
+  item: CartMainItem,
+): ReturnType<CartIconAndSidebarState["getBundleNonLeaders"]> {
   const items = item.bundle?.items;
   if (!items) return [];
   return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
 }
 function getBundleItemName(
-  bundleItem: BundleItem
-): ReturnType<CartIconAndSidebarState['getBundleItemName']> {
-  return bundleItem.product.names?.[0]?.value || 'Product';
+  bundleItem: BundleItem,
+): ReturnType<CartIconAndSidebarState["getBundleItemName"]> {
+  return bundleItem.product.names?.[0]?.value || "Product";
 }
 function getBundleItemPrice(
-  bundleItem: BundleItem
-): ReturnType<CartIconAndSidebarState['getBundleItemPrice']> {
+  bundleItem: BundleItem,
+): ReturnType<CartIconAndSidebarState["getBundleItemPrice"]> {
   const price = bundleItem.price?.net;
-  if (price === undefined || price === null) return '';
-  return _formatPrice(Number(price), { symbol: '€' });
+  if (price === undefined || price === null) return "";
+  return _formatPrice(Number(price), { symbol: "€" });
 }
-function showCheckoutButton(): ReturnType<CartIconAndSidebarState['showCheckoutButton']> {
+function showCheckoutButton(): ReturnType<
+  CartIconAndSidebarState["showCheckoutButton"]
+> {
   if (props.cartCheckoutButton === false) return false;
-  if (!props.user || !('contactId' in props.user)) return true;
+  if (!props.user || !("contactId" in props.user)) return true;
   if (!props.companyId) return true;
   const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
-  const items: any[] = (pacData as any)?.items ?? (pacData as any)?._items ?? [];
+  const items: any[] =
+    (pacData as any)?.items ?? (pacData as any)?._items ?? [];
   const purchaserPAC = items.find((pac: any) => {
     const role = pac.purchaseRole ?? pac._purchaseRole;
-    const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-    return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    const pacCompanyId =
+      pac.company?.companyId ??
+      pac.company?._companyId ??
+      pac._company?.companyId ??
+      pac._company?._companyId;
+    return (
+      role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId
+    );
   });
   if (!purchaserPAC) return true;
-  const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+  const limit =
+    purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
   const totalGross = (props.cart as any)?.total?.totalGross ?? 0;
   return totalGross <= limit;
 }
 function showRequestAuthorizationButton(): ReturnType<
-  CartIconAndSidebarState['showRequestAuthorizationButton']
+  CartIconAndSidebarState["showRequestAuthorizationButton"]
 > {
-  if (!props.user || !('contactId' in props.user)) return false;
+  if (!props.user || !("contactId" in props.user)) return false;
   if (!props.companyId) return false;
   const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
-  const items: any[] = (pacData as any)?.items ?? (pacData as any)?._items ?? [];
+  const items: any[] =
+    (pacData as any)?.items ?? (pacData as any)?._items ?? [];
   const purchaserPAC = items.find((pac: any) => {
     const role = pac.purchaseRole ?? pac._purchaseRole;
-    const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-    return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    const pacCompanyId =
+      pac.company?.companyId ??
+      pac.company?._companyId ??
+      pac._company?.companyId ??
+      pac._company?._companyId;
+    return (
+      role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId
+    );
   });
   if (!purchaserPAC) return false;
-  const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+  const limit =
+    purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
   const totalGross = (props.cart as any)?.total?.totalGross ?? 0;
   return totalGross > limit;
 }
 async function handleRequestAuthorizationClick(): ReturnType<
-  CartIconAndSidebarState['handleRequestAuthorizationClick']
+  CartIconAndSidebarState["handleRequestAuthorizationClick"]
 > {
   requestLoading.value = true;
   try {
@@ -684,7 +807,9 @@ async function handleRequestAuthorizationClick(): ReturnType<
     } else {
       const result = await requestAuthorization();
       if (!result.success && props.onError) {
-        props.onError(new Error(result.error || 'Failed to request authorization'));
+        props.onError(
+          new Error(result.error || "Failed to request authorization"),
+        );
       }
     }
     if (props.afterRequestAuthorization) {

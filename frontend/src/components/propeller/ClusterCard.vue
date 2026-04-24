@@ -7,8 +7,10 @@
   >
     <template v-if="showImage !== false">
       <div
-        :class="`propeller-cluster-card__media relative overflow-hidden bg-muted ${
-          isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'
+        :class="`propeller-cluster-card__media relative overflow-hidden bg-surface-hover ${
+          isRow()
+            ? 'w-20 h-20 flex-shrink-0 p-2'
+            : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'
         }`"
       >
         <a
@@ -25,8 +27,15 @@
           </template>
 
           <template v-if="!getClusterImageUrl()">
-            <div class="propeller-cluster-card__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-16 w-16">
+            <div
+              class="propeller-cluster-card__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle"
+            >
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                class="h-16 w-16"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -38,12 +47,21 @@
           </template>
         </a>
         <template
-          v-if="!!imageLabels && imageLabels.length > 0 && computedImageLabels().length > 0"
+          v-if="
+            !!imageLabels &&
+            imageLabels.length > 0 &&
+            computedImageLabels().length > 0
+          "
         >
-          <div class="propeller-cluster-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
-            <template :key="index" v-for="(label, index) in computedImageLabels()">
+          <div
+            class="propeller-cluster-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1"
+          >
+            <template
+              :key="index"
+              v-for="(label, index) in computedImageLabels()"
+            >
               <span
-                class="propeller-cluster-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-white shadow-sm"
+                class="propeller-cluster-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-primary-foreground shadow-sm"
                 >{{ label }}</span
               >
             </template>
@@ -85,10 +103,14 @@
     </template>
 
     <template v-if="isRow()">
-      <div class="propeller-cluster-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+      <div
+        class="propeller-cluster-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0"
+      >
         <div class="flex flex-col gap-0.5 flex-1 min-w-0">
           <template v-if="showSku !== false && !!getClusterSku()">
-            <div class="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle">
+            <div
+              class="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle"
+            >
               {{ getClusterSku() }}
             </div>
           </template>
@@ -102,22 +124,41 @@
             >
           </template>
 
-          <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
+          <template
+            v-if="
+              !!textLabels &&
+              textLabels.length > 0 &&
+              computedTextLabels().length > 0
+            "
+          >
             <div class="flex flex-col gap-0.5">
-              <template :key="index" v-for="(item, index) in computedTextLabels()">
-                <div class="propeller-cluster-card__label text-xs text-muted-foreground">{{ item.value }}</div>
+              <template
+                :key="index"
+                v-for="(item, index) in computedTextLabels()"
+              >
+                <div
+                  class="propeller-cluster-card__label text-xs text-muted-foreground"
+                >
+                  {{ item.value }}
+                </div>
               </template>
             </div>
           </template>
 
           <template v-if="showManufacturer && !!getClusterManufacturer()">
-            <div class="propeller-cluster-card__manufacturer text-xs text-muted-foreground">
+            <div
+              class="propeller-cluster-card__manufacturer text-xs text-muted-foreground"
+            >
               {{ getClusterManufacturer() }}
             </div>
           </template>
 
-          <template v-if="showShortDescription && !!getClusterShortDescription()">
-            <p class="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground">
+          <template
+            v-if="showShortDescription && !!getClusterShortDescription()"
+          >
+            <p
+              class="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground"
+            >
               {{ getClusterShortDescription() }}
             </p>
           </template>
@@ -136,9 +177,10 @@
         </template>
 
         <template v-if="!!getClusterPrice()">
-          <span class="propeller-cluster-card__price font-bold text-foreground text-sm whitespace-nowrap">{{
-            getClusterPrice()
-          }}</span>
+          <span
+            class="propeller-cluster-card__price font-bold text-foreground text-sm whitespace-nowrap"
+            >{{ getClusterPrice() }}</span
+          >
         </template>
 
         <div class="propeller-cluster-card__cta flex-shrink-0 ml-auto">
@@ -146,16 +188,20 @@
             class="propeller-cluster-card__cta-link flex w-full items-center justify-center rounded-[var(--radius-control)] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             :href="getClusterUrl()"
             @click="async (e) => handleClusterClick(e)"
-            >{{ getLabel('viewCluster', 'View cluster') }}</a
+            >{{ getLabel("viewCluster", "View cluster") }}</a
           >
         </div>
       </div>
     </template>
 
     <template v-if="!isRow()">
-      <div class="propeller-cluster-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+      <div
+        class="propeller-cluster-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4"
+      >
         <template v-if="showSku !== false && !!getClusterSku()">
-          <div class="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle">
+          <div
+            class="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle"
+          >
             {{ getClusterSku() }}
           </div>
         </template>
@@ -178,22 +224,39 @@
           ></ItemStock>
         </template>
 
-        <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
+        <template
+          v-if="
+            !!textLabels &&
+            textLabels.length > 0 &&
+            computedTextLabels().length > 0
+          "
+        >
           <div class="propeller-cluster-card__labels flex flex-col gap-0.5">
-            <template :key="index" v-for="(item, index) in computedTextLabels()">
-              <div class="propeller-cluster-card__label text-xs text-muted-foreground">{{ item.value }}</div>
+            <template
+              :key="index"
+              v-for="(item, index) in computedTextLabels()"
+            >
+              <div
+                class="propeller-cluster-card__label text-xs text-muted-foreground"
+              >
+                {{ item.value }}
+              </div>
             </template>
           </div>
         </template>
 
         <template v-if="showManufacturer && !!getClusterManufacturer()">
-          <div class="propeller-cluster-card__manufacturer text-xs text-muted-foreground">
+          <div
+            class="propeller-cluster-card__manufacturer text-xs text-muted-foreground"
+          >
             {{ getClusterManufacturer() }}
           </div>
         </template>
 
         <template v-if="showShortDescription && !!getClusterShortDescription()">
-          <p class="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground">
+          <p
+            class="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground"
+          >
             {{ getClusterShortDescription() }}
           </p>
         </template>
@@ -211,7 +274,7 @@
           class="propeller-cluster-card__cta-link flex w-full items-center justify-center rounded-[var(--radius-control)] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           :href="getClusterUrl()"
           @click="async (e) => handleClusterClick(e)"
-          >{{ getLabel('viewCluster', 'View cluster') }}</a
+          >{{ getLabel("viewCluster", "View cluster") }}</a
         >
       </div>
     </template>
@@ -219,14 +282,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
-import { Cluster, AttributeResult } from 'propeller-sdk-v2';
-import ItemStock from './ItemStock.vue';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { getClusterImageUrl as _getClusterImageUrl, getClusterSku as _getClusterSku } from '../../composables/shared/utils/productHelpers';
-import { getLanguageString } from '../../composables/shared/utils/languageResolver';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import { Cluster, AttributeResult } from "propeller-sdk-v2";
+import ItemStock from "./ItemStock.vue";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import {
+  getClusterImageUrl as _getClusterImageUrl,
+  getClusterSku as _getClusterSku,
+} from "../../composables/shared/utils/productHelpers";
+import { getLanguageString } from "../../composables/shared/utils/languageResolver";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface ClusterCardProps {
   // === Core ===
@@ -377,73 +443,109 @@ const props = withDefaults(defineProps<ClusterCardProps>(), {
   showStock: false,
   enableAddFavorite: false,
 });
-const isFavorite = ref<ClusterCardState['isFavorite']>(false);
-const includeTax = ref<ClusterCardState['includeTax']>(false);
-const priceListener = ref<ClusterCardState['priceListener']>(null);
+const isFavorite = ref<ClusterCardState["isFavorite"]>(false);
+const includeTax = ref<ClusterCardState["includeTax"]>(false);
+const priceListener = ref<ClusterCardState["priceListener"]>(null);
 
-function isRow(): ReturnType<ClusterCardState['isRow']> {
+function isRow(): ReturnType<ClusterCardState["isRow"]> {
   return (props.columns as number) === 1;
 }
-function getClusterName(): ReturnType<ClusterCardState['getClusterName']> {
-  const lang = (props.language as string) || 'NL';
-  const clusterName = getLanguageString((props.cluster as Cluster)?.names, lang, '');
+function getClusterName(): ReturnType<ClusterCardState["getClusterName"]> {
+  const lang = (props.language as string) || "NL";
+  const clusterName = getLanguageString(
+    (props.cluster as Cluster)?.names,
+    lang,
+    "",
+  );
   if (clusterName) return clusterName;
-  return getLanguageString((props.cluster as Cluster)?.defaultProduct?.names, lang, 'Cluster');
+  return getLanguageString(
+    (props.cluster as Cluster)?.defaultProduct?.names,
+    lang,
+    "Cluster",
+  );
 }
-function getClusterSku(): ReturnType<ClusterCardState['getClusterSku']> {
+function getClusterSku(): ReturnType<ClusterCardState["getClusterSku"]> {
   return _getClusterSku(props.cluster as Cluster);
 }
-function getClusterImageUrl(): ReturnType<ClusterCardState['getClusterImageUrl']> {
+function getClusterImageUrl(): ReturnType<
+  ClusterCardState["getClusterImageUrl"]
+> {
   return _getClusterImageUrl(props.cluster as Cluster);
 }
-function getClusterUrl(): ReturnType<ClusterCardState['getClusterUrl']> {
+function getClusterUrl(): ReturnType<ClusterCardState["getClusterUrl"]> {
   return props.configuration.urls.getClusterUrl(props.cluster, props.language);
 }
-function getClusterShortDescription(): ReturnType<ClusterCardState['getClusterShortDescription']> {
-  const lang = (props.language as string) || 'NL';
-  const desc = getLanguageString((props.cluster as Cluster)?.shortDescriptions, lang, '');
+function getClusterShortDescription(): ReturnType<
+  ClusterCardState["getClusterShortDescription"]
+> {
+  const lang = (props.language as string) || "NL";
+  const desc = getLanguageString(
+    (props.cluster as Cluster)?.shortDescriptions,
+    lang,
+    "",
+  );
   if (desc) return desc;
-  return getLanguageString((props.cluster as Cluster)?.defaultProduct?.shortDescriptions, lang, '');
+  return getLanguageString(
+    (props.cluster as Cluster)?.defaultProduct?.shortDescriptions,
+    lang,
+    "",
+  );
 }
-function getClusterManufacturer(): ReturnType<ClusterCardState['getClusterManufacturer']> {
-  return (props.cluster as Cluster)?.defaultProduct?.manufacturer || '';
+function getClusterManufacturer(): ReturnType<
+  ClusterCardState["getClusterManufacturer"]
+> {
+  return (props.cluster as Cluster)?.defaultProduct?.manufacturer || "";
 }
-function getStockQuantity(): ReturnType<ClusterCardState['getStockQuantity']> {
-  const qty = (props.cluster as Cluster)?.defaultProduct?.inventory?.totalQuantity;
+function getStockQuantity(): ReturnType<ClusterCardState["getStockQuantity"]> {
+  const qty = (props.cluster as Cluster)?.defaultProduct?.inventory
+    ?.totalQuantity;
   return qty !== undefined && qty !== null ? qty : -1;
 }
-function getStockStatusLabel(): ReturnType<ClusterCardState['getStockStatusLabel']> {
+function getStockStatusLabel(): ReturnType<
+  ClusterCardState["getStockStatusLabel"]
+> {
   const qty = getStockQuantity();
-  if (qty < 0) return '';
-  if (qty === 0) return getLabel('outOfStock', 'Out of stock');
-  if (qty <= 5) return getLabel('lowStock', 'Low stock');
-  return getLabel('inStock', 'In stock');
+  if (qty < 0) return "";
+  if (qty === 0) return getLabel("outOfStock", "Out of stock");
+  if (qty <= 5) return getLabel("lowStock", "Low stock");
+  return getLabel("inStock", "In stock");
 }
-function getStockStatusClass(): ReturnType<ClusterCardState['getStockStatusClass']> {
+function getStockStatusClass(): ReturnType<
+  ClusterCardState["getStockStatusClass"]
+> {
   const qty = getStockQuantity();
-  if (qty <= 0) return 'text-destructive bg-destructive/10';
-  if (qty <= 5) return 'text-warning bg-warning/10';
-  return 'text-success bg-success/10';
+  if (qty <= 0) return "text-destructive bg-destructive/10";
+  if (qty <= 5) return "text-warning bg-warning/10";
+  return "text-success bg-success/10";
 }
-function getClusterPrice(): ReturnType<ClusterCardState['getClusterPrice']> {
-  if (!props.showPrice) return '';
+function getClusterPrice(): ReturnType<ClusterCardState["getClusterPrice"]> {
+  if (!props.showPrice) return "";
   const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
   const useTax: boolean =
-    props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;
+    props.includeTax.value !== undefined
+      ? !!props.includeTax.value
+      : includeTax.value;
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
-  if (!value && value !== 0) return '';
-  return _formatPrice(Number(value), { symbol: '€' });
+  if (!value && value !== 0) return "";
+  return _formatPrice(Number(value), { symbol: "€" });
 }
-function getLabel(key: string, fallback: string): ReturnType<ClusterCardState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<ClusterCardState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function handleClusterClick(e: any): ReturnType<ClusterCardState['handleClusterClick']> {
+function handleClusterClick(
+  e: any,
+): ReturnType<ClusterCardState["handleClusterClick"]> {
   if (props.onClusterClick) {
     e.preventDefault();
     props.onClusterClick(props.cluster);
   }
 }
-function handleToggleFavorite(e: any): ReturnType<ClusterCardState['handleToggleFavorite']> {
+function handleToggleFavorite(
+  e: any,
+): ReturnType<ClusterCardState["handleToggleFavorite"]> {
   e.preventDefault();
   e.stopPropagation();
   isFavorite.value = !isFavorite.value;
@@ -451,25 +553,37 @@ function handleToggleFavorite(e: any): ReturnType<ClusterCardState['handleToggle
     props.onToggleFavorite(props.cluster, isFavorite.value);
   }
 }
-function computedImageLabels(): ReturnType<ClusterCardState['computedImageLabels']> {
-  if (!props.imageLabels || (props.imageLabels as string[]).length === 0) return [];
-  const attrs = (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
+function computedImageLabels(): ReturnType<
+  ClusterCardState["computedImageLabels"]
+> {
+  if (!props.imageLabels || (props.imageLabels as string[]).length === 0)
+    return [];
+  const attrs =
+    (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
   return (props.imageLabels as string[])
     .map((code: string) => {
-      const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
-      return found?.value?.value || '';
+      const found = attrs.find(
+        (a: AttributeResult) => a.attributeDescription?.name === code,
+      );
+      return found?.value?.value || "";
     })
     .filter((v: string) => v.length > 0);
 }
-function computedTextLabels(): ReturnType<ClusterCardState['computedTextLabels']> {
-  if (!props.textLabels || (props.textLabels as string[]).length === 0) return [];
-  const attrs = (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
+function computedTextLabels(): ReturnType<
+  ClusterCardState["computedTextLabels"]
+> {
+  if (!props.textLabels || (props.textLabels as string[]).length === 0)
+    return [];
+  const attrs =
+    (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
   return (props.textLabels as string[])
     .map((code: string) => {
-      const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
+      const found = attrs.find(
+        (a: AttributeResult) => a.attributeDescription?.name === code,
+      );
       return {
         name: code,
-        value: found?.value?.value || '',
+        value: found?.value?.value || "",
       };
     })
     .filter((item: { name: string; value: string }) => item.value.length > 0);

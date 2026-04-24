@@ -1,34 +1,51 @@
 <template>
   <div :class="`propeller-cart-carriers ${containerClass}`">
     <template v-if="carriers.length > 0">
-      <div class="propeller-cart-carriers__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <template :key="`${carrier.name}-${index}`" v-for="(carrier, index) in carriers">
+      <div
+        class="propeller-cart-carriers__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+      >
+        <template
+          :key="`${carrier.name}-${index}`"
+          v-for="(carrier, index) in carriers"
+        >
           <div
             @click="async (event) => handleSelect(carrier)"
             :data-selected="selectedName === carrier.name ? 'true' : 'false'"
-            :class="`propeller-cart-carriers__carrier cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
+            :class="`propeller-cart-carriers__carrier cursor-pointer border border-border rounded-[var(--radius-container)] p-4 flex flex-col gap-2 transition-all ${
               selectedName === carrier.name
                 ? 'border-secondary bg-secondary/5 shadow-sm'
                 : 'hover:border-secondary/30'
             }`"
           >
-            <div class="propeller-cart-carriers__carrier-row flex justify-between items-center">
+            <div
+              class="propeller-cart-carriers__carrier-row flex justify-between items-center"
+            >
               <div class="flex items-center gap-2">
                 <template v-if="showLogo && getLogoUrl(carrier)">
-                  <img class="propeller-cart-carriers__carrier-logo h-6 w-auto" :src="getLogoUrl(carrier)" :alt="carrier.name" />
+                  <img
+                    class="propeller-cart-carriers__carrier-logo h-6 w-auto"
+                    :src="getLogoUrl(carrier)"
+                    :alt="carrier.name"
+                  />
                 </template>
 
-                <span class="propeller-cart-carriers__carrier-name font-medium">{{ carrier.name }}</span>
+                <span
+                  class="propeller-cart-carriers__carrier-name font-medium"
+                  >{{ carrier.name }}</span
+                >
               </div>
               <template v-if="showPrice !== false">
-                <span class="propeller-cart-carriers__carrier-price text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{{
-                  formatCarrierPrice(carrier.price)
-                }}</span>
+                <span
+                  class="propeller-cart-carriers__carrier-price text-xs bg-surface-hover text-muted-foreground px-2 py-1 rounded-full"
+                  >{{ formatCarrierPrice(carrier.price) }}</span
+                >
               </template>
             </div>
             <template v-if="carrier.deliveryDeadline">
-              <p class="propeller-cart-carriers__carrier-deadline text-xs text-gray-500">
-                {{ getLabel('deliveryDeadline', 'Delivery deadline:')
+              <p
+                class="propeller-cart-carriers__carrier-deadline text-xs text-muted-foreground"
+              >
+                {{ getLabel("deliveryDeadline", "Delivery deadline:")
                 }}{{ carrier.deliveryDeadline }}
               </p>
             </template>
@@ -38,19 +55,19 @@
     </template>
 
     <template v-if="carriers.length === 0">
-      <p class="propeller-cart-carriers__empty text-gray-500 italic">
-        {{ getLabel('noCarriers', 'No carriers available.') }}
+      <p class="propeller-cart-carriers__empty text-muted-foreground italic">
+        {{ getLabel("noCarriers", "No carriers available.") }}
       </p>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from "vue";
 
-import { Cart, CartCarrier } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import { Cart, CartCarrier } from "propeller-sdk-v2";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface CartCarriersProps {
   /** Shopping cart object from which the carriers will be displayed */
@@ -89,10 +106,10 @@ const props = withDefaults(defineProps<CartCarriersProps>(), {
   showCarrierLogo: true,
   showPrice: true,
 });
-const selectedName = ref<CartCarriersState['selectedName']>('');
+const selectedName = ref<CartCarriersState["selectedName"]>("");
 
 const containerClass = computed(() => {
-  return props.carriersContainerClass || 'cart-carriers';
+  return props.carriersContainerClass || "cart-carriers";
 });
 const showLogo = computed(() => {
   return props.showCarrierLogo !== undefined ? props.showCarrierLogo : true;
@@ -107,26 +124,37 @@ watch(
     if (!selectedName.value && props.cart?.postageData?.carrier) {
       selectedName.value = props.cart.postageData.carrier as string;
       if (props.onCarrierSelect) {
-        const match = carriers.value.find((c: CartCarrier) => c.name === selectedName.value);
+        const match = carriers.value.find(
+          (c: CartCarrier) => c.name === selectedName.value,
+        );
         if (match) props.onCarrierSelect(match);
       }
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
-function getLabel(key: string, fallback: string): ReturnType<CartCarriersState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<CartCarriersState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function formatCarrierPrice(price: number): ReturnType<CartCarriersState['formatCarrierPrice']> {
+function formatCarrierPrice(
+  price: number,
+): ReturnType<CartCarriersState["formatCarrierPrice"]> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return _formatPrice(price || 0, { symbol: '€' });
+  return _formatPrice(price || 0, { symbol: "€" });
 }
-function getLogoUrl(carrier: CartCarrier): ReturnType<CartCarriersState['getLogoUrl']> {
-  return carrier.logo || '';
+function getLogoUrl(
+  carrier: CartCarrier,
+): ReturnType<CartCarriersState["getLogoUrl"]> {
+  return carrier.logo || "";
 }
-function handleSelect(carrier: CartCarrier): ReturnType<CartCarriersState['handleSelect']> {
+function handleSelect(
+  carrier: CartCarrier,
+): ReturnType<CartCarriersState["handleSelect"]> {
   selectedName.value = carrier.name;
   if (props.onCarrierSelect) {
     props.onCarrierSelect(carrier);

@@ -1,15 +1,20 @@
 <template>
   <div :class="`propeller-items-overview ${containerClass}`">
     <template v-if="title">
-      <h2 class="propeller-items-overview__title text-lg font-bold mb-4">{{ title }}</h2>
+      <h2 class="propeller-items-overview__title text-lg font-bold mb-4">
+        {{ title }}
+      </h2>
     </template>
 
     <div class="propeller-items-overview__list space-y-4">
       <template :key="item.itemId || index" v-for="(item, index) in items">
-        <div class="propeller-items-overview__item flex gap-3 pb-3 border-b border-border last:border-b-0 last:pb-0" :data-bundle="isBundleItem(item) ? 'true' : 'false'">
+        <div
+          class="propeller-items-overview__item flex gap-3 pb-3 border-b border-border last:border-b-0 last:pb-0"
+          :data-bundle="isBundleItem(item) ? 'true' : 'false'"
+        >
           <template v-if="showImage">
             <div
-              class="propeller-items-overview__item-media w-16 h-16 flex-shrink-0 bg-muted rounded-[var(--radius-control)] overflow-hidden border border-border-subtle flex items-center justify-center"
+              class="propeller-items-overview__item-media w-16 h-16 flex-shrink-0 bg-surface-hover rounded-[var(--radius-control)] overflow-hidden border border-border-subtle flex items-center justify-center"
             >
               <template v-if="getItemImageUrl(item)">
                 <img
@@ -41,41 +46,62 @@
             <template v-if="isBundleItem(item)">
               <div>
                 <div class="flex justify-between items-start gap-2">
-                  <span class="propeller-items-overview__item-title text-sm font-medium leading-tight text-foreground line-clamp-2">{{
-                    getBundleName(item)
-                  }}</span>
+                  <span
+                    class="propeller-items-overview__item-title text-sm font-medium leading-tight text-foreground line-clamp-2"
+                    >{{ getBundleName(item) }}</span
+                  >
                   <template v-if="showPrice && !!getBundlePrice(item)">
-                    <span class="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap">{{
-                      getBundlePrice(item)
-                    }}</span>
+                    <span
+                      class="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap"
+                      >{{ getBundlePrice(item) }}</span
+                    >
                   </template>
                 </div>
-                <div class="propeller-items-overview__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
+                <div
+                  class="propeller-items-overview__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2"
+                >
                   <template v-if="!!getBundleLeaderName(item)">
-                    <div class="propeller-items-overview__item-bundle-leader flex justify-between items-center text-xs">
-                      <span class="font-medium text-muted-foreground">{{ getBundleLeaderName(item) }}</span>
+                    <div
+                      class="propeller-items-overview__item-bundle-leader flex justify-between items-center text-xs"
+                    >
+                      <span class="font-medium text-muted-foreground">{{
+                        getBundleLeaderName(item)
+                      }}</span>
                       <template v-if="!!getBundleLeaderPrice(item)">
-                        <span class="text-muted-foreground whitespace-nowrap ml-2">{{
-                          getBundleLeaderPrice(item)
-                        }}</span>
+                        <span
+                          class="text-muted-foreground whitespace-nowrap ml-2"
+                          >{{ getBundleLeaderPrice(item) }}</span
+                        >
                       </template>
                     </div>
                   </template>
 
-                  <template :key="idx" v-for="(bundleItem, idx) in getBundleNonLeaders(item)">
-                    <div class="propeller-items-overview__item-bundle-item flex justify-between items-center text-xs text-muted-foreground">
-                      <span class="line-clamp-1">{{ getBundleItemName(bundleItem) }}</span>
+                  <template
+                    :key="idx"
+                    v-for="(bundleItem, idx) in getBundleNonLeaders(item)"
+                  >
+                    <div
+                      class="propeller-items-overview__item-bundle-item flex justify-between items-center text-xs text-muted-foreground"
+                    >
+                      <span class="line-clamp-1">{{
+                        getBundleItemName(bundleItem)
+                      }}</span>
                       <template v-if="!!getBundleItemPrice(bundleItem)">
-                        <span class="text-foreground-subtle whitespace-nowrap ml-2">{{
-                          getBundleItemPrice(bundleItem)
-                        }}</span>
+                        <span
+                          class="text-foreground-subtle whitespace-nowrap ml-2"
+                          >{{ getBundleItemPrice(bundleItem) }}</span
+                        >
                       </template>
                     </div>
                   </template>
                 </div>
               </div>
-              <div class="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
-                <span>{{ getLabel('quantity', 'Qty:') }}{{ item.quantity }}</span>
+              <div
+                class="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1"
+              >
+                <span
+                  >{{ getLabel("quantity", "Qty:") }}{{ item.quantity }}</span
+                >
               </div>
             </template>
 
@@ -92,42 +118,63 @@
                   </template>
 
                   <template v-if="!itemNameClickable">
-                    <p class="propeller-items-overview__item-title font-medium text-sm leading-tight line-clamp-2">
+                    <p
+                      class="propeller-items-overview__item-title font-medium text-sm leading-tight line-clamp-2"
+                    >
                       {{ getItemName(item) }}
                     </p>
                   </template>
 
                   <template v-if="showPrice">
-                    <span class="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap">{{
-                      formatItemPrice(getItemTotalPrice(item))
-                    }}</span>
+                    <span
+                      class="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap"
+                      >{{ formatItemPrice(getItemTotalPrice(item)) }}</span
+                    >
                   </template>
                 </div>
                 <template v-if="showSku && getItemSku(item)">
-                  <p class="propeller-items-overview__item-sku text-xs text-muted-foreground mt-0.5">SKU: {{ getItemSku(item) }}</p>
+                  <p
+                    class="propeller-items-overview__item-sku text-xs text-muted-foreground mt-0.5"
+                  >
+                    SKU: {{ getItemSku(item) }}
+                  </p>
                 </template>
 
                 <template v-if="getItemChildItems(item).length > 0">
-                  <div class="propeller-items-overview__item-options mt-1.5 space-y-1 border-l-2 border-border-subtle pl-2">
-                    <template :key="idx" v-for="(child, idx) in getItemChildItems(item)">
-                      <div class="propeller-items-overview__item-option flex justify-between items-center text-xs text-muted-foreground">
+                  <div
+                    class="propeller-items-overview__item-options mt-1.5 space-y-1 border-l-2 border-border-subtle pl-2"
+                  >
+                    <template
+                      :key="idx"
+                      v-for="(child, idx) in getItemChildItems(item)"
+                    >
+                      <div
+                        class="propeller-items-overview__item-option flex justify-between items-center text-xs text-muted-foreground"
+                      >
                         <span class="line-clamp-1">{{
-                          child.product?.names?.[0]?.value || 'Option'
+                          child.product?.names?.[0]?.value || "Option"
                         }}</span
-                        ><span class="text-foreground-subtle whitespace-nowrap ml-2">{{
-                          formatItemPrice(child.totalSum || 0)
-                        }}</span>
+                        ><span
+                          class="text-foreground-subtle whitespace-nowrap ml-2"
+                          >{{ formatItemPrice(child.totalSum || 0) }}</span
+                        >
                       </div>
                     </template>
                   </div>
                 </template>
               </div>
-              <div class="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
-                <span>{{ getLabel('quantity', 'Qty:') }}{{ item.quantity }}</span>
+              <div
+                class="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1"
+              >
+                <span
+                  >{{ getLabel("quantity", "Qty:") }}{{ item.quantity }}</span
+                >
                 <template v-if="showAvailability && getItemAvailability(item)">
-                  <span :class="`propeller-items-overview__item-availability ml-2 ${isInStock(item) ? 'text-success' : 'text-destructive'}`" :data-in-stock="isInStock(item) ? 'true' : 'false'">{{
-                    getItemAvailability(item)
-                  }}</span>
+                  <span
+                    :class="`propeller-items-overview__item-availability ml-2 ${isInStock(item) ? 'text-success' : 'text-destructive'}`"
+                    :data-in-stock="isInStock(item) ? 'true' : 'false'"
+                    >{{ getItemAvailability(item) }}</span
+                  >
                 </template>
               </div>
             </template>
@@ -136,19 +183,27 @@
       </template>
     </div>
     <template v-if="items.length === 0">
-      <p class="propeller-items-overview__empty text-muted-foreground italic text-sm">
-        {{ getLabel('noItems', 'No items in cart.') }}
+      <p
+        class="propeller-items-overview__empty text-muted-foreground italic text-sm"
+      >
+        {{ getLabel("noItems", "No items in cart.") }}
       </p>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from "vue";
 
-import { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import {
+  Cart,
+  CartMainItem,
+  CartBaseItem,
+  BundleItem,
+  Enums,
+} from "propeller-sdk-v2";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface ItemsOverviewProps {
   /** Shopping cart object from which the cart items overview will be displayed */
@@ -226,7 +281,7 @@ const props = withDefaults(defineProps<ItemsOverviewProps>(), {
 });
 
 const containerClass = computed(() => {
-  return props.itemsOverviewContainerClass || 'cart-items-overview';
+  return props.itemsOverviewContainerClass || "cart-items-overview";
 });
 const itemNameClickable = computed(() => {
   return props.itemNameClickable !== undefined ? props.itemNameClickable : true;
@@ -250,42 +305,55 @@ const items = computed(() => {
   return (props.cart as any)?.items || [];
 });
 
-function getLabel(key: string, fallback: string): ReturnType<ItemsOverviewState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<ItemsOverviewState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function formatItemPrice(price: number): ReturnType<ItemsOverviewState['formatItemPrice']> {
+function formatItemPrice(
+  price: number,
+): ReturnType<ItemsOverviewState["formatItemPrice"]> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return _formatPrice(price || 0, { symbol: '€' });
+  return _formatPrice(price || 0, { symbol: "€" });
 }
-function getItemName(item: any): ReturnType<ItemsOverviewState['getItemName']> {
-  return item.product?.names?.[0]?.value || 'Product';
+function getItemName(item: any): ReturnType<ItemsOverviewState["getItemName"]> {
+  return item.product?.names?.[0]?.value || "Product";
 }
-function getItemSku(item: any): ReturnType<ItemsOverviewState['getItemSku']> {
-  return item.product?.sku || '';
+function getItemSku(item: any): ReturnType<ItemsOverviewState["getItemSku"]> {
+  return item.product?.sku || "";
 }
-function getItemImageUrl(item: any): ReturnType<ItemsOverviewState['getItemImageUrl']> {
+function getItemImageUrl(
+  item: any,
+): ReturnType<ItemsOverviewState["getItemImageUrl"]> {
   const url = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-  if (url && typeof url === 'string' && url.startsWith('http')) {
+  if (url && typeof url === "string" && url.startsWith("http")) {
     return url;
   }
-  return '';
+  return "";
 }
-function getItemTotalPrice(item: any): ReturnType<ItemsOverviewState['getItemTotalPrice']> {
+function getItemTotalPrice(
+  item: any,
+): ReturnType<ItemsOverviewState["getItemTotalPrice"]> {
   return (item.price || 0) * (item.quantity || 1);
 }
-function getItemAvailability(item: any): ReturnType<ItemsOverviewState['getItemAvailability']> {
+function getItemAvailability(
+  item: any,
+): ReturnType<ItemsOverviewState["getItemAvailability"]> {
   const stock = item.product?.inventory?.totalQuantity;
-  if (stock === undefined || stock === null) return '';
-  if (stock > 0) return props.labels?.['inStock'] || 'In stock';
-  return props.labels?.['outOfStock'] || 'Out of stock';
+  if (stock === undefined || stock === null) return "";
+  if (stock > 0) return props.labels?.["inStock"] || "In stock";
+  return props.labels?.["outOfStock"] || "Out of stock";
 }
-function isInStock(item: any): ReturnType<ItemsOverviewState['isInStock']> {
+function isInStock(item: any): ReturnType<ItemsOverviewState["isInStock"]> {
   const stock = item.product?.inventory?.totalQuantity;
   return stock !== undefined && stock !== null && stock > 0;
 }
-function handleItemNameClick(item: any): ReturnType<ItemsOverviewState['handleItemNameClick']> {
+function handleItemNameClick(
+  item: any,
+): ReturnType<ItemsOverviewState["handleItemNameClick"]> {
   if (
     (props.itemNameClickable !== undefined ? props.itemNameClickable : true) &&
     props.onCartItemNameClick
@@ -293,49 +361,67 @@ function handleItemNameClick(item: any): ReturnType<ItemsOverviewState['handleIt
     props.onCartItemNameClick(item as CartMainItem);
   }
 }
-function getItemChildItems(item: any): ReturnType<ItemsOverviewState['getItemChildItems']> {
+function getItemChildItems(
+  item: any,
+): ReturnType<ItemsOverviewState["getItemChildItems"]> {
   const children = item.childItems;
   if (!children || !Array.isArray(children)) return [];
   return children;
 }
-function isBundleItem(item: any): ReturnType<ItemsOverviewState['isBundleItem']> {
+function isBundleItem(
+  item: any,
+): ReturnType<ItemsOverviewState["isBundleItem"]> {
   return !!item.bundle;
 }
-function getBundleName(item: any): ReturnType<ItemsOverviewState['getBundleName']> {
-  return item.bundle?.name || 'Bundle';
+function getBundleName(
+  item: any,
+): ReturnType<ItemsOverviewState["getBundleName"]> {
+  return item.bundle?.name || "Bundle";
 }
-function getBundlePrice(item: any): ReturnType<ItemsOverviewState['getBundlePrice']> {
+function getBundlePrice(
+  item: any,
+): ReturnType<ItemsOverviewState["getBundlePrice"]> {
   const price = item.bundle?.price?.net;
-  if (price === undefined || price === null) return '';
-  return _formatPrice(Number(price), { symbol: '€' });
+  if (price === undefined || price === null) return "";
+  return _formatPrice(Number(price), { symbol: "€" });
 }
-function getBundleLeaderName(item: any): ReturnType<ItemsOverviewState['getBundleLeaderName']> {
+function getBundleLeaderName(
+  item: any,
+): ReturnType<ItemsOverviewState["getBundleLeaderName"]> {
   const items = item.bundle?.items;
-  if (!items) return '';
+  if (!items) return "";
   const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
-  if (!leader) return '';
-  return leader.product.names?.[0]?.value || 'Product';
+  if (!leader) return "";
+  return leader.product.names?.[0]?.value || "Product";
 }
-function getBundleLeaderPrice(item: any): ReturnType<ItemsOverviewState['getBundleLeaderPrice']> {
+function getBundleLeaderPrice(
+  item: any,
+): ReturnType<ItemsOverviewState["getBundleLeaderPrice"]> {
   const items = item.bundle?.items;
-  if (!items) return '';
+  if (!items) return "";
   const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
-  if (!leader) return '';
+  if (!leader) return "";
   const price = leader.price?.net;
-  if (price === undefined || price === null) return '';
-  return _formatPrice(Number(price), { symbol: '€' });
+  if (price === undefined || price === null) return "";
+  return _formatPrice(Number(price), { symbol: "€" });
 }
-function getBundleNonLeaders(item: any): ReturnType<ItemsOverviewState['getBundleNonLeaders']> {
+function getBundleNonLeaders(
+  item: any,
+): ReturnType<ItemsOverviewState["getBundleNonLeaders"]> {
   const items = item.bundle?.items;
   if (!items) return [];
   return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
 }
-function getBundleItemName(bundleItem: any): ReturnType<ItemsOverviewState['getBundleItemName']> {
-  return bundleItem.product?.names?.[0]?.value || 'Product';
+function getBundleItemName(
+  bundleItem: any,
+): ReturnType<ItemsOverviewState["getBundleItemName"]> {
+  return bundleItem.product?.names?.[0]?.value || "Product";
 }
-function getBundleItemPrice(bundleItem: any): ReturnType<ItemsOverviewState['getBundleItemPrice']> {
+function getBundleItemPrice(
+  bundleItem: any,
+): ReturnType<ItemsOverviewState["getBundleItemPrice"]> {
   const price = bundleItem.price?.net;
-  if (price === undefined || price === null) return '';
-  return _formatPrice(Number(price), { symbol: '€' });
+  if (price === undefined || price === null) return "";
+  return _formatPrice(Number(price), { symbol: "€" });
 }
 </script>

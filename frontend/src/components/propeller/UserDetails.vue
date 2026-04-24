@@ -1,7 +1,7 @@
 <template>
   <div class="propeller-user-details space-y-6">
     <template v-if="isMounted">
-      <div class="propeller-user-details__section propeller-user-details__section--personal rounded-lg bg-card text-card-foreground shadow-sm">
+      <div class="propeller-user-details__section propeller-user-details__section--personal rounded-[var(--radius-container)] bg-card text-card-foreground shadow-sm">
         <div class="propeller-user-details__section-header p-6 pb-2">
           <h3 class="propeller-user-details__section-title text-lg font-semibold">Personal Information</h3>
         </div>
@@ -22,7 +22,7 @@
       </div>
 
       <template v-if="shouldShowCompanyInfo() && getActiveCompany()">
-        <div class="propeller-user-details__section propeller-user-details__section--company rounded-lg bg-card text-card-foreground shadow-sm">
+        <div class="propeller-user-details__section propeller-user-details__section--company rounded-[var(--radius-container)] bg-card text-card-foreground shadow-sm">
           <div class="propeller-user-details__section-header p-6 pb-2">
             <h3 class="propeller-user-details__section-title text-lg font-semibold">Company Information</h3>
           </div>
@@ -59,7 +59,7 @@
       </template>
 
       <template v-if="shouldListCompanies() && getCompanies().length > 0">
-        <div class="propeller-user-details__section propeller-user-details__section--companies rounded-lg bg-card text-card-foreground shadow-sm">
+        <div class="propeller-user-details__section propeller-user-details__section--companies rounded-[var(--radius-container)] bg-card text-card-foreground shadow-sm">
           <div class="propeller-user-details__section-header p-6 pb-2">
             <h3 class="propeller-user-details__section-title text-lg font-semibold">Companies</h3>
           </div>
@@ -68,7 +68,7 @@
               <template :key="String(company.companyId)" v-for="(company, index) in getCompanies()">
                 <li
                   :data-active="getActiveCompany()?.companyId === company.companyId ? 'true' : 'false'"
-                  :class="`propeller-user-details__company flex items-center gap-2 py-2 px-3 rounded-md ${
+                  :class="`propeller-user-details__company flex items-center gap-2 py-2 px-3 rounded-[var(--radius-control)] ${
                     getActiveCompany()?.companyId === company.companyId
                       ? 'bg-primary/10 font-semibold text-primary'
                       : 'text-foreground'
@@ -88,7 +88,7 @@
       </template>
 
       <template v-if="shouldShowInvoiceAddress() || shouldShowDeliveryAddress()">
-        <div class="propeller-user-details__section propeller-user-details__section--addresses rounded-lg bg-card text-card-foreground shadow-sm">
+        <div class="propeller-user-details__section propeller-user-details__section--addresses rounded-[var(--radius-container)] bg-card text-card-foreground shadow-sm">
           <div class="propeller-user-details__section-header p-6 pb-2">
             <h3 class="propeller-user-details__section-title text-lg font-semibold">Default Addresses</h3>
           </div>
@@ -98,7 +98,7 @@
                 <div class="propeller-user-details__address-group space-y-3" data-address="invoice">
                   <h4 class="propeller-user-details__address-title text-base font-bold">Invoice Address</h4>
                   <template v-if="getDefaultInvoiceAddress()">
-                    <div class="propeller-user-details__address-card bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div class="propeller-user-details__address-card bg-card p-4 rounded-[var(--radius-container)] shadow-sm border border-border">
                       <template v-if="getDefaultInvoiceAddress()?.company">
                         <div class="propeller-user-details__address-company font-bold text-lg mb-1">
                           {{ getDefaultInvoiceAddress()?.company }}
@@ -111,14 +111,14 @@
                         </div>
                       </template>
 
-                      <div class="propeller-user-details__address-line text-gray-600">
+                      <div class="propeller-user-details__address-line text-muted-foreground">
                         {{ getAddressLine1(getDefaultInvoiceAddress() as Address) }}
                       </div>
-                      <div class="propeller-user-details__address-line text-gray-600">
+                      <div class="propeller-user-details__address-line text-muted-foreground">
                         {{ getAddressLine2(getDefaultInvoiceAddress() as Address) }}
                       </div>
                       <template v-if="getDefaultInvoiceAddress()?.country">
-                        <div class="propeller-user-details__address-country text-gray-600">
+                        <div class="propeller-user-details__address-country text-muted-foreground">
                           {{ getCountryName(getDefaultInvoiceAddress()?.country || '') }}
                         </div>
                       </template>
@@ -126,7 +126,7 @@
                   </template>
 
                   <template v-if="!getDefaultInvoiceAddress()">
-                    <p class="propeller-user-details__address-empty text-gray-500 italic">No invoice address found</p>
+                    <p class="propeller-user-details__address-empty text-muted-foreground italic">No invoice address found</p>
                   </template>
                 </div>
               </template>
@@ -135,7 +135,7 @@
                 <div class="propeller-user-details__address-group space-y-3" data-address="delivery">
                   <h4 class="propeller-user-details__address-title text-base font-bold">Delivery Address</h4>
                   <template v-if="getDefaultDeliveryAddress()">
-                    <div class="propeller-user-details__address-card bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div class="propeller-user-details__address-card bg-card p-4 rounded-[var(--radius-container)] shadow-sm border border-border">
                       <template v-if="getDefaultDeliveryAddress()?.company">
                         <div class="propeller-user-details__address-company font-bold text-lg mb-1">
                           {{ getDefaultDeliveryAddress()?.company }}
@@ -148,14 +148,14 @@
                         </div>
                       </template>
 
-                      <div class="propeller-user-details__address-line text-gray-600">
+                      <div class="propeller-user-details__address-line text-muted-foreground">
                         {{ getAddressLine1(getDefaultDeliveryAddress() as Address) }}
                       </div>
-                      <div class="propeller-user-details__address-line text-gray-600">
+                      <div class="propeller-user-details__address-line text-muted-foreground">
                         {{ getAddressLine2(getDefaultDeliveryAddress() as Address) }}
                       </div>
                       <template v-if="getDefaultDeliveryAddress()?.country">
-                        <div class="propeller-user-details__address-country text-gray-600">
+                        <div class="propeller-user-details__address-country text-muted-foreground">
                           {{ getCountryName(getDefaultDeliveryAddress()?.country || '') }}
                         </div>
                       </template>
@@ -163,7 +163,7 @@
                   </template>
 
                   <template v-if="!getDefaultDeliveryAddress()">
-                    <p class="propeller-user-details__address-empty text-gray-500 italic">No delivery address found</p>
+                    <p class="propeller-user-details__address-empty text-muted-foreground italic">No delivery address found</p>
                   </template>
                 </div>
               </template>

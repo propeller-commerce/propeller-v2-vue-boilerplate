@@ -1,6 +1,8 @@
 <template>
   <div :class="`propeller-delivery-date ${containerClass}`">
-    <div class="propeller-delivery-date__grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+    <div
+      class="propeller-delivery-date__grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3"
+    >
       <template :key="index" v-for="(dateStr, index) in upcomingDates">
         <div
           @click="async (event) => handleSelect(dateStr)"
@@ -11,7 +13,9 @@
               : 'hover:border-secondary/30'
           }`"
         >
-          <div class="propeller-delivery-date__option-label font-semibold">{{ formatDisplay(dateStr) }}</div>
+          <div class="propeller-delivery-date__option-label font-semibold">
+            {{ formatDisplay(dateStr) }}
+          </div>
         </div>
       </template>
       <template v-if="showDatePicker">
@@ -26,12 +30,14 @@
           }`"
         >
           <template v-if="isCustomDateSelected">
-            <div class="propeller-delivery-date__option-label font-semibold">{{ formatDisplay(selectedDate) }}</div>
+            <div class="propeller-delivery-date__option-label font-semibold">
+              {{ formatDisplay(selectedDate) }}
+            </div>
           </template>
 
           <template v-if="!isCustomDateSelected">
             <div class="propeller-delivery-date__option-label font-semibold">
-              {{ getLabel('pickDate', 'Other date...') }}
+              {{ getLabel("pickDate", "Other date...") }}
             </div>
           </template>
         </div>
@@ -42,10 +48,16 @@
         class="propeller-delivery-date__modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         @click="async (event) => handleBackdropClick(event)"
       >
-        <div class="propeller-delivery-date__modal-content bg-card rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-          <div class="propeller-delivery-date__modal-header flex justify-between items-center mb-4">
-            <h3 class="propeller-delivery-date__modal-title text-lg font-semibold">
-              {{ getLabel('modalTitle', 'Select a delivery date') }}
+        <div
+          class="propeller-delivery-date__modal-content bg-card rounded-xl shadow-xl p-6 w-full max-w-sm mx-4"
+        >
+          <div
+            class="propeller-delivery-date__modal-header flex justify-between items-center mb-4"
+          >
+            <h3
+              class="propeller-delivery-date__modal-title text-lg font-semibold"
+            >
+              {{ getLabel("modalTitle", "Select a delivery date") }}
             </h3>
             <button
               type="button"
@@ -59,7 +71,11 @@
                 stroke="currentColor"
                 class="w-5 h-5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                ></path>
               </svg>
             </button>
           </div>
@@ -68,15 +84,19 @@
             class="propeller-delivery-date__input w-full border border-input rounded-[var(--radius-container)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
             :min="minDate"
             :value="customDateValue"
-            @change="async (event) => handleCustomDateChange(event.target.value)"
+            @change="
+              async (event) => handleCustomDateChange(event.target.value)
+            "
           />
-          <div class="propeller-delivery-date__modal-actions flex justify-end gap-3 mt-4">
+          <div
+            class="propeller-delivery-date__modal-actions flex justify-end gap-3 mt-4"
+          >
             <button
               type="button"
-              class="propeller-delivery-date__cancel-btn px-4 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-[var(--radius-container)] hover:bg-accent transition-colors"
+              class="propeller-delivery-date__cancel-btn px-4 py-2 text-sm font-medium text-muted-foreground bg-surface-hover rounded-[var(--radius-container)] hover:bg-accent transition-colors"
               @click="async (event) => closeModal()"
             >
-              {{ getLabel('cancel', 'Cancel') }}
+              {{ getLabel("cancel", "Cancel") }}
             </button>
           </div>
         </div>
@@ -86,10 +106,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from "vue";
 
-import { Cart } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { Cart } from "propeller-sdk-v2";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface DeliveryDateProps {
   /** The cart to use for the delivery date */
@@ -145,9 +165,9 @@ const props = withDefaults(defineProps<DeliveryDateProps>(), {
   skipWeekends: true,
   showDatePicker: true,
 });
-const selectedDate = ref<DeliveryDateState['selectedDate']>('');
-const modalOpen = ref<DeliveryDateState['modalOpen']>(false);
-const customDateValue = ref<DeliveryDateState['customDateValue']>('');
+const selectedDate = ref<DeliveryDateState["selectedDate"]>("");
+const modalOpen = ref<DeliveryDateState["modalOpen"]>(false);
+const customDateValue = ref<DeliveryDateState["customDateValue"]>("");
 
 const upcomingDays = computed(() => {
   return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
@@ -159,10 +179,13 @@ const showDatePicker = computed(() => {
   return props.showDatePicker !== undefined ? props.showDatePicker : true;
 });
 const isCustomDateSelected = computed(() => {
-  return selectedDate.value !== '' && upcomingDates.value.indexOf(selectedDate.value) === -1;
+  return (
+    selectedDate.value !== "" &&
+    upcomingDates.value.indexOf(selectedDate.value) === -1
+  );
 });
 const containerClass = computed(() => {
-  return props.containerClass || 'delivery-date';
+  return props.containerClass || "delivery-date";
 });
 const upcomingDates = computed(() => {
   const days: string[] = [];
@@ -182,9 +205,9 @@ const minDate = computed(() => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const y = tomorrow.getFullYear();
-  const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-  const d = String(tomorrow.getDate()).padStart(2, '0');
-  return y + '-' + m + '-' + d;
+  const m = String(tomorrow.getMonth() + 1).padStart(2, "0");
+  const d = String(tomorrow.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + d;
 });
 
 watch(
@@ -192,48 +215,60 @@ watch(
   () => {
     if (props.initialDate && !selectedDate.value) {
       // Normalize cart format "2026-04-17T00:00:00.000Z" → "2026-04-17T00:00:00Z"
-      const dot = props.initialDate.lastIndexOf('.');
-      const normalized = dot !== -1 ? props.initialDate.substring(0, dot) + 'Z' : props.initialDate;
+      const dot = props.initialDate.lastIndexOf(".");
+      const normalized =
+        dot !== -1
+          ? props.initialDate.substring(0, dot) + "Z"
+          : props.initialDate;
       selectedDate.value = normalized;
       if (props.onDateSelect) {
         props.onDateSelect(normalized);
       }
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
-function getLabel(key: string, fallback: string): ReturnType<DeliveryDateState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<DeliveryDateState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function toApiDate(date: Date): ReturnType<DeliveryDateState['toApiDate']> {
+function toApiDate(date: Date): ReturnType<DeliveryDateState["toApiDate"]> {
   const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return y + '-' + m + '-' + d + 'T00:00:00Z';
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + d + "T00:00:00Z";
 }
-function formatDisplay(isoDate: string): ReturnType<DeliveryDateState['formatDisplay']> {
+function formatDisplay(
+  isoDate: string,
+): ReturnType<DeliveryDateState["formatDisplay"]> {
   if (props.formatDateDisplay) {
     return props.formatDateDisplay(isoDate);
   }
   const date = new Date(isoDate);
-  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
+    date.getDay()
   ];
-  return weekday + ', ' + months[date.getMonth()] + ' ' + date.getDate();
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return weekday + ", " + months[date.getMonth()] + " " + date.getDate();
 }
-function handleSelect(isoDate: string): ReturnType<DeliveryDateState['handleSelect']> {
+function handleSelect(
+  isoDate: string,
+): ReturnType<DeliveryDateState["handleSelect"]> {
   selectedDate.value = isoDate;
   modalOpen.value = false;
   if (props.onDateSelect) {
@@ -241,22 +276,24 @@ function handleSelect(isoDate: string): ReturnType<DeliveryDateState['handleSele
   }
 }
 function handleCustomDateChange(
-  value: string
-): ReturnType<DeliveryDateState['handleCustomDateChange']> {
+  value: string,
+): ReturnType<DeliveryDateState["handleCustomDateChange"]> {
   customDateValue.value = value;
   if (value) {
-    const date = new Date(value + 'T00:00:00');
+    const date = new Date(value + "T00:00:00");
     const isoDate = toApiDate(date);
     handleSelect(isoDate);
   }
 }
-function openModal(): ReturnType<DeliveryDateState['openModal']> {
+function openModal(): ReturnType<DeliveryDateState["openModal"]> {
   modalOpen.value = true;
 }
-function closeModal(): ReturnType<DeliveryDateState['closeModal']> {
+function closeModal(): ReturnType<DeliveryDateState["closeModal"]> {
   modalOpen.value = false;
 }
-function handleBackdropClick(event: Event): ReturnType<DeliveryDateState['handleBackdropClick']> {
+function handleBackdropClick(
+  event: Event,
+): ReturnType<DeliveryDateState["handleBackdropClick"]> {
   if (event.target === event.currentTarget) {
     modalOpen.value = false;
   }

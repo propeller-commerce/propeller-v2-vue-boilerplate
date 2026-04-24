@@ -19,7 +19,10 @@
       <div class="h-4 bg-slate-100 rounded w-1/2 mx-auto animate-pulse"></div>
     </div>
 
-    <div v-else-if="error" class="p-8 text-center border rounded-lg">
+    <div
+      v-else-if="error"
+      class="p-8 text-center border rounded-[var(--radius-container)]"
+    >
       <p class="text-destructive mb-4">{{ error }}</p>
       <button
         @click="
@@ -33,7 +36,7 @@
 
     <div v-else-if="order" class="space-y-8">
       <!-- Order Summary + Actions -->
-      <div class="border rounded-lg p-6 space-y-4">
+      <div class="border rounded-[var(--radius-container)] p-6 space-y-4">
         <OrderSummary
           :order="order as Order"
           :countries="COUNTRIES"
@@ -72,23 +75,23 @@
         <!-- Parent/child product items -->
         <div
           v-if="parentItems.length > 0"
-          class="bg-white rounded-lg shadow overflow-hidden mb-8"
+          class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden mb-8"
         >
           <table class="w-full">
-            <thead class="bg-gray-50 border-b">
+            <thead class="bg-surface-hover border-b">
               <tr>
                 <th
-                  class="px-6 py-4 text-left text-sm font-medium text-gray-500 w-2/3"
+                  class="px-6 py-4 text-left text-sm font-medium text-muted-foreground w-2/3"
                 >
                   Product
                 </th>
                 <th
-                  class="px-6 py-4 text-center text-sm font-medium text-gray-500"
+                  class="px-6 py-4 text-center text-sm font-medium text-muted-foreground"
                 >
                   Quantity
                 </th>
                 <th
-                  class="px-6 py-4 text-right text-sm font-medium text-gray-500"
+                  class="px-6 py-4 text-right text-sm font-medium text-muted-foreground"
                 >
                   Price
                 </th>
@@ -110,23 +113,27 @@
 
         <!-- Bonus Items -->
         <div v-if="bonusItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-gray-800">Bonus Items</h3>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
+          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
+            Bonus Items
+          </h3>
+          <div
+            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
+          >
             <table class="w-full">
-              <thead class="bg-gray-50 border-b">
+              <thead class="bg-surface-hover border-b">
                 <tr>
                   <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase"
                   >
                     Product
                   </th>
                   <th
-                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                    class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase"
                   >
                     Quantity
                   </th>
                   <th
-                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase"
+                    class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase"
                   >
                     Price
                   </th>
@@ -150,8 +157,12 @@
 
         <!-- Surcharges -->
         <div v-if="surchargeItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
+          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
+            Surcharges
+          </h3>
+          <div
+            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
+          >
             <table class="w-full">
               <tbody>
                 <OrderItemCard

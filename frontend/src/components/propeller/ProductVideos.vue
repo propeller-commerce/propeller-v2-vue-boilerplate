@@ -10,7 +10,7 @@
       <div class="propeller-product-videos__list space-y-4">
         <template :key="index" v-for="(video, index) in getVideoItems()">
           <div
-            class="propeller-product-videos__item rounded-lg overflow-hidden border border-border bg-black"
+            class="propeller-product-videos__item rounded-[var(--radius-container)] overflow-hidden border border-border bg-black"
             :data-embedded="!!getVideoUri(video) && isEmbeddable(getVideoUri(video)) ? 'true' : 'false'"
           >
             <template v-if="!!getVideoUri(video)">

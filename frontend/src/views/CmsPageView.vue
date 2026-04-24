@@ -7,7 +7,7 @@
       <!-- CMS page content - rendered when CMS blocks are available -->
       <div v-for="block in page.blocks" :key="block.id">
         <!-- DynamicBlockRenderer equivalent — render blocks here -->
-        <pre class="text-xs text-gray-400">{{ block.__component }}</pre>
+        <pre class="text-xs text-foreground-subtle">{{ block.__component }}</pre>
       </div>
     </div>
     <div v-else class="text-center py-12">

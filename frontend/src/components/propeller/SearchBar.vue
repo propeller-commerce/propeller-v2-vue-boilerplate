@@ -14,7 +14,7 @@
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            class="propeller-search-bar__submit-icon w-5 h-5 text-gray-400 hover:text-gray-600"
+            class="propeller-search-bar__submit-icon w-5 h-5 text-foreground-subtle hover:text-muted-foreground"
           >
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
@@ -22,7 +22,7 @@
         ><input
           type="search"
           autoComplete="off"
-          class="propeller-search-bar__input w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-gray-500"
+          class="propeller-search-bar__input w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-[var(--radius-container)] focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-muted-foreground"
           :placeholder="placeholder"
           :value="searchTerm"
           @change="async (e) => handleInputChange(e.target.value)"
@@ -36,12 +36,12 @@
     </form>
     <template v-if="showDropdown">
       <div
-        class="propeller-search-bar__dropdown absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border max-h-96 overflow-y-auto z-50"
+        class="propeller-search-bar__dropdown absolute top-full left-0 right-0 mt-2 bg-card rounded-[var(--radius-container)] shadow-xl border max-h-96 overflow-y-auto z-50"
       >
         <template v-if="results.length > 0">
           <template :key="result.id + '-' + index" v-for="(result, index) in results">
             <div
-              class="propeller-search-bar__result flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
+              class="propeller-search-bar__result flex items-center gap-4 p-3 hover:bg-surface-hover cursor-pointer border-b border-border last:border-b-0"
               @click="async (event) => handleResultClick(result)"
             >
               <template v-if="result.imageUrl || noImageUrl">
@@ -57,7 +57,7 @@
               <div class="flex-1 min-w-0">
                 <div class="propeller-search-bar__result-name font-semibold truncate">{{ result.name }}</div>
                 <template v-if="result.sku">
-                  <div class="propeller-search-bar__result-sku text-sm text-gray-500">SKU: {{ result.sku }}</div>
+                  <div class="propeller-search-bar__result-sku text-sm text-muted-foreground">SKU: {{ result.sku }}</div>
                 </template>
               </div>
               <template v-if="result.price !== undefined && result.price !== null">
@@ -79,7 +79,7 @@
         </template>
 
         <template v-if="results.length === 0 && searchTerm.length >= minLength && !isLoading">
-          <div class="propeller-search-bar__empty p-4 text-center text-gray-500">
+          <div class="propeller-search-bar__empty p-4 text-center text-muted-foreground">
             {{ getLabel('noResults', 'No products found for') }} &quot;{{ searchTerm }}&quot;
           </div>
         </template>

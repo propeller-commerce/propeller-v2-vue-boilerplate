@@ -1,5 +1,5 @@
 <template>
-  <div class="py-8 bg-muted/20 min-h-[70vh]">
+  <div class="py-8 bg-surface-hover/20 min-h-[70vh]">
     <div class="container-width max-w-7xl">
       <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
 
@@ -7,7 +7,7 @@
         <p class="text-xl text-muted-foreground mb-4">Your cart is empty</p>
         <router-link
           to="/"
-          class="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition"
+          class="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-[var(--radius-container)] hover:bg-primary/90 transition"
         >
           Continue Shopping
         </router-link>

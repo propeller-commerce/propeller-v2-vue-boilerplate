@@ -9,17 +9,26 @@
     <template v-if="isSidebar">
       <div class="propeller-account-menu__sidebar flex flex-col">
         <template v-if="!!user">
-          <div class="propeller-account-menu__user px-4 py-3 border-b border-border">
-            <p class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
-              {{ getLabel('signedInAs', 'Signed in as') }}
+          <div
+            class="propeller-account-menu__user px-4 py-3 border-b border-border"
+          >
+            <p
+              class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1"
+            >
+              {{ getLabel("signedInAs", "Signed in as") }}
             </p>
-            <p class="propeller-account-menu__user-name font-medium text-foreground truncate">
+            <p
+              class="propeller-account-menu__user-name font-medium text-foreground truncate"
+            >
               {{ getUserName() }}
             </p>
           </div>
           <nav class="propeller-account-menu__nav py-2">
             <ul class="propeller-account-menu__list space-y-0.5">
-              <template :key="link.href" v-for="(link, index) in getMenuLinks()">
+              <template
+                :key="link.href"
+                v-for="(link, index) in getMenuLinks()"
+              >
                 <li class="propeller-account-menu__item">
                   <button
                     type="button"
@@ -37,13 +46,15 @@
               </template>
             </ul>
           </nav>
-          <div class="propeller-account-menu__logout-wrapper px-4 py-3 border-t border-border">
+          <div
+            class="propeller-account-menu__logout-wrapper px-4 py-3 border-t border-border"
+          >
             <button
               type="button"
               class="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-[var(--radius-control)] transition-colors"
               @click="async (event) => handleLogoutClick()"
             >
-              {{ getLabel('logoutLabel', 'Log Out') }}
+              {{ getLabel("logoutLabel", "Log Out") }}
             </button>
           </div>
         </template>
@@ -75,13 +86,18 @@
         </svg>
         <template v-if="isMounted">
           <template v-if="user">
-            <span class="propeller-account-menu__greeting hidden md:block font-normal"> Hi, {{ getUserName() }}</span>
+            <span
+              class="propeller-account-menu__greeting hidden md:block font-normal"
+            >
+              Hi, {{ getUserName() }}</span
+            >
           </template>
 
           <template v-if="!user">
-            <span class="propeller-account-menu__greeting hidden md:block font-normal">{{
-              getLabel('accountLabel', 'Account')
-            }}</span>
+            <span
+              class="propeller-account-menu__greeting hidden md:block font-normal"
+              >{{ getLabel("accountLabel", "Account") }}</span
+            >
           </template>
         </template>
       </button>
@@ -94,21 +110,30 @@
         >
           <template v-if="isMounted">
             <template v-if="!!user">
-              <div class="propeller-account-menu__user pb-3 mb-3 border-b border-border">
-                <p class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
-                  {{ getLabel('signedInAs', 'Signed in as') }}
+              <div
+                class="propeller-account-menu__user pb-3 mb-3 border-b border-border"
+              >
+                <p
+                  class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1"
+                >
+                  {{ getLabel("signedInAs", "Signed in as") }}
                 </p>
-                <p class="propeller-account-menu__user-name font-medium text-foreground truncate">
+                <p
+                  class="propeller-account-menu__user-name font-medium text-foreground truncate"
+                >
                   {{ getUserName() }}
                 </p>
               </div>
               <nav class="propeller-account-menu__nav">
                 <ul class="propeller-account-menu__list space-y-0.5">
-                  <template :key="link.href" v-for="(link, index) in getMenuLinks()">
+                  <template
+                    :key="link.href"
+                    v-for="(link, index) in getMenuLinks()"
+                  >
                     <li class="propeller-account-menu__item">
                       <button
                         type="button"
-                        class="propeller-account-menu__link flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-[var(--radius-control)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        class="propeller-account-menu__link flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-[var(--radius-control)] text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-colors"
                         @click="async (event) => handleMenuItemClick(link.href)"
                       >
                         {{ link.label }}
@@ -117,13 +142,15 @@
                   </template>
                 </ul>
               </nav>
-              <div class="propeller-account-menu__logout-wrapper mt-3 pt-3 border-t border-border">
+              <div
+                class="propeller-account-menu__logout-wrapper mt-3 pt-3 border-t border-border"
+              >
                 <button
                   type="button"
                   class="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-[var(--radius-control)] transition-colors"
                   @click="async (event) => handleLogoutClick()"
                 >
-                  {{ getLabel('logoutLabel', 'Log Out') }}
+                  {{ getLabel("logoutLabel", "Log Out") }}
                 </button>
               </div>
             </template>
@@ -132,9 +159,13 @@
               <template v-if="accountHeaderLoginForm !== false">
                 <LoginForm
                   :graphqlClient="graphqlClient"
-                  :title="loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')"
+                  :title="
+                    loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')
+                  "
                   :subtitle="loginFormSubtitle ?? getLabel('loginSubtitle', '')"
-                  :buttonText="loginButtonText ?? getLabel('loginButton', 'Log In')"
+                  :buttonText="
+                    loginButtonText ?? getLabel('loginButton', 'Log In')
+                  "
                   :displayForgotPasswordLink="displayForgotPasswordLink"
                   :displayRegisterLink="displayRegisterLink"
                   :displayGuestCheckoutLink="displayGuestCheckoutLink"
@@ -144,7 +175,9 @@
                   :loginError="loginError"
                   :beforeLogin="beforeLogin"
                   :afterLogin="afterLogin"
-                  :onForgotPasswordClick="(event) => handleForgotPasswordClick()"
+                  :onForgotPasswordClick="
+                    (event) => handleForgotPasswordClick()
+                  "
                   :onRegisterClick="(event) => handleRegisterClick()"
                   :onGuestCheckoutClick="(event) => handleGuestCheckoutClick()"
                   :accountHeaderLoginForm="accountHeaderLoginForm"
@@ -153,15 +186,21 @@
 
               <template v-if="accountHeaderLoginForm === false">
                 <div class="propeller-account-menu__login-cta text-center py-4">
-                  <h4 class="propeller-account-menu__login-title text-lg font-semibold mb-2">
+                  <h4
+                    class="propeller-account-menu__login-title text-lg font-semibold mb-2"
+                  >
                     {{ getMenuTitle() }}
                   </h4>
-                  <p class="propeller-account-menu__login-subtitle text-sm text-muted-foreground mb-4">
-                    {{ getLabel('loginSubtitle', 'Login to access your account') }}
+                  <p
+                    class="propeller-account-menu__login-subtitle text-sm text-muted-foreground mb-4"
+                  >
+                    {{
+                      getLabel("loginSubtitle", "Login to access your account")
+                    }}
                   </p>
                   <button
                     type="button"
-                    class="propeller-account-menu__login-btn w-full inline-flex justify-center items-center px-4 py-2 rounded-[var(--radius-control)] bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
+                    class="propeller-account-menu__login-btn w-full inline-flex justify-center items-center px-4 py-2 rounded-[var(--radius-control)] bg-secondary text-primary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors"
                     @click="
                       async (event) => {
                         closeMenu();
@@ -169,7 +208,7 @@
                       }
                     "
                   >
-                    {{ getLabel('loginButton', 'Log In') }}
+                    {{ getLabel("loginButton", "Log In") }}
                   </button>
                 </div>
               </template>
@@ -182,11 +221,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
-import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
-import LoginForm from './LoginForm.vue';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { Contact, Customer, GraphQLClient } from "propeller-sdk-v2";
+import LoginForm from "./LoginForm.vue";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface AccountMenuLink {
   /** Display label for the link */
@@ -289,7 +328,7 @@ export interface AccountIconAndMenuProps {
     user: Contact | Customer,
     accessToken?: string,
     refreshToken?: string,
-    expiresAt?: string
+    expiresAt?: string,
   ) => void;
 
   // ── Existing callbacks ──────────────────────────────────────────────────
@@ -356,7 +395,7 @@ export interface AccountIconAndMenuProps {
    * - 'dropdown' (default): Header icon with popup menu
    * - 'sidebar': Always-visible vertical navigation for account layout
    */
-  variant?: 'dropdown' | 'sidebar';
+  variant?: "dropdown" | "sidebar";
 
   /**
    * Current route path, used in sidebar variant to highlight the active link.
@@ -384,18 +423,20 @@ interface AccountIconAndMenuState {
 const props = withDefaults(defineProps<AccountIconAndMenuProps>(), {
   showAccountMenuOnClick: true,
 });
-const isMounted = ref<AccountIconAndMenuState['isMounted']>(false);
-const menuOpen = ref<AccountIconAndMenuState['menuOpen']>(false);
-function _onDocumentClick() { menuOpen.value = false; }
-onMounted(() => document.addEventListener('click', _onDocumentClick));
-onUnmounted(() => document.removeEventListener('click', _onDocumentClick));
+const isMounted = ref<AccountIconAndMenuState["isMounted"]>(false);
+const menuOpen = ref<AccountIconAndMenuState["menuOpen"]>(false);
+function _onDocumentClick() {
+  menuOpen.value = false;
+}
+onMounted(() => document.addEventListener("click", _onDocumentClick));
+onUnmounted(() => document.removeEventListener("click", _onDocumentClick));
 
 onMounted(() => {
   isMounted.value = true;
 });
 
 const isSidebar = computed(() => {
-  return props.variant === 'sidebar';
+  return props.variant === "sidebar";
 });
 
 watch(
@@ -406,99 +447,115 @@ watch(
       menuOpen.value = false;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
-function getUserName(): ReturnType<AccountIconAndMenuState['getUserName']> {
+function getUserName(): ReturnType<AccountIconAndMenuState["getUserName"]> {
   const user = props.user as Contact | Customer;
-  if (!user) return '';
+  if (!user) return "";
   const parts = [user.firstName, user.lastName].filter(Boolean);
-  if (parts.length > 0) return parts.join(' ');
+  if (parts.length > 0) return parts.join(" ");
   if (user.firstName) return user.firstName;
   if (user.email) return user.email;
-  return 'User';
+  return "User";
 }
-function getLabel(key: string, fallback: string): ReturnType<AccountIconAndMenuState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<AccountIconAndMenuState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function getMenuTitle(): ReturnType<AccountIconAndMenuState['getMenuTitle']> {
+function getMenuTitle(): ReturnType<AccountIconAndMenuState["getMenuTitle"]> {
   return (
     props.accountMenuTitle ||
-    (props.labels as Record<string, string>)?.['accountMenuTitle'] ||
-    'My account'
+    (props.labels as Record<string, string>)?.["accountMenuTitle"] ||
+    "My account"
   );
 }
-function isActiveLink(href: string): ReturnType<AccountIconAndMenuState['isActiveLink']> {
+function isActiveLink(
+  href: string,
+): ReturnType<AccountIconAndMenuState["isActiveLink"]> {
   if (!props.currentPath) return false;
-  if (href.endsWith('/account')) return props.currentPath === href;
+  if (href.endsWith("/account")) return props.currentPath === href;
   return props.currentPath.startsWith(href);
 }
-function getMenuLinks(): ReturnType<AccountIconAndMenuState['getMenuLinks']> {
+function getMenuLinks(): ReturnType<AccountIconAndMenuState["getMenuLinks"]> {
   if (props.menuLinks && (props.menuLinks as AccountMenuLink[]).length > 0) {
     return props.menuLinks as AccountMenuLink[];
   }
   return [
     {
-      label: 'Dashboard',
-      href: '/account',
+      label: "Dashboard",
+      href: "/account",
     },
     {
-      label: 'Orders',
-      href: '/account/orders',
+      label: "Orders",
+      href: "/account/orders",
     },
     {
-      label: 'Addresses',
-      href: '/account/addresses',
+      label: "Addresses",
+      href: "/account/addresses",
     },
     {
-      label: 'Quotes',
-      href: '/account/quotes',
+      label: "Quotes",
+      href: "/account/quotes",
     },
     {
-      label: 'Invoices',
-      href: '/account/invoices',
+      label: "Invoices",
+      href: "/account/invoices",
     },
     {
-      label: 'Favorites',
-      href: '/account/favorites',
+      label: "Favorites",
+      href: "/account/favorites",
     },
   ] as AccountMenuLink[];
 }
-function handleIconClick(): ReturnType<AccountIconAndMenuState['handleIconClick']> {
-  console.log('[AccountMenu] click, menuOpen was:', menuOpen.value, 'showAccountMenuOnClick:', props.showAccountMenuOnClick);
+function handleIconClick(): ReturnType<
+  AccountIconAndMenuState["handleIconClick"]
+> {
+  console.log(
+    "[AccountMenu] click, menuOpen was:",
+    menuOpen.value,
+    "showAccountMenuOnClick:",
+    props.showAccountMenuOnClick,
+  );
   if (props.showAccountMenuOnClick !== false) {
     menuOpen.value = !menuOpen.value;
-    console.log('[AccountMenu] menuOpen is now:', menuOpen.value);
+    console.log("[AccountMenu] menuOpen is now:", menuOpen.value);
   } else {
     if (props.onAccountIconClick) props.onAccountIconClick();
   }
 }
 function handleMenuItemClick(
-  href: string
-): ReturnType<AccountIconAndMenuState['handleMenuItemClick']> {
+  href: string,
+): ReturnType<AccountIconAndMenuState["handleMenuItemClick"]> {
   menuOpen.value = false;
   if (props.onMenuItemClick) props.onMenuItemClick(href);
 }
-function handleLogoutClick(): ReturnType<AccountIconAndMenuState['handleLogoutClick']> {
+function handleLogoutClick(): ReturnType<
+  AccountIconAndMenuState["handleLogoutClick"]
+> {
   menuOpen.value = false;
   if (props.onLogoutClick) props.onLogoutClick();
 }
 function handleForgotPasswordClick(): ReturnType<
-  AccountIconAndMenuState['handleForgotPasswordClick']
+  AccountIconAndMenuState["handleForgotPasswordClick"]
 > {
   menuOpen.value = false;
   if (props.onForgotPasswordClick) props.onForgotPasswordClick();
 }
-function handleRegisterClick(): ReturnType<AccountIconAndMenuState['handleRegisterClick']> {
+function handleRegisterClick(): ReturnType<
+  AccountIconAndMenuState["handleRegisterClick"]
+> {
   menuOpen.value = false;
   if (props.onRegisterClick) props.onRegisterClick();
 }
 function handleGuestCheckoutClick(): ReturnType<
-  AccountIconAndMenuState['handleGuestCheckoutClick']
+  AccountIconAndMenuState["handleGuestCheckoutClick"]
 > {
   menuOpen.value = false;
   if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
 }
-function closeMenu(): ReturnType<AccountIconAndMenuState['closeMenu']> {
+function closeMenu(): ReturnType<AccountIconAndMenuState["closeMenu"]> {
   menuOpen.value = false;
 }
 </script>

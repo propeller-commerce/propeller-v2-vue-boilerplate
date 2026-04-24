@@ -1,18 +1,29 @@
 <template>
   <tbody class="propeller-order-item-card">
-    <tr :class="`propeller-order-item-card__row ${isChildItem ? 'border-0' : 'hover:bg-surface-hover transition'}`" :data-child="isChildItem ? 'true' : 'false'">
-      <td :class="`propeller-order-item-card__cell propeller-order-item-card__cell--product ${isChildItem ? 'px-6 py-2 pl-28' : 'px-6 py-4'}`">
+    <tr
+      :class="`propeller-order-item-card__row ${isChildItem ? 'border-0' : 'hover:bg-surface-hover transition'}`"
+      :data-child="isChildItem ? 'true' : 'false'"
+    >
+      <td
+        :class="`propeller-order-item-card__cell propeller-order-item-card__cell--product ${isChildItem ? 'px-6 py-2 pl-28' : 'px-6 py-4'}`"
+      >
         <div class="flex items-center gap-4">
           <template v-if="showImage">
             <template v-if="productImage">
-              <div class="propeller-order-item-card__media relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
-                <img class="propeller-order-item-card__image object-cover w-full h-full" :src="productImage" :alt="productName" />
+              <div
+                class="propeller-order-item-card__media relative w-16 h-16 flex-shrink-0 rounded overflow-hidden"
+              >
+                <img
+                  class="propeller-order-item-card__image object-cover w-full h-full"
+                  :src="productImage"
+                  :alt="productName"
+                />
               </div>
             </template>
 
             <template v-if="!productImage">
               <div
-                class="propeller-order-item-card__image-placeholder w-16 h-16 bg-muted rounded flex items-center justify-center text-foreground-subtle text-xs"
+                class="propeller-order-item-card__image-placeholder w-16 h-16 bg-surface-hover rounded flex items-center justify-center text-foreground-subtle text-xs"
               >
                 No Img
               </div>
@@ -29,21 +40,34 @@
             </template>
 
             <template v-if="!titleLinkable || !productUrl || isChildItem">
-              <span :class="`propeller-order-item-card__title ${isChildItem ? 'text-sm text-muted-foreground' : 'font-medium'}`">{{
-                productName
-              }}</span>
+              <span
+                :class="`propeller-order-item-card__title ${isChildItem ? 'text-sm text-muted-foreground' : 'font-medium'}`"
+                >{{ productName }}</span
+              >
             </template>
 
             <template v-if="showSku && productSku">
-              <p class="propeller-order-item-card__sku text-sm text-muted-foreground mt-1">SKU: {{ productSku }}</p>
+              <p
+                class="propeller-order-item-card__sku text-sm text-muted-foreground mt-1"
+              >
+                SKU: {{ productSku }}
+              </p>
             </template>
 
             <template v-if="showItemNotes && notes">
-              <p class="propeller-order-item-card__notes text-sm text-foreground-subtle mt-1 italic">{{ notes }}</p>
+              <p
+                class="propeller-order-item-card__notes text-sm text-foreground-subtle mt-1 italic"
+              >
+                {{ notes }}
+              </p>
             </template>
 
             <template v-if="showStockComponent">
-              <p class="propeller-order-item-card__stock text-xs text-foreground-subtle mt-1">Stock info</p>
+              <p
+                class="propeller-order-item-card__stock text-xs text-foreground-subtle mt-1"
+              >
+                Stock info
+              </p>
             </template>
           </div>
         </div>
@@ -51,7 +75,9 @@
       <template v-if="showQuantity">
         <td
           :class="
-            isChildItem ? 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-gray-600' : 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-4 text-center'
+            isChildItem
+              ? 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-muted-foreground'
+              : 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-4 text-center'
           "
         >
           {{ quantity }}
@@ -62,7 +88,7 @@
         <td
           :class="
             isChildItem
-              ? 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-gray-600'
+              ? 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-muted-foreground'
               : 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-4 text-right whitespace-nowrap text-orange-600'
           "
         >
@@ -76,7 +102,7 @@
         <td
           :class="
             isChildItem
-              ? 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600'
+              ? 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-muted-foreground'
               : 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-4 text-right whitespace-nowrap'
           "
         >
@@ -85,25 +111,42 @@
       </template>
     </tr>
     <template v-if="hasChildren">
-      <template :key="child.id || child.uuid" v-for="(child, index) in childItems || []">
-        <tr class="propeller-order-item-card__child-row border-0" data-child="true">
-          <td class="propeller-order-item-card__cell propeller-order-item-card__cell--product px-6 py-2 pl-28">
-            <span class="propeller-order-item-card__child-title text-sm text-gray-700">{{
-              child.product?.names?.[0]?.value || child.name || 'Unknown'
-            }}</span>
+      <template
+        :key="child.id || child.uuid"
+        v-for="(child, index) in childItems || []"
+      >
+        <tr
+          class="propeller-order-item-card__child-row border-0"
+          data-child="true"
+        >
+          <td
+            class="propeller-order-item-card__cell propeller-order-item-card__cell--product px-6 py-2 pl-28"
+          >
+            <span
+              class="propeller-order-item-card__child-title text-sm text-muted-foreground"
+              >{{
+                child.product?.names?.[0]?.value || child.name || "Unknown"
+              }}</span
+            >
           </td>
           <template v-if="showQuantity">
-            <td class="propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-gray-600">
+            <td
+              class="propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-muted-foreground"
+            >
               {{ child.quantity || 0 }}
             </td>
           </template>
 
           <template v-if="showDiscount">
-            <td class="propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-gray-600"></td>
+            <td
+              class="propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-muted-foreground"
+            ></td>
           </template>
 
           <template v-if="showPrice">
-            <td class="propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600">
+            <td
+              class="propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-muted-foreground"
+            >
               {{ formatItemPrice(child.priceTotal || 0) }}
             </td>
           </template>
@@ -114,9 +157,9 @@
 </template>
 
 <script setup lang="ts">
-import type { OrderItem } from 'propeller-sdk-v2';
-import { computed } from 'vue';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import type { OrderItem } from "propeller-sdk-v2";
+import { computed } from "vue";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface OrderItemCardProps {
   /** The order item to display */
@@ -216,7 +259,9 @@ const showDiscount = computed(() => {
   return props.showDiscount !== undefined ? props.showDiscount : false;
 });
 const showStockComponent = computed(() => {
-  return props.showStockComponent !== undefined ? props.showStockComponent : false;
+  return props.showStockComponent !== undefined
+    ? props.showStockComponent
+    : false;
 });
 const showItemNotes = computed(() => {
   return props.showItemNotes !== undefined ? props.showItemNotes : false;
@@ -226,25 +271,28 @@ const isChildItem = computed(() => {
 });
 const productName = computed(() => {
   const item = props.orderItem;
-  return item?.product?.names?.[0]?.value || item?.name || 'Unknown Product';
+  return item?.product?.names?.[0]?.value || item?.name || "Unknown Product";
 });
 const productSku = computed(() => {
-  return props.orderItem?.product?.sku || props.orderItem?.sku || '';
+  return props.orderItem?.product?.sku || props.orderItem?.sku || "";
 });
 const productImage = computed(() => {
-  return props.orderItem?.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  return (
+    props.orderItem?.product?.media?.images?.items?.[0]?.imageVariants?.[0]
+      ?.url || ""
+  );
 });
 const productId = computed(() => {
   return props.orderItem?.product?.productId;
 });
 const productSlug = computed(() => {
-  return props.orderItem?.product?.slugs?.[0]?.value || '';
+  return props.orderItem?.product?.slugs?.[0]?.value || "";
 });
 const productUrl = computed(() => {
   if (productId && productSlug) {
-    return '/product/' + productId + '/' + productSlug;
+    return "/product/" + productId + "/" + productSlug;
   }
-  return '';
+  return "";
 });
 const quantity = computed(() => {
   return props.orderItem?.quantity || 0;
@@ -268,23 +316,32 @@ const discountPercentage = computed(() => {
   return 0;
 });
 const notes = computed(() => {
-  return props.orderItem?.notes || '';
+  return props.orderItem?.notes || "";
 });
 const hasChildren = computed(() => {
   return (props.childItems || []).length > 0;
 });
 
-function formatItemPrice(price: number): ReturnType<OrderItemCardState['formatItemPrice']> {
+function formatItemPrice(
+  price: number,
+): ReturnType<OrderItemCardState["formatItemPrice"]> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  if (!price && price !== 0) return '-';
-  return _formatPrice(price, { symbol: '€' });
+  if (!price && price !== 0) return "-";
+  return _formatPrice(price, { symbol: "€" });
 }
-function formatDiscountDisplay(): ReturnType<OrderItemCardState['formatDiscountDisplay']> {
+function formatDiscountDisplay(): ReturnType<
+  OrderItemCardState["formatDiscountDisplay"]
+> {
   const discountStr = formatItemPrice(discount.value);
   if (discountPercentage.value > 0) {
-    return discountStr + ' (' + discountPercentage.value.toFixed(2).replace('.', ',') + '%)';
+    return (
+      discountStr +
+      " (" +
+      discountPercentage.value.toFixed(2).replace(".", ",") +
+      "%)"
+    );
   }
   return discountStr;
 }

@@ -108,7 +108,7 @@
           </template>
         </div>
       </div>
-      <div class="propeller-product-tabs__mobile md:hidden divide-y divide-border border border-border rounded-lg">
+      <div class="propeller-product-tabs__mobile md:hidden divide-y divide-border border border-border rounded-[var(--radius-container)]">
         <template v-if="isTabVisible('description')">
           <div>
             <button

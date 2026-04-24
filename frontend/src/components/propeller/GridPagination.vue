@@ -5,18 +5,18 @@
         <div class="propeller-grid-pagination__compact flex justify-center items-center gap-2">
           <button
             type="button"
-            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--prev inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--prev inline-flex items-center rounded-[var(--radius-control)] border border-input bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
             :disabled="getCurrentPage() === 1"
             @click="async (event) => handlePageChange(getCurrentPage() - 1)"
           >
             {{ getLabel('previous') }}</button
-          ><span class="propeller-grid-pagination__info px-2 text-sm font-medium text-gray-700"
+          ><span class="propeller-grid-pagination__info px-2 text-sm font-medium text-muted-foreground"
             >{{ getLabel('page') }}&nbsp;{{ getCurrentPage() }}&nbsp;{{ getLabel('of') }}&nbsp;{{
               getTotalPages()
             }}</span
           ><button
             type="button"
-            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--next inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--next inline-flex items-center rounded-[var(--radius-control)] border border-input bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
             :disabled="getCurrentPage() === getTotalPages()"
             @click="async (event) => handlePageChange(getCurrentPage() + 1)"
           >
@@ -29,7 +29,7 @@
         <div class="propeller-grid-pagination__full flex justify-center items-center gap-1 flex-wrap">
           <button
             type="button"
-            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--prev inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--prev inline-flex items-center rounded-[var(--radius-control)] border border-input bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
             :disabled="getCurrentPage() === 1"
             @click="async (event) => handlePageChange(getCurrentPage() - 1)"
           >
@@ -41,7 +41,7 @@
             <div class="propeller-grid-pagination__page-wrapper inline-flex">
               <template v-if="item.type === 'dots'">
                 <span
-                  class="propeller-grid-pagination__dots inline-flex items-center justify-center min-w-[2rem] px-1 py-2 text-sm text-gray-500 select-none"
+                  class="propeller-grid-pagination__dots inline-flex items-center justify-center min-w-[2rem] px-1 py-2 text-sm text-muted-foreground select-none"
                 >
                   ...
                 </span>
@@ -54,8 +54,8 @@
                   :data-active="item.value === getCurrentPage() ? 'true' : 'false'"
                   :class="
                     item.value === getCurrentPage()
-                      ? 'propeller-grid-pagination__page inline-flex items-center justify-center min-w-[2.25rem] rounded-md border border-primary bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm'
-                      : 'propeller-grid-pagination__page inline-flex items-center justify-center min-w-[2.25rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50'
+                      ? 'propeller-grid-pagination__page inline-flex items-center justify-center min-w-[2.25rem] rounded-[var(--radius-control)] border border-primary bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm'
+                      : 'propeller-grid-pagination__page inline-flex items-center justify-center min-w-[2.25rem] rounded-[var(--radius-control)] border border-input bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-surface-hover'
                   "
                 >
                   {{ item.value }}
@@ -64,7 +64,7 @@
             </div> </template
           ><button
             type="button"
-            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--next inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            class="propeller-grid-pagination__btn propeller-grid-pagination__btn--next inline-flex items-center rounded-[var(--radius-control)] border border-input bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
             :disabled="getCurrentPage() === getTotalPages()"
             @click="async (event) => handlePageChange(getCurrentPage() + 1)"
           >

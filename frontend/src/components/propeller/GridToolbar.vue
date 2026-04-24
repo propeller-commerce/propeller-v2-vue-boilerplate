@@ -8,7 +8,7 @@
       </div>
       <div class="propeller-grid-toolbar__controls flex flex-wrap items-center gap-3">
         <select
-          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--offset h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--offset h-9 rounded-[var(--radius-control)] border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           :value="currentOffset"
           @change="async (e) => handleOffsetChange(parseInt((e.target as HTMLSelectElement).value))"
         >
@@ -18,7 +18,7 @@
         </select>
         <div class="propeller-grid-toolbar__divider h-4 w-px bg-border hidden sm:block"></div>
         <select
-          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-field h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-field h-9 rounded-[var(--radius-control)] border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           :value="currentSortField"
           @change="async (e) => handleSortFieldChange((e.target as HTMLSelectElement).value)"
         >
@@ -28,7 +28,7 @@
             </option>
           </template></select
         ><select
-          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-order h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-order h-9 rounded-[var(--radius-control)] border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           :value="currentSortOrder"
           @change="async (e) => handleSortOrderChange((e.target as HTMLSelectElement).value)"
         >
@@ -38,7 +38,7 @@
           </option></select
         ><button
           type="button"
-          class="propeller-grid-toolbar__view-toggle h-9 w-9 flex items-center justify-center rounded-md border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"
+          class="propeller-grid-toolbar__view-toggle h-9 w-9 flex items-center justify-center rounded-[var(--radius-control)] border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"
           @click="async (event) => handleViewChange()"
           :title="currentViewMode === 'grid' ? getLabel('switchToList') : getLabel('switchToGrid')"
         >
@@ -88,7 +88,7 @@
       <div class="propeller-grid-toolbar__active-filters flex flex-wrap gap-2 mb-4">
         <button
           type="button"
-          class="propeller-grid-toolbar__clear-all h-7 px-2 text-xs rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          class="propeller-grid-toolbar__clear-all h-7 px-2 text-xs rounded-[var(--radius-control)] hover:bg-accent hover:text-accent-foreground transition-colors"
           @click="
             async (event) => {
               if (onClearFilters) onClearFilters();

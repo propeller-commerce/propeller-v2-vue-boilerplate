@@ -1,8 +1,12 @@
 <template>
   <div :class="`propeller-product-gallery ${className || ''}`">
-    <div class="propeller-product-gallery__stage relative aspect-square bg-card overflow-hidden">
+    <div
+      class="propeller-product-gallery__stage relative aspect-square bg-card overflow-hidden"
+    >
       <template v-if="getImages().length === 0">
-        <div class="propeller-product-gallery__empty flex h-full w-full items-center justify-center bg-muted">
+        <div
+          class="propeller-product-gallery__empty flex h-full w-full items-center justify-center bg-surface-hover"
+        >
           <svg
             fill="none"
             stroke="currentColor"
@@ -68,7 +72,12 @@
             }
           "
         >
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-6 w-6">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            class="h-6 w-6"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -89,7 +98,12 @@
               }
             "
           >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-6 w-6">
+            <svg
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              class="h-6 w-6"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -118,7 +132,12 @@
               }
             "
           >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-6 w-6">
+            <svg
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              class="h-6 w-6"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -134,7 +153,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
 export interface ProductGalleryProps {
   /**
@@ -174,40 +193,42 @@ const props = withDefaults(defineProps<ProductGalleryProps>(), {
   showThumbnails: true,
   enableLightbox: true,
 });
-const selectedIndex = ref<ProductGalleryState['selectedIndex']>(0);
-const lightboxOpen = ref<ProductGalleryState['lightboxOpen']>(false);
+const selectedIndex = ref<ProductGalleryState["selectedIndex"]>(0);
+const lightboxOpen = ref<ProductGalleryState["lightboxOpen"]>(false);
 
-function getImages(): ReturnType<ProductGalleryState['getImages']> {
+function getImages(): ReturnType<ProductGalleryState["getImages"]> {
   return (props.images as string[]) || [];
 }
-function getMainImage(): ReturnType<ProductGalleryState['getMainImage']> {
+function getMainImage(): ReturnType<ProductGalleryState["getMainImage"]> {
   const images = getImages();
-  if (!images || images.length === 0) return '';
+  if (!images || images.length === 0) return "";
   const idx = selectedIndex.value;
-  return images[idx] || images[0] || '';
+  return images[idx] || images[0] || "";
 }
-function hasThumbnails(): ReturnType<ProductGalleryState['hasThumbnails']> {
+function hasThumbnails(): ReturnType<ProductGalleryState["hasThumbnails"]> {
   const images = getImages();
   return !!images && images.length > 1;
 }
-function selectImage(index: number): ReturnType<ProductGalleryState['selectImage']> {
+function selectImage(
+  index: number,
+): ReturnType<ProductGalleryState["selectImage"]> {
   selectedIndex.value = index;
 }
-function openLightbox(): ReturnType<ProductGalleryState['openLightbox']> {
+function openLightbox(): ReturnType<ProductGalleryState["openLightbox"]> {
   if (props.enableLightbox !== false) {
     lightboxOpen.value = true;
   }
 }
-function closeLightbox(): ReturnType<ProductGalleryState['closeLightbox']> {
+function closeLightbox(): ReturnType<ProductGalleryState["closeLightbox"]> {
   lightboxOpen.value = false;
 }
-function prevImage(): ReturnType<ProductGalleryState['prevImage']> {
+function prevImage(): ReturnType<ProductGalleryState["prevImage"]> {
   const images = getImages();
   const len = images?.length || 0;
   if (len === 0) return;
   selectedIndex.value = (selectedIndex.value - 1 + len) % len;
 }
-function nextImage(): ReturnType<ProductGalleryState['nextImage']> {
+function nextImage(): ReturnType<ProductGalleryState["nextImage"]> {
   const images = getImages();
   const len = images?.length || 0;
   if (len === 0) return;

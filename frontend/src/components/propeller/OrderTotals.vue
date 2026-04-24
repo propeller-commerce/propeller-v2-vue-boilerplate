@@ -1,7 +1,7 @@
 <template>
-  <div class="propeller-order-totals w-full md:w-80 bg-white p-6 rounded-lg shadow space-y-3">
+  <div class="propeller-order-totals w-full md:w-80 bg-card p-6 rounded-[var(--radius-container)] shadow space-y-3">
     <template v-if="showSubtotal">
-      <div class="propeller-order-totals__row flex justify-between text-gray-600" data-row="subtotal">
+      <div class="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="subtotal">
         <span class="propeller-order-totals__label">{{ getLabel('subtotal', 'Subtotal:') }}</span
         ><span class="propeller-order-totals__value">{{ formatItemPrice(subtotal) }}</span>
       </div>
@@ -12,28 +12,28 @@
         <span class="propeller-order-totals__label">{{ getLabel('discount', 'Discount:') }}</span
         ><span class="propeller-order-totals__value">{{ discountDisplay }}</span>
       </div>
-      <div class="propeller-order-totals__row flex justify-between text-gray-600 border-t pt-2 border-dashed" data-row="subtotal-with-discount">
+      <div class="propeller-order-totals__row flex justify-between text-muted-foreground border-t pt-2 border-dashed" data-row="subtotal-with-discount">
         <span class="propeller-order-totals__label">{{ getLabel('subtotalWithDiscount', 'Subtotal with discount:') }}</span
         ><span class="propeller-order-totals__value">{{ formatItemPrice(subtotalWithDiscount) }}</span>
       </div>
     </template>
 
     <template v-if="hasTransactionCosts">
-      <div class="propeller-order-totals__row flex justify-between text-gray-600" data-row="transaction-costs">
+      <div class="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="transaction-costs">
         <span class="propeller-order-totals__label">{{ getLabel('transactionCosts', 'Transaction costs:') }}</span
         ><span class="propeller-order-totals__value">{{ formatItemPrice(transactionCosts) }}</span>
       </div>
     </template>
 
     <template v-if="showShippingCosts && hasShippingCosts">
-      <div class="propeller-order-totals__row flex justify-between text-gray-600" data-row="shipping-costs">
+      <div class="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="shipping-costs">
         <span class="propeller-order-totals__label">{{ getLabel('shippingCosts', 'Shipping costs:') }}</span
         ><span class="propeller-order-totals__value">{{ formatItemPrice(shippingCosts) }}</span>
       </div>
     </template>
 
     <template v-if="showTotalExclVat">
-      <div class="propeller-order-totals__row flex justify-between text-gray-600 pt-2 border-t" data-row="total-excl-vat">
+      <div class="propeller-order-totals__row flex justify-between text-muted-foreground pt-2 border-t" data-row="total-excl-vat">
         <span class="propeller-order-totals__label">{{ getLabel('totalExclVat', 'Total excl. VAT:') }}</span
         ><span class="propeller-order-totals__value">{{ formatItemPrice(totalExclVat) }}</span>
       </div>
@@ -41,7 +41,7 @@
 
     <template v-if="showVATs && taxPercentages.length > 0">
       <template :key="index" v-for="(tax, index) in taxPercentages">
-        <div class="propeller-order-totals__row flex justify-between text-gray-600 text-sm" data-row="vat-line">
+        <div class="propeller-order-totals__row flex justify-between text-muted-foreground text-sm" data-row="vat-line">
           <span class="propeller-order-totals__label">{{ tax.percentage }}% {{ getLabel('vat', 'VAT') }}:</span
           ><span class="propeller-order-totals__value">{{ formatItemPrice(Number(tax.total)) }}</span>
         </div>
@@ -49,13 +49,13 @@
     </template>
 
     <template v-if="showTotalVat">
-      <div class="propeller-order-totals__row flex justify-between text-gray-600 text-sm" data-row="total-vat">
+      <div class="propeller-order-totals__row flex justify-between text-muted-foreground text-sm" data-row="total-vat">
         <span class="propeller-order-totals__label">{{ getLabel('totalVat', 'Total VAT:') }}</span
         ><span class="propeller-order-totals__value">{{ formatItemPrice(totalVat) }}</span>
       </div>
     </template>
 
-    <div class="propeller-order-totals__row propeller-order-totals__row--total flex justify-between text-xl font-bold pt-4 border-t text-gray-900 mt-2" data-row="total">
+    <div class="propeller-order-totals__row propeller-order-totals__row--total flex justify-between text-xl font-bold pt-4 border-t text-foreground mt-2" data-row="total">
       <span class="propeller-order-totals__label">{{ getLabel('total', 'Total:') }}</span
       ><span class="propeller-order-totals__value">{{ formatItemPrice(totalInclVat) }}</span>
     </div>

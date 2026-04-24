@@ -1,6 +1,9 @@
 <template>
   <template v-if="user">
-    <div class="propeller-add-to-favorite relative inline-block" :data-favorited="isFavorited ? 'true' : 'false'">
+    <div
+      class="propeller-add-to-favorite relative inline-block"
+      :data-favorited="isFavorited ? 'true' : 'false'"
+    >
       <button
         type="button"
         @click="async (event) => toggleModal()"
@@ -55,14 +58,20 @@
         <div
           class="propeller-add-to-favorite__modal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         >
-          <div class="propeller-add-to-favorite__modal-content bg-card rounded-[var(--radius-container)] max-w-md w-full shadow-lg border">
-            <div class="propeller-add-to-favorite__modal-header flex justify-between items-center p-6 pb-4">
-              <h3 class="propeller-add-to-favorite__modal-title text-xl font-bold">
-                {{ getLabel('modalTitle', 'Favorite product?') }}
+          <div
+            class="propeller-add-to-favorite__modal-content bg-card rounded-[var(--radius-container)] max-w-md w-full shadow-lg border"
+          >
+            <div
+              class="propeller-add-to-favorite__modal-header flex justify-between items-center p-6 pb-4"
+            >
+              <h3
+                class="propeller-add-to-favorite__modal-title text-xl font-bold"
+              >
+                {{ getLabel("modalTitle", "Favorite product?") }}
               </h3>
               <button
                 type="button"
-                class="propeller-add-to-favorite__modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-[var(--radius-control)] text-muted-foreground hover:text-muted-foreground hover:bg-muted"
+                class="propeller-add-to-favorite__modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-[var(--radius-control)] text-muted-foreground hover:text-muted-foreground hover:bg-surface-hover"
                 @click="async (event) => closeModal()"
               >
                 <svg
@@ -81,14 +90,21 @@
                 </svg>
               </button>
             </div>
-            <div class="propeller-add-to-favorite__modal-body px-6 pb-6 space-y-4">
+            <div
+              class="propeller-add-to-favorite__modal-body px-6 pb-6 space-y-4"
+            >
               <template v-if="getMemberLists().length > 0">
                 <div class="propeller-add-to-favorite__member-lists space-y-2">
-                  <template :key="list.id" v-for="(list, index) in getMemberLists()">
+                  <template
+                    :key="list.id"
+                    v-for="(list, index) in getMemberLists()"
+                  >
                     <button
                       type="button"
                       class="propeller-add-to-favorite__member-list-item flex items-center gap-2 py-2 w-full text-left hover:bg-surface-hover rounded-[var(--radius-control)] px-1 transition-colors disabled:opacity-50"
-                      @click="async (event) => handleRemoveFromList(String(list.id))"
+                      @click="
+                        async (event) => handleRemoveFromList(String(list.id))
+                      "
                       :disabled="removeLoading"
                     >
                       <svg
@@ -121,25 +137,31 @@
                     :disabled="removeLoading"
                   >
                     <template v-if="removeLoading">
-                      {{ getLabel('removing', 'Removing...') }}
+                      {{ getLabel("removing", "Removing...") }}
                     </template>
 
                     <template v-else>
-                      {{ getLabel('removeFromFavorites', 'Remove from favorites') }}
+                      {{
+                        getLabel("removeFromFavorites", "Remove from favorites")
+                      }}
                     </template>
                   </button>
                 </div>
-                <div class="propeller-add-to-favorite__divider border-t border-border"></div>
+                <div
+                  class="propeller-add-to-favorite__divider border-t border-border"
+                ></div>
               </template>
 
               <template v-if="getNonMemberLists().length > 0">
                 <div class="propeller-add-to-favorite__add-form space-y-3">
                   <div class="space-y-1">
-                    <label class="propeller-add-to-favorite__select-label text-xs text-gray-500">{{
-                      getLabel('chooseList', 'Choose a favorites list*')
-                    }}</label
+                    <label
+                      class="propeller-add-to-favorite__select-label text-xs text-muted-foreground"
+                      >{{
+                        getLabel("chooseList", "Choose a favorites list*")
+                      }}</label
                     ><select
-                      class="propeller-add-to-favorite__select block w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
+                      class="propeller-add-to-favorite__select block w-full rounded-[var(--radius-control)] border border-input px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
                       :value="selectedListId"
                       @change="
                         async (e) => {
@@ -147,7 +169,10 @@
                         }
                       "
                     >
-                      <template :key="list.id" v-for="(list, index) in getNonMemberLists()">
+                      <template
+                        :key="list.id"
+                        v-for="(list, index) in getNonMemberLists()"
+                      >
                         <option :value="String(list.id)">
                           {{ list.name }}
                         </option>
@@ -156,27 +181,34 @@
                   </div>
                   <button
                     type="button"
-                    class="propeller-add-to-favorite__submit-btn w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
+                    class="propeller-add-to-favorite__submit-btn w-full py-2.5 px-4 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/80 rounded-[var(--radius-control)] transition-colors disabled:opacity-50"
                     @click="async (event) => handleAddToList()"
                     :disabled="!selectedListId || addLoading"
                   >
                     <template v-if="addLoading">
-                      {{ getLabel('adding', 'Adding...') }}
+                      {{ getLabel("adding", "Adding...") }}
                     </template>
 
                     <template v-else>
-                      {{ getLabel('addToFavorites', 'Add to favorites') }}
+                      {{ getLabel("addToFavorites", "Add to favorites") }}
                     </template>
                   </button>
                 </div>
               </template>
 
-              <template v-if="getMemberLists().length === 0 && getNonMemberLists().length === 0">
-                <div class="propeller-add-to-favorite__empty py-4 text-center text-gray-500 text-sm">
+              <template
+                v-if="
+                  getMemberLists().length === 0 &&
+                  getNonMemberLists().length === 0
+                "
+              >
+                <div
+                  class="propeller-add-to-favorite__empty py-4 text-center text-muted-foreground text-sm"
+                >
                   {{
                     getLabel(
-                      'noLists',
-                      'You have no favorite lists. Create one in your account first.'
+                      "noLists",
+                      "You have no favorite lists. Create one in your account first.",
                     )
                   }}
                 </div>
@@ -190,16 +222,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from "vue";
 
 import {
   FavoriteList,
   GraphQLClient,
   Contact,
   Customer,
-} from 'propeller-sdk-v2';
-import { useFavorites } from '../../composables/useFavorites';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+} from "propeller-sdk-v2";
+import { useFavorites } from "../../composables/useFavorites";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface AddToFavoriteProps {
   /** The initialized GraphQL Client instance */
@@ -252,12 +284,14 @@ const { addToList, removeFromList } = useFavorites({
   user: userRef,
 });
 
-const memberListIds = ref<AddToFavoriteState['memberListIds']>(new Set<string>());
-const showModal = ref<AddToFavoriteState['showModal']>(false);
-const selectedListId = ref<AddToFavoriteState['selectedListId']>('');
-const addLoading = ref<AddToFavoriteState['addLoading']>(false);
-const removeLoading = ref<AddToFavoriteState['removeLoading']>(false);
-const _isMounted = ref<AddToFavoriteState['_isMounted']>(false);
+const memberListIds = ref<AddToFavoriteState["memberListIds"]>(
+  new Set<string>(),
+);
+const showModal = ref<AddToFavoriteState["showModal"]>(false);
+const selectedListId = ref<AddToFavoriteState["selectedListId"]>("");
+const addLoading = ref<AddToFavoriteState["addLoading"]>(false);
+const removeLoading = ref<AddToFavoriteState["removeLoading"]>(false);
+const _isMounted = ref<AddToFavoriteState["_isMounted"]>(false);
 
 const isFavorited = computed(() => {
   return memberListIds.value.size > 0;
@@ -273,7 +307,9 @@ watch(
   () => [props.user, props.productId, props.clusterId],
   () => {
     if (!props.user || !itemId) return;
-    const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
+    const userLists = (props.user as any)?.favoriteLists?.items as
+      | FavoriteList[]
+      | undefined;
     const memberIds = new Set<string>();
     (userLists || []).forEach((list: FavoriteList) => {
       const productsRef = list?.products as
@@ -296,8 +332,12 @@ watch(
           memberIds.add(String(list.id));
         }
       } else {
-        const inProducts = productsRef?.items?.some((item) => item.clusterId === itemId);
-        const inClusters = clustersRef?.items?.some((item) => item.clusterId === itemId);
+        const inProducts = productsRef?.items?.some(
+          (item) => item.clusterId === itemId,
+        );
+        const inClusters = clustersRef?.items?.some(
+          (item) => item.clusterId === itemId,
+        );
         if (inProducts || inClusters) {
           memberIds.add(String(list.id));
         }
@@ -305,9 +345,9 @@ watch(
     });
     memberListIds.value = memberIds;
   },
-  { immediate: true }
+  { immediate: true },
 );
-function toggleModal(): ReturnType<AddToFavoriteState['toggleModal']> {
+function toggleModal(): ReturnType<AddToFavoriteState["toggleModal"]> {
   if (!props.user) return;
   if (!showModal.value) {
     const nonMember = getNonMemberLists();
@@ -317,10 +357,12 @@ function toggleModal(): ReturnType<AddToFavoriteState['toggleModal']> {
   }
   showModal.value = !showModal.value;
 }
-function closeModal(): ReturnType<AddToFavoriteState['closeModal']> {
+function closeModal(): ReturnType<AddToFavoriteState["closeModal"]> {
   showModal.value = false;
 }
-async function handleAddToList(): ReturnType<AddToFavoriteState['handleAddToList']> {
+async function handleAddToList(): ReturnType<
+  AddToFavoriteState["handleAddToList"]
+> {
   if (!selectedListId.value || addLoading.value) return;
   addLoading.value = true;
   try {
@@ -330,18 +372,18 @@ async function handleAddToList(): ReturnType<AddToFavoriteState['handleAddToList
     const newMemberIds = new Set(memberListIds.value);
     newMemberIds.add(String(selectedListId.value));
     memberListIds.value = newMemberIds;
-    selectedListId.value = '';
+    selectedListId.value = "";
     showModal.value = false;
     if (props.onFavoriteChanged) props.onFavoriteChanged();
   } catch (error) {
-    console.error('Error adding to favorite list:', error);
+    console.error("Error adding to favorite list:", error);
   } finally {
     addLoading.value = false;
   }
 }
 async function handleRemoveFromList(
-  listId: string
-): ReturnType<AddToFavoriteState['handleRemoveFromList']> {
+  listId: string,
+): ReturnType<AddToFavoriteState["handleRemoveFromList"]> {
   if (removeLoading.value) return;
   removeLoading.value = true;
   try {
@@ -351,26 +393,37 @@ async function handleRemoveFromList(
     const newMemberIds = new Set(memberListIds.value);
     newMemberIds.delete(String(listId));
     memberListIds.value = newMemberIds;
-    selectedListId.value = '';
+    selectedListId.value = "";
     showModal.value = false;
     if (props.onFavoriteChanged) props.onFavoriteChanged();
   } catch (error) {
-    console.error('Error removing from favorite list:', error);
+    console.error("Error removing from favorite list:", error);
   } finally {
     removeLoading.value = false;
   }
 }
-function getLabel(key: string, fallback: string): ReturnType<AddToFavoriteState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<AddToFavoriteState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function getMemberLists(): ReturnType<AddToFavoriteState['getMemberLists']> {
-  const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
-  return (userLists || []).filter((list: FavoriteList) => memberListIds.value.has(String(list.id)));
+function getMemberLists(): ReturnType<AddToFavoriteState["getMemberLists"]> {
+  const userLists = (props.user as any)?.favoriteLists?.items as
+    | FavoriteList[]
+    | undefined;
+  return (userLists || []).filter((list: FavoriteList) =>
+    memberListIds.value.has(String(list.id)),
+  );
 }
-function getNonMemberLists(): ReturnType<AddToFavoriteState['getNonMemberLists']> {
-  const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
+function getNonMemberLists(): ReturnType<
+  AddToFavoriteState["getNonMemberLists"]
+> {
+  const userLists = (props.user as any)?.favoriteLists?.items as
+    | FavoriteList[]
+    | undefined;
   return (userLists || []).filter(
-    (list: FavoriteList) => !memberListIds.value.has(String(list.id))
+    (list: FavoriteList) => !memberListIds.value.has(String(list.id)),
   );
 }
 </script>

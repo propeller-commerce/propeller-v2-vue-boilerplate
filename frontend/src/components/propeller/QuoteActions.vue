@@ -5,7 +5,7 @@
         <input
           type="checkbox"
           id="quote-actions-terms"
-          class="propeller-quote-actions__checkbox h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          class="propeller-quote-actions__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
           :checked="termsAccepted"
           @change="async (event) => handleTermsChange(event.target.checked)"
         /><label for="quote-actions-terms" class="text-sm leading-none"
@@ -22,7 +22,7 @@
 
     <button
       type="button"
-      class="propeller-quote-actions__submit flex items-center justify-center gap-2 w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+      class="propeller-quote-actions__submit flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground text-center py-3 rounded-[var(--radius-container)] hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
       @click="async (event) => handleAcceptClick()"
       :disabled="isAcceptDisabled"
     >

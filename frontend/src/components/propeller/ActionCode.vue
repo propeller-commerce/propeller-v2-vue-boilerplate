@@ -50,7 +50,7 @@
             :disabled="loading"
           /><button
             type="button"
-            class="propeller-action-code__submit bg-secondary text-white text-sm font-medium px-4 py-2 rounded-[var(--radius-control)] hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            class="propeller-action-code__submit bg-secondary text-primary-foreground text-sm font-medium px-4 py-2 rounded-[var(--radius-control)] hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             @click="async (event) => handleApply()"
             :disabled="loading || !code.trim()"
           >

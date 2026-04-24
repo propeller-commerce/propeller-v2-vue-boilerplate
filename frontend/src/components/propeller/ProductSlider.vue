@@ -5,16 +5,24 @@
       :data-loading="isLoading ? 'true' : 'false'"
     >
       <template v-if="sliderTitle() || items().length > 0">
-        <div class="propeller-product-slider__header flex items-center justify-between mb-6">
+        <div
+          class="propeller-product-slider__header flex items-center justify-between mb-6"
+        >
           <template v-if="sliderTitle()">
-            <h2 class="propeller-product-slider__title text-2xl font-bold">{{ sliderTitle() }}</h2>
+            <h2 class="propeller-product-slider__title text-2xl font-bold">
+              {{ sliderTitle() }}
+            </h2>
           </template>
 
           <template v-if="items().length > desktopCount()">
             <div class="propeller-product-slider__nav flex gap-2">
               <button
                 class="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--prev p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
-                @click="() => { if (sliderRef) sliderScrollLeft(sliderRef as HTMLElement) }"
+                @click="
+                  () => {
+                    if (sliderRef) sliderScrollLeft(sliderRef as HTMLElement);
+                  }
+                "
                 :disabled="!canScrollLeft"
                 :aria-label="getLabel('scrollLeft', 'Scroll left')"
               >
@@ -31,7 +39,11 @@
                 </svg></button
               ><button
                 class="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--next p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
-                @click="() => { if (sliderRef) sliderScrollRight(sliderRef as HTMLElement) }"
+                @click="
+                  () => {
+                    if (sliderRef) sliderScrollRight(sliderRef as HTMLElement);
+                  }
+                "
                 :disabled="!canScrollRight"
                 :aria-label="getLabel('scrollRight', 'Scroll right')"
               >
@@ -53,11 +65,21 @@
       </template>
 
       <template v-if="isLoading">
-        <div class="propeller-product-slider__skeleton flex gap-6 overflow-hidden">
-          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
-          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
-          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
-          <div class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-muted rounded-[var(--radius-container)] animate-pulse"></div>
+        <div
+          class="propeller-product-slider__skeleton flex gap-6 overflow-hidden"
+        >
+          <div
+            class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-[var(--radius-container)] animate-pulse"
+          ></div>
+          <div
+            class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-[var(--radius-container)] animate-pulse"
+          ></div>
+          <div
+            class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-[var(--radius-container)] animate-pulse"
+          ></div>
+          <div
+            class="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-[var(--radius-container)] animate-pulse"
+          ></div>
         </div>
       </template>
 
@@ -71,13 +93,16 @@
             msOverflowStyle: 'none',
           }"
         >
-          <template :key="getItemId(item) + '-' + index" v-for="(item, index) in items()">
+          <template
+            :key="getItemId(item) + '-' + index"
+            v-for="(item, index) in items()"
+          >
             <div
               class="propeller-product-slider__slide flex-shrink-0 w-[calc((100%_-_1.5rem)_/_1.5)] md:w-[calc((100%_-_3rem)_/_2.5)] lg:w-[calc((100%_-_4.5rem)_/_4)]"
             >
               <template v-if="isCluster(item)">
                 <ClusterCard
-                  :cluster="item as Cluster "
+                  :cluster="item as Cluster"
                   :configuration="configuration"
                   :includeTax="includeTax"
                   :language="language"
@@ -124,7 +149,11 @@
                   :showAvailability="showAvailability"
                   :stockLabels="stockLabels"
                   :labels="labels"
-                  :onToggleFavorite="(product, isFav) => { if (onToggleFavorite) onToggleFavorite(product, isFav); }"
+                  :onToggleFavorite="
+                    (product, isFav) => {
+                      if (onToggleFavorite) onToggleFavorite(product, isFav);
+                    }
+                  "
                   :onProductClick="(product) => handleProductClick(product)"
                 ></ProductCard>
               </template>
@@ -133,9 +162,18 @@
         </div>
       </template>
 
-      <template v-if="!isLoading && items().length === 0 && !products && !isCrossUpsellMode()">
-        <div class="propeller-product-slider__empty text-center text-muted-foreground py-8">
-          {{ getLabel('noProducts', 'No products found') }}
+      <template
+        v-if="
+          !isLoading &&
+          items().length === 0 &&
+          !products &&
+          !isCrossUpsellMode()
+        "
+      >
+        <div
+          class="propeller-product-slider__empty text-center text-muted-foreground py-8"
+        >
+          {{ getLabel("noProducts", "No products found") }}
         </div>
       </template>
     </div>
@@ -143,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from "vue";
 
 import {
   GraphQLClient,
@@ -154,11 +192,11 @@ import {
   Cart,
   CartMainItem,
   Enums,
-} from 'propeller-sdk-v2';
-import ProductCard from './ProductCard.vue';
-import ClusterCard from './ClusterCard.vue';
-import { useProductSlider } from '../../composables/useProductSlider';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+} from "propeller-sdk-v2";
+import ProductCard from "./ProductCard.vue";
+import ClusterCard from "./ClusterCard.vue";
+import { useProductSlider } from "../../composables/useProductSlider";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface ProductSliderProps {
   // === Data source ===
@@ -338,7 +376,7 @@ const props = withDefaults(defineProps<ProductSliderProps>(), {
   enableAddFavorite: false,
 });
 
-const langRef = computed(() => props.language || 'NL');
+const langRef = computed(() => props.language || "NL");
 const sliderRef = ref<HTMLElement | null>(null);
 
 const {
@@ -391,7 +429,7 @@ watch(
     } else {
       fetchProducts(props.productIds || [], props.clusterIds || []);
     }
-  }
+  },
 );
 
 function items(): (Product | Cluster)[] {
@@ -404,17 +442,17 @@ function isCrossUpsellMode(): boolean {
   return !!(props.crossUpsellTypes && props.crossUpsellTypes.length > 0);
 }
 function crossUpsellTitle(): string {
-  if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return '';
+  if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return "";
   const typeLabels: Record<string, string> = {
-    ACCESSORIES: 'Accessories',
-    ALTERNATIVES: 'Alternatives',
-    RELATED: 'Related products',
-    OPTIONS: 'Options',
-    PARTS: 'Parts',
+    ACCESSORIES: "Accessories",
+    ALTERNATIVES: "Alternatives",
+    RELATED: "Related products",
+    OPTIONS: "Options",
+    PARTS: "Parts",
   };
   return props.crossUpsellTypes
     .map((t: string) => props.labels?.[t.toLowerCase()] || typeLabels[t] || t)
-    .join(' & ');
+    .join(" & ");
 }
 function sliderTitle(): string | undefined {
   if (props.title !== undefined) return props.title;
@@ -425,13 +463,13 @@ function desktopCount(): number {
   return props.itemsPerView?.desktop || 4;
 }
 function portalMode(): string {
-  return (props.portalMode as string) || 'open';
+  return (props.portalMode as string) || "open";
 }
 function getLabel(key: string, fallback: string): string {
   return _getLabel(props.labels, key, fallback);
 }
 function isCluster(item: any): boolean {
-  return 'clusterId' in item && !('productId' in item);
+  return "clusterId" in item && !("productId" in item);
 }
 function getItemId(item: any): number {
   return isCluster(item) ? item.clusterId : item.productId;

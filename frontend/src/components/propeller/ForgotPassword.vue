@@ -4,7 +4,7 @@
       <div class="propeller-forgot-password__header space-y-1 text-center mb-6">
         <h2 class="propeller-forgot-password__title text-2xl font-bold">{{ resolvedTitle }}</h2>
         <template v-if="subtitle">
-          <p class="propeller-forgot-password__subtitle text-sm text-gray-500">{{ subtitle }}</p>
+          <p class="propeller-forgot-password__subtitle text-sm text-muted-foreground">{{ subtitle }}</p>
         </template>
       </div>
     </template>
@@ -19,7 +19,7 @@
             type="email"
             id="forgot-password-email"
             name="email"
-            class="propeller-forgot-password__input flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+            class="propeller-forgot-password__input flex h-10 w-full rounded-[var(--radius-control)] border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
             :value="email"
             @change="
               async (e) => {
@@ -32,14 +32,14 @@
           />
         </div>
         <template v-if="error">
-          <div class="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+          <div class="text-sm text-destructive bg-destructive/10 p-3 rounded-[var(--radius-control)]">
             {{ error }}
           </div>
         </template>
 
         <button
           type="submit"
-          class="propeller-forgot-password__submit inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="propeller-forgot-password__submit inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-[var(--radius-control)] hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="loading"
         >
           <template v-if="loading">
@@ -47,7 +47,7 @@
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
-              class="propeller-forgot-password__spinner animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              class="propeller-forgot-password__spinner animate-spin -ml-1 mr-2 h-4 w-4 text-primary-foreground"
             >
               <circle
                 cx="12"
@@ -83,7 +83,7 @@
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth="2"
-            class="propeller-forgot-password__success-icon h-12 w-12 text-green-500"
+            class="propeller-forgot-password__success-icon h-12 w-12 text-success"
           >
             <path
               strokeLinecap="round"
@@ -92,7 +92,7 @@
             ></path>
           </svg>
         </div>
-        <p class="propeller-forgot-password__success-message text-sm text-gray-600">{{ resolvedResponseMessage }}</p>
+        <p class="propeller-forgot-password__success-message text-sm text-muted-foreground">{{ resolvedResponseMessage }}</p>
       </div>
     </template>
   </div>
