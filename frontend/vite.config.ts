@@ -5,14 +5,8 @@ import { resolve } from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  // Proxy target — upstream GraphQL URL the Vite dev proxy forwards to.
-  // VITE_GRAPHQL_PROXY_TARGET is server-only (used here, not exposed to the browser).
-  // VITE_GRAPHQL_ENDPOINT is honored as a fallback for backwards compatibility.
-  const graphqlEndpoint = env.VITE_GRAPHQL_PROXY_TARGET
-    || env.VITE_GRAPHQL_ENDPOINT
-    || 'https://api.staging.helice.cloud/v2/graphql'
+  const graphqlEndpoint = env.VITE_GRAPHQL_ENDPOINT || 'https://api.staging.helice.cloud/v2/graphql'
   const apiKey = env.VITE_API_KEY || ''
-  const behindProxy = env.VITE_BEHIND_PROXY === 'true'
 
   return {
     plugins: [
@@ -28,14 +22,17 @@ export default defineConfig(({ mode }) => {
       host: '127.0.0.1',
       allowedHosts: [
         'vue-boilerplate.dev.wp-propel.com',
+        'vue-boilerplate.stage.wp-propel.com',
         'vue-boilerplate.prod.wp-propel.com',
       ],
-      hmr: behindProxy ? { clientPort: 80 } : true,
+      hmr: {
+        clientPort: 80,
+      },
       proxy: {
         '/api/graphql': {
-          target: new URL(graphqlEndpoint).origin,
+          target: 'https://api.staging.helice.cloud',
           changeOrigin: true,
-          rewrite: () => new URL(graphqlEndpoint).pathname,
+          rewrite: (path) => '/v2/graphql',
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq) => {
               proxyReq.setHeader('apikey', apiKey)
