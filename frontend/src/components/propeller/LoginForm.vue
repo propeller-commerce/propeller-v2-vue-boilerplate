@@ -1,22 +1,26 @@
 <template>
-  <div class="login-form">
+  <div
+    class="propeller-login-form"
+    :data-loading="isLoading ? 'true' : 'false'"
+    :data-variant="accountHeaderLoginForm ? 'compact' : 'full'"
+  >
     <template v-if="resolvedTitle">
-      <div class="space-y-1 text-center mb-6">
-        <h2 class="text-2xl font-bold">{{ resolvedTitle }}</h2>
+      <div class="propeller-login-form__header space-y-1 text-center mb-6">
+        <h2 class="propeller-login-form__title text-2xl font-bold">{{ resolvedTitle }}</h2>
         <template v-if="subtitle">
-          <p class="text-sm text-gray-500">{{ subtitle }}</p>
+          <p class="propeller-login-form__subtitle text-sm text-muted-foreground">{{ subtitle }}</p>
         </template>
       </div>
     </template>
 
-    <form class="space-y-4" @submit="async (e) => handleSubmit(e)">
-      <div class="space-y-2">
-        <label for="login-email" class="text-sm font-medium leading-none">{{ emailLabel }}</label
+    <form class="propeller-login-form__form space-y-4" @submit="async (e) => handleSubmit(e)">
+      <div class="propeller-login-form__field space-y-2">
+        <label for="login-email" class="propeller-login-form__label text-sm font-medium leading-none">{{ emailLabel }}</label
         ><input
           type="email"
           id="login-email"
           name="email"
-          class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+          class="propeller-login-form__input flex h-10 w-full rounded-[var(--radius-control)] border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
           :value="email"
           @input="
             async (e) => {
@@ -28,15 +32,15 @@
           :disabled="isLoading"
         />
       </div>
-      <div class="space-y-2">
+      <div class="propeller-login-form__field space-y-2">
         <div class="flex items-center justify-between">
-          <label for="login-password" class="text-sm font-medium leading-none">{{
+          <label for="login-password" class="propeller-login-form__label text-sm font-medium leading-none">{{
             passwordLabel
           }}</label>
           <template v-if="showForgotPassword && !accountHeaderLoginForm">
             <button
               type="button"
-              class="text-sm text-primary hover:underline"
+              class="propeller-login-form__forgot-link text-sm text-primary hover:underline"
               @click="
                 async (event) => {
                   if (onForgotPasswordClick) onForgotPasswordClick();
@@ -51,7 +55,7 @@
           type="password"
           id="login-password"
           name="password"
-          class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+          class="propeller-login-form__input flex h-10 w-full rounded-[var(--radius-control)] border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
           :value="password"
           @input="
             async (e) => {
@@ -64,14 +68,14 @@
         />
       </div>
       <template v-if="errorMessage">
-        <div class="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+        <div class="propeller-login-form__error text-sm text-destructive bg-destructive/10 p-3 rounded-[var(--radius-control)]">
           {{ errorMessage }}
         </div>
       </template>
 
       <button
         type="submit"
-        class="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="propeller-login-form__submit inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-[var(--radius-control)] hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="isLoading"
       >
         <template v-if="isLoading">
@@ -79,7 +83,7 @@
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+            class="propeller-login-form__spinner animate-spin -ml-1 mr-2 h-4 w-4 text-primary-foreground"
           >
             <circle
               cx="12"
@@ -105,13 +109,13 @@
       </button>
     </form>
     <template v-if="(showRegister || showGuestCheckout) && !accountHeaderLoginForm">
-      <div class="mt-6 border-t pt-6 space-y-3">
+      <div class="propeller-login-form__footer mt-6 border-t pt-6 space-y-3">
         <template v-if="showRegister">
-          <div class="text-center">
-            <p class="text-sm text-gray-500 mb-2">{{ registerText }}</p>
+          <div class="propeller-login-form__register text-center">
+            <p class="propeller-login-form__register-prompt text-sm text-muted-foreground mb-2">{{ registerText }}</p>
             <button
               type="button"
-              class="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              class="propeller-login-form__register-btn inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-input rounded-[var(--radius-control)] hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               @click="
                 async (event) => {
                   if (onRegisterClick) onRegisterClick();
@@ -124,10 +128,10 @@
         </template>
 
         <template v-if="showGuestCheckout">
-          <div class="text-center">
+          <div class="propeller-login-form__guest text-center">
             <button
               type="button"
-              class="text-sm text-primary hover:underline"
+              class="propeller-login-form__guest-btn text-sm text-primary hover:underline"
               @click="
                 async (event) => {
                   if (onGuestCheckoutClick) onGuestCheckoutClick();
@@ -142,10 +146,10 @@
     </template>
 
     <template v-if="accountHeaderLoginForm">
-      <div class="flex flex-col gap-2 text-sm pt-3 text-center">
+      <div class="propeller-login-form__footer flex flex-col gap-2 text-sm pt-3 text-center">
         <button
           type="button"
-          class="text-secondary hover:underline text-xs"
+          class="propeller-login-form__forgot-link text-secondary hover:underline text-xs"
           @click="
             async (event) => {
               if (onForgotPasswordClick) onForgotPasswordClick();
@@ -154,11 +158,11 @@
         >
           {{ getLabel('forgotPassword', 'Forgot Password?') }}
         </button>
-        <div class="text-xs text-gray-500">
+        <div class="propeller-login-form__register text-xs text-muted-foreground">
           {{ getLabel('noAccount', "Don't have an account?")
           }}<button
             type="button"
-            class="text-secondary hover:underline font-medium"
+            class="propeller-login-form__register-btn text-secondary hover:underline font-medium"
             @click="
               async (event) => {
                 if (onRegisterClick) onRegisterClick();

@@ -21,7 +21,7 @@
             :onSetDefault="handleSetDefault"
             :countries="COUNTRIES"
           />
-          <div v-else class="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
+          <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
             <p class="text-sm text-muted-foreground">No default invoice address</p>
             <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(Enums.AddressType.invoice)">Add One</button>
           </div>
@@ -40,7 +40,7 @@
             :onSetDefault="handleSetDefault"
             :countries="COUNTRIES"
           />
-          <div v-else class="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
+          <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
             <p class="text-sm text-muted-foreground">No default delivery address</p>
             <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(Enums.AddressType.delivery)">Add One</button>
           </div>
@@ -52,7 +52,7 @@
     <div class="space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold">Additional Billing Addresses</h2>
-        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(Enums.AddressType.invoice)">
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(Enums.AddressType.invoice)">
           + Add New
         </button>
       </div>
@@ -75,7 +75,7 @@
     <div class="space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold">Additional Delivery Addresses</h2>
-        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(Enums.AddressType.delivery)">
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(Enums.AddressType.delivery)">
           + Add New
         </button>
       </div>

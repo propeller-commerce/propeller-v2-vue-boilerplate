@@ -1,10 +1,13 @@
 <template>
-  <div :class="`price-toggle flex items-center gap-2 ${className || ''}`">
-    <span class="hidden sm:inline text-xs">{{ getLabel() }}</span
+  <div
+    :class="`propeller-price-toggle flex items-center gap-2 ${className || ''}`"
+    :data-state="isOn ? 'on' : 'off'"
+  >
+    <span class="propeller-price-toggle__label hidden sm:inline text-xs">{{ getLabel() }}</span
     ><button
       type="button"
       role="switch"
-      class="hover:opacity-80 transition-opacity text-xs font-medium"
+      class="propeller-price-toggle__switch hover:opacity-80 transition-opacity text-xs font-medium"
       :aria-checked="isOn"
       @click="async (event) => handleToggle()"
     >

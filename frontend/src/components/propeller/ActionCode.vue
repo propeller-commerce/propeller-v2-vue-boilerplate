@@ -1,10 +1,10 @@
 <template>
-  <div class="w-full bg-white p-6 rounded-lg shadow space-y-3">
+  <div class="propeller-action-code w-full bg-card p-6 rounded-[var(--radius-container)] shadow space-y-3">
     <h2 class="text-lg font-bold">{{ title }}</h2>
     <template v-if="isMounted">
       <template v-if="hasAppliedCode">
         <div
-          class="flex items-center justify-between bg-secondary/5 border border-secondary/20 rounded-md px-3 py-2"
+          class="flex items-center justify-between bg-secondary/5 border border-secondary/20 rounded-[var(--radius-control)] px-3 py-2"
         >
           <div class="flex items-center gap-2">
             <svg
@@ -38,7 +38,7 @@
         <div class="flex gap-2">
           <input
             type="text"
-            class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent disabled:opacity-50"
+            class="propeller-action-code__input flex-1 text-sm border border-input rounded-[var(--radius-control)] px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent disabled:opacity-50"
             :value="code"
             @change="
               async (e) => {
@@ -50,7 +50,7 @@
             :disabled="loading"
           /><button
             type="button"
-            class="bg-secondary text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            class="propeller-action-code__submit bg-secondary text-primary-foreground text-sm font-medium px-4 py-2 rounded-[var(--radius-control)] hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             @click="async (event) => handleApply()"
             :disabled="loading || !code.trim()"
           >
@@ -66,7 +66,7 @@
       </template>
 
       <template v-if="!!error">
-        <p class="text-sm text-red-600">{{ error }}</p>
+        <p class="propeller-action-code__error text-sm text-destructive">{{ error }}</p>
       </template>
     </template>
   </div>

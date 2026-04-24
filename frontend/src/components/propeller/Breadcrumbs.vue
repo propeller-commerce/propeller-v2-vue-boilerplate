@@ -1,32 +1,64 @@
 <template>
-  <nav aria-label="Breadcrumb" :class="`breadcrumbs ${className || ''}`">
-    <ol class="flex flex-wrap items-center text-sm text-muted-foreground">
+  <nav aria-label="Breadcrumb" :class="`propeller-breadcrumbs ${className || ''}`">
+    <ol class="propeller-breadcrumbs__list flex flex-wrap items-center text-sm text-muted-foreground">
       <template v-if="showHome !== false">
-        <li class="flex items-center">
-          <a class="hover:text-foreground transition-colors" :href="homeUrl || '/'">{{
+        <li class="propeller-breadcrumbs__item flex items-center" data-home="true">
+          <a class="propeller-breadcrumbs__link hover:text-foreground transition-colors" :href="homeUrl || '/'">{{
             getLabel('home', 'Home')
           }}</a>
         </li>
       </template>
 
-      <template :key="cat.categoryId || index" v-for="(cat, index) in getDisplayItems()">
-        <li class="flex items-center">
-          <template v-if="showSeparatorBefore(index)">
-            <span aria-hidden="true" class="mx-2 select-none text-muted-foreground/40">{{
-              getLabel('separator', '/')
-            }}</span>
-          </template>
+      <li
+        v-for="(cat, index) in getDisplayItems()"
+        :key="cat.categoryId || index"
+        class="propeller-breadcrumbs__item flex items-center"
+        :data-current="isCurrentItem(index) ? 'true' : 'false'"
+      >
+        <span
+          v-if="showSeparatorBefore(index)"
+          aria-hidden="true"
+          class="propeller-breadcrumbs__separator mx-2 select-none text-muted-foreground/40"
+          >{{ getLabel('separator', '/') }}</span
+        >
 
-          <template v-if="isCurrentItem(index)">
-            <a class="hover:text-foreground transition-colors" :href="getCategoryUrl(cat, index)">{{
-              getCategoryName(cat)
-            }}</a>
-          </template>
+        <span
+          v-if="isCurrentItem(index)"
+          aria-current="page"
+          class="propeller-breadcrumbs__link propeller-breadcrumbs__link--current text-foreground"
+          >{{ getCategoryName(cat) }}</span
+        >
 
-          <template v-if="!isCurrentItem(index)">
-            <a class="hover:text-foreground transition-colors" :href="getCategoryUrl(cat, index)">{{
-              getCategoryName(cat)
-            }}</a>
+        <a
+          v-else
+          class="propeller-breadcrumbs__link hover:text-foreground transition-colors"
+          :href="getCategoryUrl(cat, index)"
+          >{{ getCategoryName(cat) }}</a
+        >
+      </li>
+
+      <template v-if="!!currentLabel">
+        <li
+          class="propeller-breadcrumbs__item flex items-center"
+          data-current="true"
+        >
+          <span aria-hidden="true" class="propeller-breadcrumbs__separator mx-2 select-none text-muted-foreground/40">{{
+            getLabel('separator', '/')
+          }}</span>
+          <template v-if="!!currentUrl">
+            <a
+              aria-current="page"
+              class="propeller-breadcrumbs__link propeller-breadcrumbs__link--current text-foreground"
+              :href="currentUrl"
+              >{{ currentLabel }}</a
+            >
+          </template>
+          <template v-if="!currentUrl">
+            <span
+              aria-current="page"
+              class="propeller-breadcrumbs__link propeller-breadcrumbs__link--current text-foreground"
+              >{{ currentLabel }}</span
+            >
           </template>
         </li>
       </template>
@@ -50,8 +82,33 @@ export interface BreadcrumbsProps {
    * When true (default), the last item in the path is displayed as the
    * current page (non-clickable, aria-current="page").
    * When false, the last item is omitted.
+   * Ignored when `currentLabel` is provided — the extra crumb becomes
+   * the current page instead.
    */
   showCurrent?: boolean;
+
+  /**
+   * The category of the current page. When provided and not already
+   * the last item in `categoryPath`, it is appended automatically so
+   * the trail always ends at the current category. This makes the
+   * component correct whether the API's categoryPath includes the
+   * current category or only its ancestors.
+   */
+  currentCategory?: Category;
+
+  /**
+   * Optional trailing crumb appended after the category path — typically
+   * the name of the current product or cluster on a detail page.
+   * When provided, this crumb is marked as the current page and the
+   * last category becomes a normal link.
+   */
+  currentLabel?: string;
+
+  /**
+   * Optional URL for the trailing `currentLabel` crumb. When omitted,
+   * the crumb is rendered as a non-link `<span>`.
+   */
+  currentUrl?: string;
 
   /**
    * When true (default), a "Home" link is prepended to the trail.
@@ -101,13 +158,23 @@ interface BreadcrumbsState {
 
 const props = withDefaults(defineProps<BreadcrumbsProps>(), {
   showHome: true,
+  showCurrent: true,
 });
 
 function getItems(): ReturnType<BreadcrumbsState['getItems']> {
   const path = (props.categoryPath as Category[]) || [];
   const baseId = props.configuration?.baseCategoryId;
-  if (!baseId) return path;
-  return path.filter((cat: Category) => cat.categoryId !== baseId);
+  const filtered = baseId
+    ? path.filter((cat: Category) => cat.categoryId !== baseId)
+    : path;
+  const current = props.currentCategory;
+  if (current) {
+    const last = filtered[filtered.length - 1];
+    if (!last || last.categoryId !== current.categoryId) {
+      return [...filtered, current];
+    }
+  }
+  return filtered;
 }
 function getDisplayItems(): ReturnType<BreadcrumbsState['getDisplayItems']> {
   const items = getItems();
@@ -133,6 +200,7 @@ function getCategoryUrl(
 }
 function isCurrentItem(index: number): ReturnType<BreadcrumbsState['isCurrentItem']> {
   if (props.showCurrent === false) return false;
+  if (props.currentLabel) return false;
   return index === getDisplayItems().length - 1;
 }
 function showSeparatorBefore(index: number): ReturnType<BreadcrumbsState['showSeparatorBefore']> {

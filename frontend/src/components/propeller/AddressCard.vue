@@ -1,80 +1,135 @@
 <template>
-  <div>
+  <div class="propeller-address-card">
     <template v-if="showCard">
-      <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
-        <div class="flex-grow">
+      <div
+        class="propeller-address-card__card bg-card p-4 rounded-[var(--radius-container)] shadow-sm border border-border h-full flex flex-col"
+        :data-default="addr?.isDefault === 'Y' ? 'true' : 'false'"
+        :data-type="addr?.type || ''"
+      >
+        <div class="propeller-address-card__body flex-grow">
           <template v-if="showCompanyName !== false && addr?.company">
-            <div class="font-bold text-lg mb-1">{{ addr?.company }}</div>
+            <div class="propeller-address-card__company font-bold text-lg mb-1">
+              {{ addr?.company }}
+            </div>
           </template>
 
-          <template v-if="showFullName !== false && (addr?.firstName || addr?.lastName)">
-            <div class="font-medium mb-1">
-              {{ [props.showSalutation !== false ? (addr?.gender === 'M' ? 'Mr.' : addr?.gender === 'F' ? 'Mrs.' : null) : null, addr?.firstName, addr?.middleName, addr?.lastName].filter(Boolean).join(' ') }}
+          <template
+            v-if="showFullName !== false && (addr?.firstName || addr?.lastName)"
+          >
+            <div class="propeller-address-card__name font-medium mb-1">
+              {{
+                [
+                  props.showSalutation !== false
+                    ? addr?.gender === "M"
+                      ? "Mr."
+                      : addr?.gender === "F"
+                        ? "Mrs."
+                        : null
+                    : null,
+                  addr?.firstName,
+                  addr?.middleName,
+                  addr?.lastName,
+                ]
+                  .filter(Boolean)
+                  .join(" ")
+              }}
             </div>
           </template>
 
           <template v-if="showStreet !== false && addr?.street">
-            <div class="text-gray-600">
-              {{ [addr?.street, showNumberExtension !== false ? addr?.number : null, showNumberExtension !== false ? addr?.numberExtension : null].filter(Boolean).join(' ') }}
+            <div class="propeller-address-card__street text-muted-foreground">
+              {{
+                [
+                  addr?.street,
+                  showNumberExtension !== false ? addr?.number : null,
+                  showNumberExtension !== false ? addr?.numberExtension : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")
+              }}
             </div>
           </template>
 
-          <template v-if="(showPostalCode !== false && addr?.postalCode) || (showCity !== false && addr?.city)">
-            <div class="text-gray-600">
-              {{ [showPostalCode !== false ? addr?.postalCode : null, showCity !== false ? addr?.city : null].filter(Boolean).join(' ') }}
+          <template
+            v-if="
+              (showPostalCode !== false && addr?.postalCode) ||
+              (showCity !== false && addr?.city)
+            "
+          >
+            <div class="propeller-address-card__city text-muted-foreground">
+              {{
+                [
+                  showPostalCode !== false ? addr?.postalCode : null,
+                  showCity !== false ? addr?.city : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")
+              }}
             </div>
           </template>
 
           <template v-if="showCountry !== false && addr?.country">
-            <div class="text-gray-600">{{ getCountryName(addr?.country) }}</div>
+            <div class="propeller-address-card__country text-muted-foreground">
+              {{ getCountryName(addr?.country) }}
+            </div>
           </template>
 
           <template v-if="!!showEmail && addr?.email">
-            <div class="text-gray-600">{{ addr?.email }}</div>
+            <div class="propeller-address-card__email text-muted-foreground">
+              {{ addr?.email }}
+            </div>
           </template>
 
           <template v-if="!!showPhone && addr?.phone">
-            <div class="text-gray-600">{{ addr?.phone }}</div>
+            <div class="propeller-address-card__phone text-muted-foreground">
+              {{ addr?.phone }}
+            </div>
           </template>
 
           <template v-if="showDefaultBadge === true && addr?.isDefault === 'Y'">
             <div class="mt-2">
-              <span class="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
+              <span
+                class="propeller-address-card__default-badge bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full"
+              >
                 Default {{ addr?.type }} Address
               </span>
             </div>
           </template>
         </div>
         <template v-if="enableActions !== false">
-          <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+          <div
+            class="propeller-address-card__actions mt-4 pt-4 border-t border-border-subtle flex flex-wrap gap-2"
+          >
             <template v-if="enableEdit !== false">
               <button
-                class="text-primary hover:text-primary/80 text-sm font-medium"
+                class="propeller-address-card__edit-btn text-primary hover:text-primary/80 text-sm font-medium"
                 @click="async (event) => openEditModal()"
               >
-                {{ getLabel('edit', 'Edit') }}
+                {{ getLabel("edit", "Edit") }}
               </button>
             </template>
 
             <template v-if="enableDelete !== false">
               <button
-                class="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                class="propeller-address-card__delete-btn text-muted-foreground hover:text-foreground text-sm font-medium"
                 @click="
                   async (event) => {
                     showDeleteConfirm = true;
                   }
                 "
               >
-                {{ getLabel('delete', 'Delete') }}
+                {{ getLabel("delete", "Delete") }}
               </button>
             </template>
 
-            <template v-if="enableSetDefault !== false && addr?.isDefault !== 'Y'">
+            <template
+              v-if="enableSetDefault !== false && addr?.isDefault !== 'Y'"
+            >
               <button
-                class="text-primary hover:text-primary/80 text-sm font-medium ml-auto"
+                class="propeller-address-card__default-btn text-primary hover:text-primary/80 text-sm font-medium ml-auto"
                 @click="async (event) => handleSetDefault()"
               >
-                {{ getLabel('setDefault', 'Set Default') }}
+                {{ getLabel("setDefault", "Set Default") }}
               </button>
             </template>
           </div>
@@ -83,7 +138,9 @@
     </template>
 
     <template v-if="inline && showEditModal">
-      <div class="bg-white p-6 rounded-lg border">
+      <div
+        class="propeller-address-card__form bg-card p-6 rounded-[var(--radius-container)] border"
+      >
         <form @submit="async (e) => handleSaveEdit(e)">
           <template v-if="!!formTitle">
             <h3 class="text-xl font-bold mb-4">{{ formTitle }}</h3>
@@ -93,39 +150,43 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('gender', 'Gender')
+                  getLabel("gender", "Gender")
                 }}</label
                 ><select
-                  class="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input bg-card"
                   :value="editGender"
                   @change="
                     async (e) => {
-                      editGender = (e.target as HTMLInputElement | HTMLSelectElement).value as Enums.Gender;
+                      editGender = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value as Enums.Gender;
                     }
                   "
                 >
                   <option value="M">
-                    {{ getLabel('genderMale', 'Male') }}
+                    {{ getLabel("genderMale", "Male") }}
                   </option>
                   <option value="F">
-                    {{ getLabel('genderFemale', 'Female') }}
+                    {{ getLabel("genderFemale", "Female") }}
                   </option>
                   <option value="U">
-                    {{ getLabel('genderOther', 'Other') }}
+                    {{ getLabel("genderOther", "Other") }}
                   </option>
                 </select>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('company', 'Company')
+                  getLabel("company", "Company")
                 }}</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editCompany"
                   @change="
                     async (e) => {
-                      editCompany = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editCompany = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                 />
@@ -134,14 +195,16 @@
             <div class="grid grid-cols-3 gap-4">
               <div>
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('firstName', 'First Name') }} *</label
+                  >{{ getLabel("firstName", "First Name") }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editFirstName"
                   @change="
                     async (e) => {
-                      editFirstName = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editFirstName = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
@@ -149,29 +212,33 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('middleName', 'Middle Name')
+                  getLabel("middleName", "Middle Name")
                 }}</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editMiddleName"
                   @change="
                     async (e) => {
-                      editMiddleName = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editMiddleName = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                 />
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('lastName', 'Last Name') }} *</label
+                  >{{ getLabel("lastName", "Last Name") }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editLastName"
                   @change="
                     async (e) => {
-                      editLastName = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editLastName = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
@@ -181,14 +248,16 @@
             <div class="grid grid-cols-12 gap-4">
               <div class="col-span-8">
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('street', 'Street') }} *</label
+                  >{{ getLabel("street", "Street") }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editStreet"
                   @change="
                     async (e) => {
-                      editStreet = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editStreet = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
@@ -196,14 +265,16 @@
               </div>
               <div class="col-span-2">
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('number', 'Number') }} *</label
+                  >{{ getLabel("number", "Number") }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editNumber"
                   @change="
                     async (e) => {
-                      editNumber = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editNumber = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
@@ -211,15 +282,17 @@
               </div>
               <div class="col-span-2">
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('numberExtension', 'Ext')
+                  getLabel("numberExtension", "Ext")
                 }}</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editNumberExtension"
                   @change="
                     async (e) => {
-                      editNumberExtension = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editNumberExtension = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                 />
@@ -228,14 +301,16 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('postalCode', 'Postal Code') }} *</label
+                  >{{ getLabel("postalCode", "Postal Code") }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editPostalCode"
                   @change="
                     async (e) => {
-                      editPostalCode = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editPostalCode = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
@@ -243,14 +318,16 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('city', 'City') }} *</label
+                  >{{ getLabel("city", "City") }} *</label
                 ><input
                   type="text"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editCity"
                   @change="
                     async (e) => {
-                      editCity = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editCity = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
@@ -259,19 +336,21 @@
             </div>
             <div>
               <label class="block text-sm font-medium mb-1"
-                >{{ getLabel('country', 'Country') }} *</label
+                >{{ getLabel("country", "Country") }} *</label
               ><select
-                class="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                class="w-full h-10 px-3 rounded-[var(--radius-control)] border border-input bg-card"
                 :value="editCountry"
                 @change="
                   async (e) => {
-                    editCountry = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                    editCountry = (
+                      e.target as HTMLInputElement | HTMLSelectElement
+                    ).value;
                   }
                 "
                 :required="true"
               >
                 <option value="">
-                  {{ getLabel('selectCountry', 'Select country') }}
+                  {{ getLabel("selectCountry", "Select country") }}
                 </option>
                 <template :key="c.code" v-for="(c, index) in countries || []">
                   <option :value="c.code">{{ c.name }}</option>
@@ -281,14 +360,16 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('email', 'Email') }} *</label
+                  >{{ getLabel("email", "Email") }} *</label
                 ><input
                   type="email"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editEmail"
                   @change="
                     async (e) => {
-                      editEmail = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editEmail = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
@@ -296,15 +377,17 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">{{
-                  getLabel('phone', 'Phone')
+                  getLabel("phone", "Phone")
                 }}</label
                 ><input
                   type="tel"
-                  class="w-full h-10 px-3 rounded-md border border-gray-300"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                   :value="editPhone"
                   @change="
                     async (e) => {
-                      editPhone = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editPhone = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                 />
@@ -315,15 +398,17 @@
                 <input
                   type="checkbox"
                   id="icp-inline"
-                  class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  class="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
                   :checked="editIcp === Enums.YesNo.Y"
                   @change="
                     async (e) => {
-                      editIcp = (e.target as HTMLInputElement).checked ? Enums.YesNo.Y : Enums.YesNo.N;
+                      editIcp = (e.target as HTMLInputElement).checked
+                        ? Enums.YesNo.Y
+                        : Enums.YesNo.N;
                     }
                   "
                 /><label for="icp-inline" class="text-sm font-medium">{{
-                  getLabel('icp', 'ICP/ICS (Intra-Community Supply)')
+                  getLabel("icp", "ICP/ICS (Intra-Community Supply)")
                 }}</label>
               </div>
             </template>
@@ -332,36 +417,36 @@
             <template v-if="!isNew">
               <button
                 type="button"
-                class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-surface-hover disabled:opacity-50"
                 @click="async (event) => closeEditModal()"
                 :disabled="saving"
               >
-                {{ getLabel('cancel', 'Cancel') }}
+                {{ getLabel("cancel", "Cancel") }}
               </button>
             </template>
 
             <template v-if="isNew && !!onCancel">
               <button
                 type="button"
-                class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-surface-hover disabled:opacity-50"
                 @click="async (event) => closeEditModal()"
                 :disabled="saving"
               >
-                {{ getLabel('cancel', 'Cancel') }}
+                {{ getLabel("cancel", "Cancel") }}
               </button>
             </template>
 
             <button
               type="submit"
-              class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+              class="propeller-address-card__submit-btn px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
               :disabled="saving"
             >
               <template v-if="saving">
-                {{ getLabel('saving', 'Saving...') }}
+                {{ getLabel("saving", "Saving...") }}
               </template>
 
               <template v-else>
-                {{ getLabel('save', 'Save') }}
+                {{ getLabel("save", "Save") }}
               </template>
             </button>
           </div>
@@ -371,15 +456,17 @@
 
     <template v-if="!inline && showEditModal">
       <div
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-10"
+        class="propeller-address-card__modal fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-10"
       >
-        <div class="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
+        <div
+          class="propeller-address-card__modal-content bg-card p-6 rounded-[var(--radius-container)] max-w-2xl w-full mx-4 shadow-xl"
+        >
           <form @submit="async (e) => handleSaveEdit(e)">
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-xl font-bold">{{ formTitle }}</h3>
               <button
                 type="button"
-                class="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                class="propeller-address-card__modal-close text-muted-foreground hover:text-muted-foreground text-xl leading-none"
                 @click="async (event) => closeEditModal()"
               >
                 &times;
@@ -389,39 +476,43 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium mb-1">{{
-                    getLabel('gender', 'Gender')
+                    getLabel("gender", "Gender")
                   }}</label
                   ><select
-                    class="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input bg-card"
                     :value="editGender"
                     @change="
                       async (e) => {
-                        editGender = (e.target as HTMLInputElement | HTMLSelectElement).value as Enums.Gender;
+                        editGender = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value as Enums.Gender;
                       }
                     "
                   >
                     <option value="M">
-                      {{ getLabel('genderMale', 'Male') }}
+                      {{ getLabel("genderMale", "Male") }}
                     </option>
                     <option value="F">
-                      {{ getLabel('genderFemale', 'Female') }}
+                      {{ getLabel("genderFemale", "Female") }}
                     </option>
                     <option value="U">
-                      {{ getLabel('genderOther', 'Other') }}
+                      {{ getLabel("genderOther", "Other") }}
                     </option>
                   </select>
                 </div>
                 <div>
                   <label class="block text-sm font-medium mb-1">{{
-                    getLabel('company', 'Company')
+                    getLabel("company", "Company")
                   }}</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editCompany"
                     @change="
                       async (e) => {
-                        editCompany = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editCompany = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                   />
@@ -430,14 +521,16 @@
               <div class="grid grid-cols-3 gap-4">
                 <div>
                   <label class="block text-sm font-medium mb-1"
-                    >{{ getLabel('firstName', 'First Name') }} *</label
+                    >{{ getLabel("firstName", "First Name") }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editFirstName"
                     @change="
                       async (e) => {
-                        editFirstName = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editFirstName = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                     :required="true"
@@ -445,29 +538,33 @@
                 </div>
                 <div>
                   <label class="block text-sm font-medium mb-1">{{
-                    getLabel('middleName', 'Middle Name')
+                    getLabel("middleName", "Middle Name")
                   }}</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editMiddleName"
                     @change="
                       async (e) => {
-                        editMiddleName = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editMiddleName = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                   />
                 </div>
                 <div>
                   <label class="block text-sm font-medium mb-1"
-                    >{{ getLabel('lastName', 'Last Name') }} *</label
+                    >{{ getLabel("lastName", "Last Name") }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editLastName"
                     @change="
                       async (e) => {
-                        editLastName = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editLastName = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                     :required="true"
@@ -477,14 +574,16 @@
               <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-8">
                   <label class="block text-sm font-medium mb-1"
-                    >{{ getLabel('street', 'Street') }} *</label
+                    >{{ getLabel("street", "Street") }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editStreet"
                     @change="
                       async (e) => {
-                        editStreet = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editStreet = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                     :required="true"
@@ -492,14 +591,16 @@
                 </div>
                 <div class="col-span-2">
                   <label class="block text-sm font-medium mb-1"
-                    >{{ getLabel('number', 'Number') }} *</label
+                    >{{ getLabel("number", "Number") }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editNumber"
                     @change="
                       async (e) => {
-                        editNumber = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editNumber = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                     :required="true"
@@ -507,15 +608,17 @@
                 </div>
                 <div class="col-span-2">
                   <label class="block text-sm font-medium mb-1">{{
-                    getLabel('numberExtension', 'Ext')
+                    getLabel("numberExtension", "Ext")
                   }}</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editNumberExtension"
                     @change="
                       async (e) => {
-                        editNumberExtension = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editNumberExtension = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                   />
@@ -524,14 +627,16 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium mb-1"
-                    >{{ getLabel('postalCode', 'Postal Code') }} *</label
+                    >{{ getLabel("postalCode", "Postal Code") }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editPostalCode"
                     @change="
                       async (e) => {
-                        editPostalCode = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editPostalCode = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                     :required="true"
@@ -539,14 +644,16 @@
                 </div>
                 <div>
                   <label class="block text-sm font-medium mb-1"
-                    >{{ getLabel('city', 'City') }} *</label
+                    >{{ getLabel("city", "City") }} *</label
                   ><input
                     type="text"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editCity"
                     @change="
                       async (e) => {
-                        editCity = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editCity = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                     :required="true"
@@ -555,19 +662,21 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1"
-                  >{{ getLabel('country', 'Country') }} *</label
+                  >{{ getLabel("country", "Country") }} *</label
                 ><select
-                  class="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                  class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input bg-card"
                   :value="editCountry"
                   @change="
                     async (e) => {
-                      editCountry = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                      editCountry = (
+                        e.target as HTMLInputElement | HTMLSelectElement
+                      ).value;
                     }
                   "
                   :required="true"
                 >
                   <option value="">
-                    {{ getLabel('selectCountry', 'Select country') }}
+                    {{ getLabel("selectCountry", "Select country") }}
                   </option>
                   <template :key="c.code" v-for="(c, index) in countries || []">
                     <option :value="c.code">{{ c.name }}</option>
@@ -577,14 +686,16 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium mb-1"
-                    >{{ getLabel('email', 'Email') }} *</label
+                    >{{ getLabel("email", "Email") }} *</label
                   ><input
                     type="email"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editEmail"
                     @change="
                       async (e) => {
-                        editEmail = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editEmail = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                     :required="true"
@@ -592,15 +703,17 @@
                 </div>
                 <div>
                   <label class="block text-sm font-medium mb-1">{{
-                    getLabel('phone', 'Phone')
+                    getLabel("phone", "Phone")
                   }}</label
                   ><input
                     type="tel"
-                    class="w-full h-10 px-3 rounded-md border border-gray-300"
+                    class="propeller-address-card__input w-full h-10 px-3 rounded-[var(--radius-control)] border border-input"
                     :value="editPhone"
                     @change="
                       async (e) => {
-                        editPhone = (e.target as HTMLInputElement | HTMLSelectElement).value;
+                        editPhone = (
+                          e.target as HTMLInputElement | HTMLSelectElement
+                        ).value;
                       }
                     "
                   />
@@ -611,15 +724,17 @@
                   <input
                     type="checkbox"
                     id="icp-modal"
-                    class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    class="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
                     :checked="editIcp === Enums.YesNo.Y"
                     @change="
                       async (e) => {
-                        editIcp = (e.target as HTMLInputElement).checked ? Enums.YesNo.Y : Enums.YesNo.N;
+                        editIcp = (e.target as HTMLInputElement).checked
+                          ? Enums.YesNo.Y
+                          : Enums.YesNo.N;
                       }
                     "
                   /><label for="icp-modal" class="text-sm font-medium">{{
-                    getLabel('icp', 'ICP/ICS (Intra-Community Supply)')
+                    getLabel("icp", "ICP/ICS (Intra-Community Supply)")
                   }}</label>
                 </div>
               </template>
@@ -627,22 +742,22 @@
             <div class="flex justify-end gap-3 pt-4 mt-4 border-t">
               <button
                 type="button"
-                class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-surface-hover disabled:opacity-50"
                 @click="async (event) => closeEditModal()"
                 :disabled="saving"
               >
-                {{ getLabel('cancel', 'Cancel') }}</button
+                {{ getLabel("cancel", "Cancel") }}</button
               ><button
                 type="submit"
-                class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+                class="propeller-address-card__submit-btn px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
                 :disabled="saving"
               >
                 <template v-if="saving">
-                  {{ getLabel('saving', 'Saving...') }}
+                  {{ getLabel("saving", "Saving...") }}
                 </template>
 
                 <template v-else>
-                  {{ getLabel('save', 'Save') }}
+                  {{ getLabel("save", "Save") }}
                 </template>
               </button>
             </div>
@@ -652,29 +767,40 @@
     </template>
 
     <template v-if="showDeleteConfirm">
-      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+      <div
+        class="propeller-address-card__delete-modal fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      >
+        <div
+          class="propeller-address-card__delete-modal-content bg-card p-6 rounded-[var(--radius-container)] max-w-sm w-full mx-4"
+        >
           <h3 class="text-xl font-bold mb-4">
-            {{ getLabel('confirmDeleteTitle', 'Confirm Delete') }}
+            {{ getLabel("confirmDeleteTitle", "Confirm Delete") }}
           </h3>
-          <p class="mb-6 text-gray-600">
-            {{ getLabel('confirmDeleteMessage', 'Are you sure you want to delete this address?') }}
+          <p
+            class="propeller-address-card__delete-message mb-6 text-muted-foreground"
+          >
+            {{
+              getLabel(
+                "confirmDeleteMessage",
+                "Are you sure you want to delete this address?",
+              )
+            }}
           </p>
           <div class="flex justify-end gap-4">
             <button
-              class="px-4 py-2 border rounded hover:bg-gray-100"
+              class="propeller-address-card__cancel-btn px-4 py-2 border rounded hover:bg-surface-hover"
               @click="
                 async (event) => {
                   showDeleteConfirm = false;
                 }
               "
             >
-              {{ getLabel('cancel', 'Cancel') }}</button
+              {{ getLabel("cancel", "Cancel") }}</button
             ><button
-              class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
+              class="propeller-address-card__confirm-btn px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/80"
               @click="async (event) => confirmDelete()"
             >
-              {{ getLabel('delete', 'Delete') }}
+              {{ getLabel("delete", "Delete") }}
             </button>
           </div>
         </div>
@@ -684,7 +810,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from "vue";
 
 import {
   GraphQLClient,
@@ -693,8 +819,8 @@ import {
   WarehouseAddress,
   OrderAddress,
   Enums,
-} from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+} from "propeller-sdk-v2";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface AddressCardProps {
   /** GraphQL client for the Propeller SDK (only needed when editing) */
@@ -848,25 +974,25 @@ const props = withDefaults(defineProps<AddressCardProps>(), {
   inline: false,
   showIcp: false,
 });
-const showEditModal = ref<AddressCardState['showEditModal']>(false);
-const showDeleteConfirm = ref<AddressCardState['showDeleteConfirm']>(false);
-const saving = ref<AddressCardState['saving']>(false);
-const localAddress = ref<AddressCardState['localAddress']>(null);
-const editCompany = ref<AddressCardState['editCompany']>('');
-const editGender = ref<AddressCardState['editGender']>(Enums.Gender.U);
-const editFirstName = ref<AddressCardState['editFirstName']>('');
-const editMiddleName = ref<AddressCardState['editMiddleName']>('');
-const editLastName = ref<AddressCardState['editLastName']>('');
-const editStreet = ref<AddressCardState['editStreet']>('');
-const editNumber = ref<AddressCardState['editNumber']>('');
-const editNumberExtension = ref<AddressCardState['editNumberExtension']>('');
-const editPostalCode = ref<AddressCardState['editPostalCode']>('');
-const editCity = ref<AddressCardState['editCity']>('');
-const editCountry = ref<AddressCardState['editCountry']>('');
-const editEmail = ref<AddressCardState['editEmail']>('');
-const editPhone = ref<AddressCardState['editPhone']>('');
-const editNotes = ref<AddressCardState['editNotes']>('');
-const editIcp = ref<AddressCardState['editIcp']>(Enums.YesNo.N);
+const showEditModal = ref<AddressCardState["showEditModal"]>(false);
+const showDeleteConfirm = ref<AddressCardState["showDeleteConfirm"]>(false);
+const saving = ref<AddressCardState["saving"]>(false);
+const localAddress = ref<AddressCardState["localAddress"]>(null);
+const editCompany = ref<AddressCardState["editCompany"]>("");
+const editGender = ref<AddressCardState["editGender"]>(Enums.Gender.U);
+const editFirstName = ref<AddressCardState["editFirstName"]>("");
+const editMiddleName = ref<AddressCardState["editMiddleName"]>("");
+const editLastName = ref<AddressCardState["editLastName"]>("");
+const editStreet = ref<AddressCardState["editStreet"]>("");
+const editNumber = ref<AddressCardState["editNumber"]>("");
+const editNumberExtension = ref<AddressCardState["editNumberExtension"]>("");
+const editPostalCode = ref<AddressCardState["editPostalCode"]>("");
+const editCity = ref<AddressCardState["editCity"]>("");
+const editCountry = ref<AddressCardState["editCountry"]>("");
+const editEmail = ref<AddressCardState["editEmail"]>("");
+const editPhone = ref<AddressCardState["editPhone"]>("");
+const editNotes = ref<AddressCardState["editNotes"]>("");
+const editIcp = ref<AddressCardState["editIcp"]>(Enums.YesNo.N);
 
 onMounted(() => {
   if (props.isNew || (props.inline && !props.address)) {
@@ -884,8 +1010,8 @@ const showCard = computed(() => {
 });
 const formTitle = computed(() => {
   if (props.title) return props.title;
-  if (props.isNew) return getLabel('newTitle', 'New Address');
-  return getLabel('editTitle', 'Edit Address');
+  if (props.isNew) return getLabel("newTitle", "New Address");
+  return getLabel("editTitle", "Edit Address");
 });
 
 watch(
@@ -893,39 +1019,46 @@ watch(
   () => {
     localAddress.value = null;
   },
-  { immediate: true }
+  { immediate: true },
 );
-function getLabel(key: string, fallback: string): ReturnType<AddressCardState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<AddressCardState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function getCountryName(code: string): ReturnType<AddressCardState['getCountryName']> {
-  if (!code) return '';
+function getCountryName(
+  code: string,
+): ReturnType<AddressCardState["getCountryName"]> {
+  if (!code) return "";
   const list = props.countries || [];
   for (let i = 0; i < list.length; i++) {
     if (list[i].code === code) return list[i].name;
   }
   return code;
 }
-function openEditModal(): ReturnType<AddressCardState['openEditModal']> {
+function openEditModal(): ReturnType<AddressCardState["openEditModal"]> {
   const a = addr.value;
-  editCompany.value = a?.company || '';
-  editGender.value = a?.gender || 'M';
-  editFirstName.value = a?.firstName || '';
-  editMiddleName.value = a?.middleName || '';
-  editLastName.value = a?.lastName || '';
-  editStreet.value = a?.street || '';
-  editNumber.value = a?.number || '';
-  editNumberExtension.value = a?.numberExtension || '';
-  editPostalCode.value = a?.postalCode || '';
-  editCity.value = a?.city || '';
-  editCountry.value = a?.country || '';
-  editEmail.value = a?.email || '';
-  editPhone.value = a?.phone || '';
-  editNotes.value = a?.notes || '';
+  editCompany.value = a?.company || "";
+  editGender.value = a?.gender || "M";
+  editFirstName.value = a?.firstName || "";
+  editMiddleName.value = a?.middleName || "";
+  editLastName.value = a?.lastName || "";
+  editStreet.value = a?.street || "";
+  editNumber.value = a?.number || "";
+  editNumberExtension.value = a?.numberExtension || "";
+  editPostalCode.value = a?.postalCode || "";
+  editCity.value = a?.city || "";
+  editCountry.value = a?.country || "";
+  editEmail.value = a?.email || "";
+  editPhone.value = a?.phone || "";
+  editNotes.value = a?.notes || "";
   editIcp.value = a?.icp || Enums.YesNo.N;
   showEditModal.value = true;
 }
-async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEdit']> {
+async function handleSaveEdit(
+  e: any,
+): ReturnType<AddressCardState["handleSaveEdit"]> {
   e.preventDefault();
   if (saving.value) return;
   saving.value = true;
@@ -934,7 +1067,7 @@ async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEd
   }
   const editedAddress = {
     id: addr.value?.id,
-    type: addr.value?.type || props.addressType || '',
+    type: addr.value?.type || props.addressType || "",
     isDefault: addr.value?.isDefault,
     company: editCompany.value,
     gender: editGender.value,
@@ -965,7 +1098,7 @@ async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEd
     saving.value = false;
   }
 }
-function confirmDelete(): ReturnType<AddressCardState['confirmDelete']> {
+function confirmDelete(): ReturnType<AddressCardState["confirmDelete"]> {
   const id = addr.value?.id;
   if (id != null) {
     if (props.onDelete) {
@@ -979,7 +1112,7 @@ function confirmDelete(): ReturnType<AddressCardState['confirmDelete']> {
     showDeleteConfirm.value = false;
   }
 }
-function handleSetDefault(): ReturnType<AddressCardState['handleSetDefault']> {
+function handleSetDefault(): ReturnType<AddressCardState["handleSetDefault"]> {
   if (props.onSetDefault) {
     props.onSetDefault(addr.value);
   }
@@ -987,7 +1120,7 @@ function handleSetDefault(): ReturnType<AddressCardState['handleSetDefault']> {
     props.afterSetDefault(addr.value);
   }
 }
-function closeEditModal(): ReturnType<AddressCardState['closeEditModal']> {
+function closeEditModal(): ReturnType<AddressCardState["closeEditModal"]> {
   showEditModal.value = false;
   if (props.isNew && props.onCancel) {
     props.onCancel();

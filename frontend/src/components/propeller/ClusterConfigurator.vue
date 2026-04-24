@@ -1,38 +1,64 @@
 <template>
-  <div :class="`cluster-configurator ${className || ''}`">
+  <div :class="`propeller-cluster-configurator ${className || ''}`">
     <template v-if="!!config?.settings?.length">
-      <div class="configurator-content flex flex-col gap-6">
-        <template :key="setting.id" v-for="(setting, index) in getSettingsWithValues()">
-          <div class="attribute-group">
-            <h4 class="font-semibold text-sm text-gray-700 mb-3">
+      <div class="propeller-cluster-configurator__content flex flex-col gap-6">
+        <template
+          :key="setting.id"
+          v-for="(setting, index) in getSettingsWithValues()"
+        >
+          <div
+            class="propeller-cluster-configurator__group"
+            :data-display-type="setting.displayType"
+            :data-disabled="setting.disabled ? 'true' : 'false'"
+          >
+            <h4
+              class="propeller-cluster-configurator__label font-semibold text-sm text-muted-foreground mb-3"
+            >
               {{ setting.displayName || setting.name }}
             </h4>
             <template v-if="setting.displayType === 'DROPDOWN'">
               <select
-                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
+                class="propeller-cluster-configurator__select w-full border border-border rounded-[var(--radius-container)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-surface-hover disabled:text-foreground-subtle cursor-pointer"
                 :value="setting.selectedValue"
                 :disabled="setting.disabled"
-                @change="async (e) => handleAttributeSelect(setting.name, (e.target as HTMLSelectElement).value)"
+                @change="
+                  async (e) =>
+                    handleAttributeSelect(
+                      setting.name,
+                      (e.target as HTMLSelectElement).value,
+                    )
+                "
               >
                 <option value="">
-                  {{ getLabel('selectOption', '— Select —') }}
+                  {{ getLabel("selectOption", "— Select —") }}
                 </option>
-                <template :key="val" v-for="(val, index) in setting.availableValues">
+                <template
+                  :key="val"
+                  v-for="(val, index) in setting.availableValues"
+                >
                   <option :value="val">{{ val }}</option>
                 </template>
               </select>
             </template>
 
             <template v-if="setting.displayType === 'RADIO'">
-              <div class="flex flex-wrap gap-2">
-                <template :key="val" v-for="(val, index) in setting.availableValues">
+              <div
+                class="propeller-cluster-configurator__options flex flex-wrap gap-2"
+              >
+                <template
+                  :key="val"
+                  v-for="(val, index) in setting.availableValues"
+                >
                   <label
-                    :class="`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors select-none ${
+                    :data-selected="
+                      setting.selectedValue === val ? 'true' : 'false'
+                    "
+                    :class="`propeller-cluster-configurator__radio flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-container)] border text-sm font-medium transition-colors select-none ${
                       setting.disabled
-                        ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400'
+                        ? 'opacity-50 cursor-not-allowed border-border text-foreground-subtle'
                         : setting.selectedValue === val
                           ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer'
-                          : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'
+                          : 'border-border text-muted-foreground hover:border-secondary/30 cursor-pointer'
                     }`"
                     ><input
                       type="radio"
@@ -41,7 +67,10 @@
                       :value="val"
                       :checked="setting.selectedValue === val"
                       :disabled="setting.disabled"
-                      @change="async (event) => handleAttributeSelect(setting.name, val)"
+                      @change="
+                        async (event) =>
+                          handleAttributeSelect(setting.name, val)
+                      "
                     />{{ val }}</label
                   >
                 </template>
@@ -49,22 +78,34 @@
             </template>
 
             <template v-if="setting.displayType === 'COLOR'">
-              <div class="flex flex-wrap gap-2">
-                <template :key="val" v-for="(val, index) in setting.availableValues">
+              <div
+                class="propeller-cluster-configurator__options flex flex-wrap gap-2"
+              >
+                <template
+                  :key="val"
+                  v-for="(val, index) in setting.availableValues"
+                >
                   <button
                     type="button"
                     :title="val"
                     :disabled="setting.disabled"
-                    @click="async (event) => handleAttributeSelect(setting.name, val)"
+                    @click="
+                      async (event) => handleAttributeSelect(setting.name, val)
+                    "
+                    :data-selected="
+                      setting.selectedValue === val ? 'true' : 'false'
+                    "
                     :style="{
                       backgroundColor: val,
                     }"
-                    :class="`w-8 h-8 rounded-full border-2 transition-all ${
-                      setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    :class="`propeller-cluster-configurator__color w-8 h-8 rounded-full border-2 transition-all ${
+                      setting.disabled
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer'
                     } ${
                       setting.selectedValue === val
                         ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1 scale-110'
-                        : 'border-gray-300 hover:scale-105'
+                        : 'border-input hover:scale-105'
                     }`"
                   ></button>
                 </template>
@@ -72,26 +113,46 @@
             </template>
 
             <template v-if="setting.displayType === 'IMAGE'">
-              <div class="flex flex-wrap gap-3">
-                <template :key="val" v-for="(val, index) in setting.availableValues">
+              <div
+                class="propeller-cluster-configurator__options flex flex-wrap gap-3"
+              >
+                <template
+                  :key="val"
+                  v-for="(val, index) in setting.availableValues"
+                >
                   <button
                     type="button"
                     :disabled="setting.disabled"
-                    @click="async (event) => handleAttributeSelect(setting.name, val)"
-                    :class="`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all ${
-                      setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    @click="
+                      async (event) => handleAttributeSelect(setting.name, val)
+                    "
+                    :data-selected="
+                      setting.selectedValue === val ? 'true' : 'false'
+                    "
+                    :class="`propeller-cluster-configurator__image-swatch relative w-16 h-16 rounded-[var(--radius-container)] border-2 overflow-hidden transition-all ${
+                      setting.disabled
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer'
                     } ${
                       setting.selectedValue === val
                         ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1'
-                        : 'border-gray-200 hover:border-secondary/30'
+                        : 'border-border hover:border-secondary/30'
                     }`"
                   >
-                    <img class="w-full h-full object-cover" :src="val" :alt="val" />
+                    <img
+                      class="propeller-cluster-configurator__image w-full h-full object-cover"
+                      :src="val"
+                      :alt="val"
+                    />
                     <template v-if="setting.selectedValue === val">
                       <div
-                        class="absolute inset-0 bg-secondary bg-opacity-20 flex items-center justify-center"
+                        class="propeller-cluster-configurator__image-check absolute inset-0 bg-secondary bg-opacity-20 flex items-center justify-center"
                       >
-                        <svg fill="currentColor" viewBox="0 0 20 20" class="w-5 h-5 text-secondary">
+                        <svg
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          class="w-5 h-5 text-secondary"
+                        >
                           <path
                             fillRule="evenodd"
                             d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -113,18 +174,28 @@
                 setting.displayType !== 'IMAGE'
               "
             >
-              <div class="flex flex-wrap gap-2">
-                <template :key="val" v-for="(val, index) in setting.availableValues">
+              <div
+                class="propeller-cluster-configurator__options flex flex-wrap gap-2"
+              >
+                <template
+                  :key="val"
+                  v-for="(val, index) in setting.availableValues"
+                >
                   <button
                     type="button"
                     :disabled="setting.disabled"
-                    @click="async (event) => handleAttributeSelect(setting.name, val)"
-                    :class="`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                    @click="
+                      async (event) => handleAttributeSelect(setting.name, val)
+                    "
+                    :data-selected="
+                      setting.selectedValue === val ? 'true' : 'false'
+                    "
+                    :class="`propeller-cluster-configurator__chip px-3 py-1.5 rounded-[var(--radius-container)] border text-sm font-medium transition-colors ${
                       setting.disabled
-                        ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400'
+                        ? 'opacity-50 cursor-not-allowed border-border text-foreground-subtle'
                         : setting.selectedValue === val
                           ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer'
-                          : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'
+                          : 'border-border text-muted-foreground hover:border-secondary/30 cursor-pointer'
                     }`"
                   >
                     {{ val }}
@@ -140,15 +211,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { onMounted, ref } from "vue";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import {
   Product,
   AttributeResult,
   ClusterConfig,
   ClusterConfigSetting,
   Enums,
-} from 'propeller-sdk-v2';
+} from "propeller-sdk-v2";
 
 /**
  * A computed object containing a cluster config setting enriched with
@@ -255,13 +326,16 @@ interface ClusterConfiguratorState {
    * position in the sorted settings list, filtered by all prior selections
    * (drilldown logic). For the first attribute (index 0) all values are returned.
    */
-  getAvailableValuesForIndex: (attributeName: string, settingIndex: number) => string[];
+  getAvailableValuesForIndex: (
+    attributeName: string,
+    settingIndex: number,
+  ) => string[];
 
   /** Same as getAvailableValuesForIndex but uses explicit selections instead of state. */
   getAvailableValuesForIndexWithSelections: (
     attributeName: string,
     settingIndex: number,
-    selections: Record<string, string>
+    selections: Record<string, string>,
   ) => string[];
 
   /**
@@ -286,7 +360,9 @@ interface ClusterConfiguratorState {
 }
 
 const props = defineProps<ClusterConfiguratorProps>();
-const selectedAttributes = ref<ClusterConfiguratorState['selectedAttributes']>({});
+const selectedAttributes = ref<ClusterConfiguratorState["selectedAttributes"]>(
+  {},
+);
 
 onMounted(() => {
   const defaultProduct = props.defaultProduct as Product;
@@ -297,8 +373,8 @@ onMounted(() => {
   sortedSettings.forEach((setting: ClusterConfigSetting) => {
     const attrItems = defaultProduct.attributes?.items;
     if (!Array.isArray(attrItems)) return;
-    const matchingAttr = (attrItems as AttributeResult[]).find((attr: AttributeResult) =>
-      attributeNameMatches(attr, setting.name)
+    const matchingAttr = (attrItems as AttributeResult[]).find(
+      (attr: AttributeResult) => attributeNameMatches(attr, setting.name),
     );
     if (matchingAttr) {
       const values = extractAttributeValues(matchingAttr);
@@ -309,7 +385,9 @@ onMounted(() => {
   });
   if (Object.keys(initial).length === 0) return;
   selectedAttributes.value = initial;
-  const allSelected = sortedSettings.every((s: ClusterConfigSetting) => !!initial[s.name]);
+  const allSelected = sortedSettings.every(
+    (s: ClusterConfigSetting) => !!initial[s.name],
+  );
   if (allSelected && props.onConfigurationChange) {
     const matchingProduct = findMatchingProduct(initial);
     if (matchingProduct) {
@@ -318,35 +396,43 @@ onMounted(() => {
   }
 });
 
-function getLabel(key: string, fallback: string): ReturnType<ClusterConfiguratorState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<ClusterConfiguratorState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function getSortedSettings(): ReturnType<ClusterConfiguratorState['getSortedSettings']> {
+function getSortedSettings(): ReturnType<
+  ClusterConfiguratorState["getSortedSettings"]
+> {
   const settings = (props.config as ClusterConfig)?.settings;
   if (!settings || settings.length === 0) return [];
   return settings
     .slice()
     .sort(
       (a: ClusterConfigSetting, b: ClusterConfigSetting) =>
-        parseInt(a.priority) - parseInt(b.priority)
+        parseInt(a.priority) - parseInt(b.priority),
     );
 }
 function attributeNameMatches(
   attr: AttributeResult,
-  targetName: string
-): ReturnType<ClusterConfiguratorState['attributeNameMatches']> {
+  targetName: string,
+): ReturnType<ClusterConfiguratorState["attributeNameMatches"]> {
   const attrName =
-    attr.attributeDescription?.descriptions?.[0]?.value || attr.attributeDescription?.name;
+    attr.attributeDescription?.descriptions?.[0]?.value ||
+    attr.attributeDescription?.name;
   return (
     attrName === targetName ||
     attr.attributeDescription?.name === targetName ||
-    (attr.attributeDescription?.descriptions?.some((desc: any) => desc.value === targetName) ??
+    (attr.attributeDescription?.descriptions?.some(
+      (desc: any) => desc.value === targetName,
+    ) ??
       false)
   );
 }
 function extractAttributeValues(
-  attr: AttributeResult
-): ReturnType<ClusterConfiguratorState['extractAttributeValues']> {
+  attr: AttributeResult,
+): ReturnType<ClusterConfiguratorState["extractAttributeValues"]> {
   let extractedValues: string[] = [];
 
   // ── Legacy SDK format ────────────────────────────────────────────
@@ -359,7 +445,7 @@ function extractAttributeValues(
   } else if ((attr.value as any)?.numericValue !== undefined) {
     extractedValues.push((attr.value as any).numericValue.toString());
   } else if ((attr.value as any)?.booleanValue !== undefined) {
-    extractedValues.push((attr.value as any).booleanValue ? 'Yes' : 'No');
+    extractedValues.push((attr.value as any).booleanValue ? "Yes" : "No");
   }
   // ── Current SDK format (type-based) ──────────────────────────────
   else if (attr.value?.type === Enums.AttributeType.COLOR) {
@@ -374,28 +460,35 @@ function extractAttributeValues(
     extractedValues.push(attr.value?.value);
   }
   // ── Fallback ─────────────────────────────────────────────────────
-  else if (typeof attr.value === 'string') {
+  else if (typeof attr.value === "string") {
     extractedValues.push(attr.value);
-  } else if (attr.value && typeof attr.value === 'object') {
-    if ((attr.value as any).values && Array.isArray((attr.value as any).values)) {
-      extractedValues = (attr.value as any).values.filter((v: any) => typeof v === 'string');
+  } else if (attr.value && typeof attr.value === "object") {
+    if (
+      (attr.value as any).values &&
+      Array.isArray((attr.value as any).values)
+    ) {
+      extractedValues = (attr.value as any).values.filter(
+        (v: any) => typeof v === "string",
+      );
     } else {
-      const possibleValues = Object.values(attr.value).filter((v: any) => typeof v === 'string');
+      const possibleValues = Object.values(attr.value).filter(
+        (v: any) => typeof v === "string",
+      );
       extractedValues = possibleValues as string[];
     }
   }
   return extractedValues.filter((val: string) => !!val);
 }
 function getAttributeDisplayName(
-  attributeName: string
-): ReturnType<ClusterConfiguratorState['getAttributeDisplayName']> {
+  attributeName: string,
+): ReturnType<ClusterConfiguratorState["getAttributeDisplayName"]> {
   const products = (props.products as Product[]) || [];
   if (products.length === 0) return attributeName;
   const firstProduct = products[0];
   const attributeItems = firstProduct.attributes?.items;
   if (Array.isArray(attributeItems)) {
-    const matchingAttr = (attributeItems as AttributeResult[]).find((attr: AttributeResult) =>
-      attributeNameMatches(attr, attributeName)
+    const matchingAttr = (attributeItems as AttributeResult[]).find(
+      (attr: AttributeResult) => attributeNameMatches(attr, attributeName),
     );
     if (matchingAttr?.attributeDescription?.descriptions?.[0]?.value) {
       return matchingAttr.attributeDescription.descriptions[0].value;
@@ -404,8 +497,8 @@ function getAttributeDisplayName(
   return attributeName;
 }
 function getAttributeValues(
-  attributeName: string
-): ReturnType<ClusterConfiguratorState['getAttributeValues']> {
+  attributeName: string,
+): ReturnType<ClusterConfiguratorState["getAttributeValues"]> {
   const valSet = new Set<string>();
   const products = (props.products as Product[]) || [];
   products.forEach((product: Product) => {
@@ -423,19 +516,21 @@ function getAttributeValues(
 }
 function getAvailableValuesForIndex(
   attributeName: string,
-  settingIndex: number
-): ReturnType<ClusterConfiguratorState['getAvailableValuesForIndex']> {
+  settingIndex: number,
+): ReturnType<ClusterConfiguratorState["getAvailableValuesForIndex"]> {
   return getAvailableValuesForIndexWithSelections(
     attributeName,
     settingIndex,
-    selectedAttributes.value as Record<string, string>
+    selectedAttributes.value as Record<string, string>,
   );
 }
 function getAvailableValuesForIndexWithSelections(
   attributeName: string,
   settingIndex: number,
-  selections: Record<string, string>
-): ReturnType<ClusterConfiguratorState['getAvailableValuesForIndexWithSelections']> {
+  selections: Record<string, string>,
+): ReturnType<
+  ClusterConfiguratorState["getAvailableValuesForIndexWithSelections"]
+> {
   if (settingIndex === 0) {
     return getAttributeValues(attributeName);
   }
@@ -453,10 +548,12 @@ function getAvailableValuesForIndexWithSelections(
     return prevEntries.every(([attrName, attrValue]: [string, string]) => {
       const attributeItems = product.attributes?.items;
       if (!Array.isArray(attributeItems)) return false;
-      return (attributeItems as AttributeResult[]).some((attr: AttributeResult) => {
-        if (!attributeNameMatches(attr, attrName)) return false;
-        return extractAttributeValues(attr).includes(attrValue);
-      });
+      return (attributeItems as AttributeResult[]).some(
+        (attr: AttributeResult) => {
+          if (!attributeNameMatches(attr, attrName)) return false;
+          return extractAttributeValues(attr).includes(attrValue);
+        },
+      );
     });
   });
   const availableSet = new Set<string>();
@@ -465,23 +562,30 @@ function getAvailableValuesForIndexWithSelections(
     if (Array.isArray(attributeItems)) {
       (attributeItems as AttributeResult[]).forEach((attr: AttributeResult) => {
         if (attributeNameMatches(attr, attributeName)) {
-          extractAttributeValues(attr).forEach((val: string) => availableSet.add(val));
+          extractAttributeValues(attr).forEach((val: string) =>
+            availableSet.add(val),
+          );
         }
       });
     }
   });
   return Array.from(availableSet);
 }
-function getSettingsWithValues(): ReturnType<ClusterConfiguratorState['getSettingsWithValues']> {
+function getSettingsWithValues(): ReturnType<
+  ClusterConfiguratorState["getSettingsWithValues"]
+> {
   const sortedSettings = getSortedSettings();
   const sel = selectedAttributes.value as Record<string, string>;
   return sortedSettings.map((setting: ClusterConfigSetting, index: number) => {
     const availableValues = getAvailableValuesForIndex(setting.name, index);
-    const selectedValue = sel[setting.name] || '';
+    const selectedValue = sel[setting.name] || "";
     const isPreviousSelectionMissing =
       index > 0 &&
-      sortedSettings.slice(0, index).some((prev: ClusterConfigSetting) => !sel[prev.name]);
-    const isDisabled = availableValues.length === 0 || isPreviousSelectionMissing;
+      sortedSettings
+        .slice(0, index)
+        .some((prev: ClusterConfigSetting) => !sel[prev.name]);
+    const isDisabled =
+      availableValues.length === 0 || isPreviousSelectionMissing;
     const displayName = getAttributeDisplayName(setting.name);
     return {
       id: setting.id,
@@ -496,8 +600,8 @@ function getSettingsWithValues(): ReturnType<ClusterConfiguratorState['getSettin
   });
 }
 function findMatchingProduct(
-  selections: Record<string, string>
-): ReturnType<ClusterConfiguratorState['findMatchingProduct']> {
+  selections: Record<string, string>,
+): ReturnType<ClusterConfiguratorState["findMatchingProduct"]> {
   const products = (props.products as Product[]) || [];
   const entries = Object.entries(selections);
   if (entries.length === 0) return null;
@@ -516,11 +620,11 @@ function findMatchingProduct(
 }
 function handleAttributeSelect(
   settingName: string,
-  value: string
-): ReturnType<ClusterConfiguratorState['handleAttributeSelect']> {
+  value: string,
+): ReturnType<ClusterConfiguratorState["handleAttributeSelect"]> {
   const sortedSettings = getSortedSettings();
   const changedIndex = sortedSettings.findIndex(
-    (s: ClusterConfigSetting) => s.name === settingName
+    (s: ClusterConfigSetting) => s.name === settingName,
   );
 
   // Build new selections: keep, update changed, remove subsequent
@@ -535,7 +639,11 @@ function handleAttributeSelect(
   // Always pre-select the first available value for all subsequent settings
   for (let i = changedIndex + 1; i < sortedSettings.length; i++) {
     const nextSetting = sortedSettings[i];
-    const available = getAvailableValuesForIndexWithSelections(nextSetting.name, i, newSelections);
+    const available = getAvailableValuesForIndexWithSelections(
+      nextSetting.name,
+      i,
+      newSelections,
+    );
     if (available.length > 0) {
       newSelections[nextSetting.name] = available[0];
     } else {
@@ -545,7 +653,9 @@ function handleAttributeSelect(
   selectedAttributes.value = newSelections;
 
   // When all settings have a selection, resolve and report the product
-  const allSelected = sortedSettings.every((s: ClusterConfigSetting) => !!newSelections[s.name]);
+  const allSelected = sortedSettings.every(
+    (s: ClusterConfigSetting) => !!newSelections[s.name],
+  );
   if (allSelected) {
     const matchingProduct = findMatchingProduct(newSelections);
     if (matchingProduct && props.onConfigurationChange) {

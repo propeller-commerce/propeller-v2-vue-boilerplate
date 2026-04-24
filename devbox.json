@@ -52,6 +52,24 @@
       ],
       "stop-dev": [
         "task stop-dev"
+      ],
+      "build-frontend-staging": [
+        "task build-frontend-staging"
+      ],
+      "build-cms-staging": [
+        "task build-cms-staging"
+      ],
+      "deploy-frontend-staging": [
+        "task deploy-frontend-staging"
+      ],
+      "deploy-staging": [
+        "task deploy-staging"
+      ],
+      "start-staging": [
+        "task start-staging"
+      ],
+      "stop-staging": [
+        "task stop-staging"
       ]
     }
   }

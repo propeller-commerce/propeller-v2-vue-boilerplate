@@ -1,14 +1,14 @@
 <template>
-  <div :class="`${className || ''}`">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-      <div class="text-sm text-muted-foreground font-medium">
+  <div :class="`propeller-grid-toolbar ${className || ''}`" :data-view-mode="currentViewMode">
+    <div class="propeller-grid-toolbar__bar flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+      <div class="propeller-grid-toolbar__count text-sm text-muted-foreground font-medium">
         <template v-if="itemsFound !== undefined && itemsFound > 0">
           <span>{{ itemsFound }}{{ getLabel('products') }}</span>
         </template>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="propeller-grid-toolbar__controls flex flex-wrap items-center gap-3">
         <select
-          class="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--offset h-9 rounded-[var(--radius-control)] border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           :value="currentOffset"
           @change="async (e) => handleOffsetChange(parseInt((e.target as HTMLSelectElement).value))"
         >
@@ -16,9 +16,9 @@
             <option :value="n">{{ n }}{{ getLabel('perPage') }}</option>
           </template>
         </select>
-        <div class="h-4 w-px bg-border hidden sm:block"></div>
+        <div class="propeller-grid-toolbar__divider h-4 w-px bg-border hidden sm:block"></div>
         <select
-          class="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-field h-9 rounded-[var(--radius-control)] border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           :value="currentSortField"
           @change="async (e) => handleSortFieldChange((e.target as HTMLSelectElement).value)"
         >
@@ -28,7 +28,7 @@
             </option>
           </template></select
         ><select
-          class="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-order h-9 rounded-[var(--radius-control)] border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           :value="currentSortOrder"
           @change="async (e) => handleSortOrderChange((e.target as HTMLSelectElement).value)"
         >
@@ -38,7 +38,7 @@
           </option></select
         ><button
           type="button"
-          class="h-9 w-9 flex items-center justify-center rounded-md border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"
+          class="propeller-grid-toolbar__view-toggle h-9 w-9 flex items-center justify-center rounded-[var(--radius-control)] border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"
           @click="async (event) => handleViewChange()"
           :title="currentViewMode === 'grid' ? getLabel('switchToList') : getLabel('switchToGrid')"
         >
@@ -85,10 +85,10 @@
       </div>
     </div>
     <template v-if="hasActiveFilters()">
-      <div class="flex flex-wrap gap-2 mb-4">
+      <div class="propeller-grid-toolbar__active-filters flex flex-wrap gap-2 mb-4">
         <button
           type="button"
-          class="h-7 px-2 text-xs rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          class="propeller-grid-toolbar__clear-all h-7 px-2 text-xs rounded-[var(--radius-control)] hover:bg-accent hover:text-accent-foreground transition-colors"
           @click="
             async (event) => {
               if (onClearFilters) onClearFilters();
@@ -99,14 +99,14 @@
         </button>
         <template v-if="priceFilterMin !== undefined || priceFilterMax !== undefined">
           <span
-            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
+            class="propeller-grid-toolbar__filter-badge propeller-grid-toolbar__filter-badge--price inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
             @click="
               async (event) => {
                 if (onPriceFilterRemove) onPriceFilterRemove();
               }
             "
             >{{ getLabel('price') }}: € {{ priceFilterMin ?? 0 }} – €{{ priceFilterMax ?? '∞'
-            }}<span>×</span></span
+            }}<span class="propeller-grid-toolbar__filter-badge-remove">×</span></span
           >
         </template>
 
@@ -115,13 +115,14 @@
           v-for="(badge, index) in getActiveFilterBadges()"
         >
           <span
-            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
+            class="propeller-grid-toolbar__filter-badge inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
+            :data-filter-key="badge.key"
             @click="
               async (event) => {
                 if (onFilterRemove) onFilterRemove(badge.key, badge.value);
               }
             "
-            >{{ badge.value }}<span>×</span></span
+            >{{ badge.value }}<span class="propeller-grid-toolbar__filter-badge-remove">×</span></span
           >
         </template>
       </div>

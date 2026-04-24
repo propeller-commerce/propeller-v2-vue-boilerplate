@@ -1,58 +1,58 @@
 <template>
-  <div class="w-full bg-white space-y-3">
-    <h2 class="text-xl font-bold mb-4">{{ title }}</h2>
+  <div class="propeller-cart-summary w-full bg-card space-y-3">
+    <h2 class="propeller-cart-summary__title text-xl font-bold mb-4">{{ title }}</h2>
     <template v-if="showSubtotal">
-      <div class="flex justify-between text-gray-600">
-        <span>{{ getLabel('subtotal', 'Subtotal:') }}</span
-        ><span>{{ formatItemPrice(subtotal) }}</span>
+      <div class="propeller-cart-summary__row flex justify-between text-muted-foreground" data-row="subtotal">
+        <span class="propeller-cart-summary__label">{{ getLabel('subtotal', 'Subtotal:') }}</span
+        ><span class="propeller-cart-summary__value">{{ formatItemPrice(subtotal) }}</span>
       </div>
     </template>
 
     <template v-if="showDiscount && hasDiscount">
-      <div class="flex justify-between text-green-600">
-        <span>{{ getLabel('discount', 'Discount:') }}</span
-        ><span>-{{ formatItemPrice(discountAmount) }}</span>
+      <div class="propeller-cart-summary__row flex justify-between text-success" data-row="discount">
+        <span class="propeller-cart-summary__label">{{ getLabel('discount', 'Discount:') }}</span
+        ><span class="propeller-cart-summary__value">-{{ formatItemPrice(discountAmount) }}</span>
       </div>
     </template>
 
     <template v-if="showShippingCosts && hasShippingCosts">
-      <div class="flex justify-between text-gray-600">
-        <span>{{ getLabel('shippingCosts', 'Shipping costs:') }}</span
-        ><span>{{ formatItemPrice(shippingCosts) }}</span>
+      <div class="propeller-cart-summary__row flex justify-between text-muted-foreground" data-row="shipping-costs">
+        <span class="propeller-cart-summary__label">{{ getLabel('shippingCosts', 'Shipping costs:') }}</span
+        ><span class="propeller-cart-summary__value">{{ formatItemPrice(shippingCosts) }}</span>
       </div>
     </template>
 
     <template v-if="showTotalExclVat">
-      <div class="flex justify-between text-gray-600 pt-2 border-t">
-        <span>{{ getLabel('totalExclVat', 'Total excl. VAT:') }}</span
-        ><span>{{ formatItemPrice(totalExclVat) }}</span>
+      <div class="propeller-cart-summary__row flex justify-between text-muted-foreground pt-2 border-t" data-row="total-excl-vat">
+        <span class="propeller-cart-summary__label">{{ getLabel('totalExclVat', 'Total excl. VAT:') }}</span
+        ><span class="propeller-cart-summary__value">{{ formatItemPrice(totalExclVat) }}</span>
       </div>
     </template>
 
     <template v-if="showVATs && taxLevels.length > 0">
       <template :key="index" v-for="(tax, index) in taxLevels">
-        <div class="flex justify-between text-gray-600 text-sm">
-          <span>{{ tax.taxPercentage }}% {{ getLabel('vat', 'VAT') }}:</span
-          ><span>{{ formatItemPrice(Number(tax.price)) }}</span>
+        <div class="propeller-cart-summary__row flex justify-between text-muted-foreground text-sm" data-row="vat-line">
+          <span class="propeller-cart-summary__label">{{ tax.taxPercentage }}% {{ getLabel('vat', 'VAT') }}:</span
+          ><span class="propeller-cart-summary__value">{{ formatItemPrice(Number(tax.price)) }}</span>
         </div>
       </template>
     </template>
 
     <template v-if="showTotalVat && totalVat > 0">
-      <div class="flex justify-between text-gray-600 text-sm">
-        <span>{{ getLabel('totalVat', 'Total VAT:') }}</span
-        ><span>{{ formatItemPrice(totalVat) }}</span>
+      <div class="propeller-cart-summary__row flex justify-between text-muted-foreground text-sm" data-row="total-vat">
+        <span class="propeller-cart-summary__label">{{ getLabel('totalVat', 'Total VAT:') }}</span
+        ><span class="propeller-cart-summary__value">{{ formatItemPrice(totalVat) }}</span>
       </div>
     </template>
 
-    <div class="flex justify-between text-xl font-bold pt-4 border-t text-gray-900 mt-2">
-      <span>{{ getLabel('total', 'Total:') }}</span
-      ><span>{{ formatItemPrice(totalInclVat) }}</span>
+    <div class="propeller-cart-summary__row propeller-cart-summary__row--total flex justify-between text-xl font-bold pt-4 border-t text-foreground mt-2" data-row="total">
+      <span class="propeller-cart-summary__label">{{ getLabel('total', 'Total:') }}</span
+      ><span class="propeller-cart-summary__value">{{ formatItemPrice(totalInclVat) }}</span>
     </div>
     <template v-if="showCheckoutButton && !showRequestAuthorizationButton">
       <button
         type="button"
-        class="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4"
+        class="propeller-cart-summary__checkout-btn block w-full bg-secondary text-primary-foreground text-center py-3 rounded-[var(--radius-container)] hover:bg-secondary/90 transition font-semibold mt-4"
         @click="async (event) => handleCheckoutClick()"
       >
         {{ getLabel('checkoutButton', 'Continue to Checkout') }}
@@ -61,7 +61,7 @@
       <template v-if="!!onRequestQuoteClick && !!user && 'contactId' in user">
         <button
           type="button"
-          class="block w-full bg-white border border-secondary text-secondary text-center py-3 rounded-lg hover:bg-secondary/5 transition font-semibold mt-2"
+          class="propeller-cart-summary__quote-btn block w-full bg-card border border-secondary text-secondary text-center py-3 rounded-[var(--radius-container)] hover:bg-secondary/5 transition font-semibold mt-2"
           @click="async (event) => onRequestQuoteClick && onRequestQuoteClick(cart)"
         >
           {{ getLabel('requestQuoteButton', 'Request a Quote') }}
@@ -72,7 +72,7 @@
     <template v-if="showRequestAuthorizationButton">
       <button
         type="button"
-        class="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="propeller-cart-summary__authorization-btn block w-full bg-secondary text-primary-foreground text-center py-3 rounded-[var(--radius-container)] hover:bg-secondary/90 transition font-semibold mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
         @click="async (event) => handleRequestAuthorizationClick()"
         :disabled="requestLoading"
       >

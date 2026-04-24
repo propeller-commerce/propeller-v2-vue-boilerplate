@@ -11,7 +11,7 @@
       <div
         v-for="post in posts"
         :key="post.slug"
-        class="bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition cursor-pointer"
+        class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden hover:shadow-md transition cursor-pointer"
         @click="router.push(`/blog/${post.slug}`)"
       >
         <img v-if="post.cover?.url" :src="post.cover.url" :alt="post.title" class="w-full h-48 object-cover" />

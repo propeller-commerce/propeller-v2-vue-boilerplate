@@ -13,10 +13,14 @@ vars:
   CMS_PORT_PROD: '{{.CMS_PORT_PROD | default "1337"}}'
   APP_PORT_DEV: '{{.APP_PORT_DEV | default "3001"}}'
   CMS_PORT_DEV: '{{.CMS_PORT_DEV | default "1338"}}'
+  APP_PORT_STAGING: '{{.APP_PORT_STAGING | default "3002"}}'
+  CMS_PORT_STAGING: '{{.CMS_PORT_STAGING | default "1339"}}'
   DEPLOY_PATH_PROD: '{{.DEPLOY_PATH_PROD | default "/home/vueboilerplate/public_html"}}'
   DEPLOY_PATH_DEV: '{{.DEPLOY_PATH_DEV | default "/home/vueboilerplatedev/public_html"}}'
+  DEPLOY_PATH_STAGING: '{{.DEPLOY_PATH_STAGING | default "/home/vueboilerplatestage/public_html"}}'
   OWNER_PROD: '{{.OWNER_PROD | default "vueboilerplate"}}'
   OWNER_DEV: '{{.OWNER_DEV | default "vueboilerplatedev"}}'
+  OWNER_STAGING: '{{.OWNER_STAGING | default "vueboilerplatestage"}}'
 
 tasks:
 
@@ -35,8 +39,13 @@ tasks:
           echo "Syncing config files to DEV ({{.DEPLOY_PATH_DEV}})..."
           sudo rsync -a devbox.json devbox.lock Taskfile.yml rsync-exclude.txt {{.DEPLOY_PATH_DEV}}/
           sudo chown {{.OWNER_DEV}}:{{.OWNER_DEV}} {{.DEPLOY_PATH_DEV}}/devbox.json {{.DEPLOY_PATH_DEV}}/devbox.lock {{.DEPLOY_PATH_DEV}}/Taskfile.yml {{.DEPLOY_PATH_DEV}}/rsync-exclude.txt
+        elif [ "{{.CI_COMMIT_BRANCH}}" = "staging" ]; then
+          [ ! -d "{{.DEPLOY_PATH_STAGING}}" ] && sudo mkdir -p {{.DEPLOY_PATH_STAGING}}
+          echo "Syncing config files to STAGING ({{.DEPLOY_PATH_STAGING}})..."
+          sudo rsync -a devbox.json devbox.lock Taskfile.yml rsync-exclude.txt {{.DEPLOY_PATH_STAGING}}/
+          sudo chown {{.OWNER_STAGING}}:{{.OWNER_STAGING}} {{.DEPLOY_PATH_STAGING}}/devbox.json {{.DEPLOY_PATH_STAGING}}/devbox.lock {{.DEPLOY_PATH_STAGING}}/Taskfile.yml {{.DEPLOY_PATH_STAGING}}/rsync-exclude.txt
         else
-          echo "Branch '{{.CI_COMMIT_BRANCH}}' is neither 'master' nor 'develop'. Skipping config sync."
+          echo "Branch '{{.CI_COMMIT_BRANCH}}' is NOT 'master', 'develop' or 'staging'. Skipping config sync."
           exit 1
         fi
 
@@ -75,6 +84,12 @@ tasks:
       - task: _build-frontend
         vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_DEV}}", OWNER: "{{.OWNER_DEV}}" }
 
+  build-frontend-staging:
+    desc: "Builds the frontend application for STAGING."
+    cmds:
+      - task: _build-frontend
+        vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_STAGING}}", OWNER: "{{.OWNER_STAGING}}" }
+
   _build-cms:
     internal: true
     dir: "{{.BUILD_PATH}}/source/cms"
@@ -109,6 +124,12 @@ tasks:
       - task: _build-cms
         vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_DEV}}", OWNER: "{{.OWNER_DEV}}" }
 
+  build-cms-staging:
+    desc: "Builds the Strapi CMS for DEV. Rebuilds only when cms/ directory has changed."
+    cmds:
+      - task: _build-cms
+        vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_STAGING}}", OWNER: "{{.OWNER_STAGING}}" }
+
   _deploy-frontend:
     internal: true
     dir: "{{.DEPLOY_PATH}}/frontend"
@@ -128,6 +149,12 @@ tasks:
     cmds:
       - task: _deploy-frontend
         vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_DEV}}", APP_PORT: "{{.APP_PORT_DEV}}", PM2_NAME: "frontend-dev" }
+
+  deploy-frontend-staging:
+    desc: "Deploy the frontend for STAGING."
+    cmds:
+      - task: _deploy-frontend
+        vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_STAGING}}", APP_PORT: "{{.APP_PORT_STAGING}}", PM2_NAME: "frontend-staging" }
 
   _deploy-cms:
     internal: true
@@ -149,6 +176,12 @@ tasks:
       - task: _deploy-cms
         vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_DEV}}", CMS_PORT: "{{.CMS_PORT_DEV}}", PM2_NAME: "cms-dev" }
 
+  deploy-cms-staging:
+    desc: "Deploy the CMS for STAGING."
+    cmds:
+      - task: _deploy-cms
+        vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_STAGING}}", CMS_PORT: "{{.CMS_PORT_STAGING}}", PM2_NAME: "cms-staging" }
+
   deploy-prod:
     desc: "Deploying the applications for PROD."
     deps: [deploy-frontend-prod, deploy-cms-prod]
@@ -156,6 +189,10 @@ tasks:
   deploy-dev:
     desc: "Deploying the applications for DEV."
     deps: [deploy-frontend-dev, deploy-cms-dev]
+
+  deploy-staging:
+    desc: "Deploying the applications for STAGING."
+    deps: [deploy-frontend-staging, deploy-cms-staging]
 
   _start:
     internal: true
@@ -175,6 +212,12 @@ tasks:
       - task: _start
         vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_DEV}}", APP_PORT: "{{.APP_PORT_DEV}}", CMS_PORT: "{{.CMS_PORT_DEV}}", FRONTEND_NAME: "frontend-dev", CMS_NAME: "cms-dev" }
 
+  start-staging:
+    desc: "Starting the applications for STAGING."
+    cmds:
+      - task: _start
+        vars: { DEPLOY_PATH: "{{.DEPLOY_PATH_STAGING}}", APP_PORT: "{{.APP_PORT_STAGING}}", CMS_PORT: "{{.CMS_PORT_STAGING}}", FRONTEND_NAME: "frontend-staging", CMS_NAME: "cms-staging" }
+
   _stop:
     internal: true
     cmds:
@@ -192,3 +235,9 @@ tasks:
     cmds:
       - task: _stop
         vars: { FRONTEND_NAME: "frontend-dev", CMS_NAME: "cms-dev" }
+
+  stop-staging:
+    desc: "Stops the applications for STAGING via PM2."
+    cmds:
+      - task: _stop
+        vars: { FRONTEND_NAME: "frontend-staging", CMS_NAME: "cms-staging" }

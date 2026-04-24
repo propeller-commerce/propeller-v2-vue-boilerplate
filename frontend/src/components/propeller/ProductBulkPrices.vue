@@ -1,42 +1,65 @@
 <template>
   <template v-if="!isHidden() && hasItems()">
-    <div :class="`product-bulk-prices ${className || ''}`">
+    <div
+      :class="`propeller-product-bulk-prices ${className || ''}`"
+      :data-include-tax="getIncludeTax() ? 'true' : 'false'"
+    >
       <template v-if="getLabel('title', 'Volume pricing')">
-        <h3 class="text-base font-semibold text-foreground mb-3">
-          {{ getLabel('title', 'Volume pricing') }}
+        <h3
+          class="propeller-product-bulk-prices__title text-base font-semibold text-foreground mb-3"
+        >
+          {{ getLabel("title", "Volume pricing") }}
         </h3>
       </template>
 
-      <div class="overflow-hidden rounded-lg border border-border">
-        <table class="w-full text-sm">
-          <thead class="bg-muted/50">
+      <div
+        class="propeller-product-bulk-prices__table-wrapper overflow-hidden rounded-[var(--radius-container)] border border-border"
+      >
+        <table class="propeller-product-bulk-prices__table w-full text-sm">
+          <thead
+            class="propeller-product-bulk-prices__thead bg-surface-hover/50"
+          >
             <tr>
-              <th class="px-4 py-2 text-left font-medium text-muted-foreground">
-                {{ getLabel('quantityFrom', 'Qty from') }}
+              <th
+                class="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--quantity px-4 py-2 text-left font-medium text-muted-foreground"
+              >
+                {{ getLabel("quantityFrom", "Qty from") }}
               </th>
-              <th class="px-4 py-2 text-right font-medium text-muted-foreground">
-                {{ getLabel('price', 'Price')
-                }}<span class="font-normal text-xs">
+              <th
+                class="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--price px-4 py-2 text-right font-medium text-muted-foreground"
+              >
+                {{ getLabel("price", "Price")
+                }}<span
+                  class="propeller-product-bulk-prices__tax-label font-normal text-xs"
+                >
                   (
                   <template v-if="getIncludeTax()">
-                    {{ getLabel('inclTax', 'incl. VAT') }}
+                    {{ getLabel("inclTax", "incl. VAT") }}
                   </template>
 
                   <template v-else>
-                    {{ getLabel('exclTax', 'excl. VAT') }}
+                    {{ getLabel("exclTax", "excl. VAT") }}
                   </template>
                   )
                 </span>
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-border">
+          <tbody
+            class="propeller-product-bulk-prices__tbody divide-y divide-border"
+          >
             <template :key="index" v-for="(tier, index) in getBulkPrices()">
-              <tr class="bg-white hover:bg-muted/20 transition-colors">
-                <td class="px-4 py-2 text-foreground font-medium">
+              <tr
+                class="propeller-product-bulk-prices__row bg-card hover:bg-surface-hover/20 transition-colors"
+              >
+                <td
+                  class="propeller-product-bulk-prices__cell propeller-product-bulk-prices__cell--quantity px-4 py-2 text-foreground font-medium"
+                >
                   {{ getQuantityLabel(tier, index) }}
                 </td>
-                <td class="px-4 py-2 text-right text-foreground font-semibold">
+                <td
+                  class="propeller-product-bulk-prices__cell propeller-product-bulk-prices__cell--price px-4 py-2 text-right text-foreground font-semibold"
+                >
                   {{ getPrice(tier) }}
                 </td>
               </tr>
@@ -49,10 +72,10 @@
 </template>
 
 <script setup lang="ts">
-import { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
-import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import { ProductPrice, Contact, Customer } from "propeller-sdk-v2";
+import type { IDiscount } from "propeller-sdk-v2/dist/type/IDiscount";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface ProductBulkPricesProps {
   /**
@@ -103,15 +126,15 @@ interface ProductBulkPricesState {
 
 const props = defineProps<ProductBulkPricesProps>();
 
-function isHidden(): ReturnType<ProductBulkPricesState['isHidden']> {
-  return (props.portalMode as string) === 'semi-closed' && !props.user;
+function isHidden(): ReturnType<ProductBulkPricesState["isHidden"]> {
+  return (props.portalMode as string) === "semi-closed" && !props.user;
 }
-function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
+function getIncludeTax(): ReturnType<ProductBulkPricesState["getIncludeTax"]> {
   return props.includeTax !== undefined ? !!props.includeTax : false;
 }
 function getTierQuantity(
-  tier: ProductPrice
-): ReturnType<ProductBulkPricesState['getTierQuantity']> {
+  tier: ProductPrice,
+): ReturnType<ProductBulkPricesState["getTierQuantity"]> {
   const discount = tier.discount as
     | (IDiscount & {
         quantityFrom?: number;
@@ -119,7 +142,7 @@ function getTierQuantity(
     | undefined;
   return discount?.quantityFrom ?? tier.quantity ?? null;
 }
-function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
+function getBulkPrices(): ReturnType<ProductBulkPricesState["getBulkPrices"]> {
   const rawAll = (props.bulkPrices as ProductPrice[]) || [];
   const all = rawAll.filter((tier) => {
     const t = tier as ProductPrice & {
@@ -144,7 +167,7 @@ function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
             }
           | undefined
       )?.discountType;
-    return !(priceType === 'PRICESHEET' && discountType === 'LIST_PRICE_MIN');
+    return !(priceType === "PRICESHEET" && discountType === "LIST_PRICE_MIN");
   });
   if (all.length === 0) return [];
   const now = new Date();
@@ -179,29 +202,34 @@ function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
       }
       let isValid = true;
       if (validFrom !== null && now < new Date(validFrom)) isValid = false;
-      if (isValid && validTo !== null && now > new Date(validTo)) isValid = false;
+      if (isValid && validTo !== null && now > new Date(validTo))
+        isValid = false;
       if (isValid) validDated.push(tier);
     }
     if (validDated.length > 0) filtered.push(validDated[0]);
     else if (nullDated.length > 0) filtered.push(nullDated[0]);
   }
-  filtered.sort((a, b) => (getTierQuantity(a) ?? 0) - (getTierQuantity(b) ?? 0));
+  filtered.sort(
+    (a, b) => (getTierQuantity(a) ?? 0) - (getTierQuantity(b) ?? 0),
+  );
   if (filtered.length === 1 && getTierQuantity(filtered[0]) === 1) return [];
   return filtered;
 }
-function hasItems(): ReturnType<ProductBulkPricesState['hasItems']> {
+function hasItems(): ReturnType<ProductBulkPricesState["hasItems"]> {
   return getBulkPrices().length > 0;
 }
-function getPrice(tier: ProductPrice): ReturnType<ProductBulkPricesState['getPrice']> {
+function getPrice(
+  tier: ProductPrice,
+): ReturnType<ProductBulkPricesState["getPrice"]> {
   const useTax: boolean = getIncludeTax();
   const value: number | undefined = useTax ? tier.net : tier.gross;
-  if (value === null || value === undefined) return '';
-  return _formatPrice(Number(value), { symbol: '€' });
+  if (value === null || value === undefined) return "";
+  return _formatPrice(Number(value), { symbol: "€" });
 }
 function getQuantityLabel(
   tier: ProductPrice,
-  index: number
-): ReturnType<ProductBulkPricesState['getQuantityLabel']> {
+  index: number,
+): ReturnType<ProductBulkPricesState["getQuantityLabel"]> {
   const prices = getBulkPrices();
   const discount = tier.discount as
     | (IDiscount & {
@@ -221,7 +249,10 @@ function getQuantityLabel(
   }
   return `${qty}+`;
 }
-function getLabel(key: string, fallback: string): ReturnType<ProductBulkPricesState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<ProductBulkPricesState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
 </script>
