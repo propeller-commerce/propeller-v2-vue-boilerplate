@@ -239,10 +239,10 @@
               </template>
 
               <div class="flex-1 min-w-0">
-                <a
+                <router-link
                   class="propeller-add-to-cart__modal-product-title text-sm font-medium text-secondary leading-tight hover:underline line-clamp-2"
-                  :href="getProductUrl()"
-                  >{{ getModalName() }}</a
+                  :to="getProductUrl()"
+                  >{{ getModalName() }}</router-link
                 >
                 <template v-if="!!getModalSku()">
                   <p
@@ -304,12 +304,7 @@
               {{ getLabel("continueShopping", "Continue shopping") }}
             </button>
             <template
-              v-if="
-                checkoutAllowed &&
-                !!onRequestQuoteClick &&
-                !!user &&
-                'contactId' in user
-              "
+              v-if="!!onRequestQuoteClick && !!user && 'contactId' in user"
             >
               <button
                 type="button"

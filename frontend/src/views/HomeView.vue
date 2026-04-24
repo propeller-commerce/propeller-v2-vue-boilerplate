@@ -3,9 +3,12 @@
     <!-- Hero / Featured products fallback -->
     <div class="container-width py-16">
       <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-foreground mb-4">Welcome to Propeller</h1>
+        <h1 class="text-4xl font-bold text-foreground mb-4">
+          Welcome to Propeller
+        </h1>
         <p class="text-muted-foreground text-lg max-w-xl mx-auto">
-          Discover our full catalog of products — quality, selection, and fast delivery.
+          Discover our full catalog of products — quality, selection, and fast
+          delivery.
         </p>
         <router-link
           to="/search"
@@ -18,47 +21,70 @@
       <ProductSlider
         :graphqlClient="graphqlClient"
         :user="authStore.user as Contact | Customer"
-        :productIds="[1531, 5400, 5404, 1620, 5395, 5396]"
-        :cartId="cartStore.cartId || undefined"
+        :companyId="companyStore.selectedCompany?.companyId"
+        :productIds="[140, 64, 1382, 142, 146, 145]"
         :taxZone="configuration.taxZone"
+        :cartId="cartStore.cartId || undefined"
+        :createCart="true"
+        :showModal="true"
         :language="languageStore.language"
         :includeTax="priceStore.includeTax"
         :configuration="configuration"
-        :onCartCreated="(cart: any) => cartStore.setCart(cart)"
+        :showStock="true"
+        :showAvailability="true"
+        :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+        :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
+        :title="'Featured Products'"
         :onProductClick="
-          (p: Product) =>
+          (product: Product) =>
             router.push(
-              configuration.urls.getProductUrl(p, languageStore.language),
+              configuration.urls.getProductUrl(product, languageStore.language),
             )
         "
         :onClusterClick="
-          (c: Cluster) =>
+          (cluster: Cluster) =>
             router.push(
-              configuration.urls.getClusterUrl(c, languageStore.language),
+              configuration.urls.getClusterUrl(cluster, languageStore.language),
             )
         "
-        title="Featured Products"
+        :onProceedToCheckout="
+          () => router.push(localizeHref('/checkout', languageStore.language))
+        "
+        :onRequestQuoteClick="
+          () =>
+            router.push(
+              localizeHref('/checkout?mode=quote', languageStore.language),
+            )
+        "
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { useCartStore } from '@/stores/cart'
-import { usePriceStore } from '@/stores/price'
-import { useLanguageStore } from '@/stores/language'
-import { graphqlClient, productService } from '@/lib/api'
-import { configuration } from '@/lib/config'
-import ProductSlider from '@/components/propeller/ProductSlider.vue'
-import type { Cluster, Contact, Customer, Product } from 'propeller-sdk-v2'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { useCartStore } from "@/stores/cart";
+import { usePriceStore } from "@/stores/price";
+import { useLanguageStore } from "@/stores/language";
+import { useCompanyStore } from "@/stores/company";
+import { graphqlClient, productService } from "@/lib/api";
+import { configuration, localizeHref } from "@/lib/config";
+import ProductSlider from "@/components/propeller/ProductSlider.vue";
+import type {
+  Cart,
+  Cluster,
+  Contact,
+  Customer,
+  Product,
+} from "propeller-sdk-v2";
 
-const router = useRouter()
-const authStore = useAuthStore()
-const cartStore = useCartStore()
-const priceStore = usePriceStore()
-const languageStore = useLanguageStore()
-
+const router = useRouter();
+const authStore = useAuthStore();
+const cartStore = useCartStore();
+const priceStore = usePriceStore();
+const languageStore = useLanguageStore();
+const companyStore = useCompanyStore();
+const router = useRouter();
 </script>

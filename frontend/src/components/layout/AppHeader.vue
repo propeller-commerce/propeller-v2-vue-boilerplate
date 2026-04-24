@@ -374,7 +374,8 @@ async function handleAfterLogin(
 async function handleCompanyChange(company: Company) {
   companyStore.setSelectedCompany(company)
   if (authStore.user) {
-    await fetchActiveCart()
+    const newCart = await fetchActiveCart()
+    cartStore.setCart(newCart ?? null)
   }
 }
 

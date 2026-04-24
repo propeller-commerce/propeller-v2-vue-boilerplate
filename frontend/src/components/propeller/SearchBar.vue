@@ -25,7 +25,7 @@
           class="propeller-search-bar__input w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-[var(--radius-container)] focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-muted-foreground"
           :placeholder="placeholder"
           :value="searchTerm"
-          @change="async (e) => handleInputChange(e.target.value)"
+          @input="async (e) => handleInputChange((e.target as HTMLInputElement).value)"
         />
         <template v-if="isLoading">
           <div class="propeller-search-bar__spinner-wrapper absolute right-3 top-1/2 transform -translate-y-1/2">

@@ -273,11 +273,11 @@
                     <template v-if="!isBundleItem(item)">
                       <div>
                         <div class="flex justify-between items-start gap-2">
-                          <a
+                          <router-link
                             class="propeller-cart-icon__item-title text-sm font-medium leading-tight text-foreground hover:text-secondary transition-colors line-clamp-2"
-                            :href="getItemProductUrl(item)"
+                            :to="getItemProductUrl(item)"
                             @click="async (event) => closeSidebar()"
-                            >{{ getItemName(item) }}</a
+                            >{{ getItemName(item) }}</router-link
                           ><span
                             class="propeller-cart-icon__item-price font-semibold text-sm text-foreground whitespace-nowrap"
                           >

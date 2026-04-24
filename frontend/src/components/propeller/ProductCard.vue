@@ -13,10 +13,9 @@
             : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'
         }`"
       >
-        <a
-          class="block h-full w-full"
-          :href="getProductUrl()"
-          @click="async (e) => handleProductClick(e)"
+        <span
+          class="block h-full w-full cursor-pointer"
+          @click="handleNavigate()"
         >
           <template v-if="!!getProductImageUrl()">
             <img
@@ -45,7 +44,7 @@
               </svg>
             </div>
           </template>
-        </a>
+        </span>
         <template
           v-if="
             !!imageLabels &&
@@ -116,11 +115,10 @@
           </template>
 
           <template v-if="showName !== false">
-            <a
-              class="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-1"
-              :href="getProductUrl()"
-              @click="async (e) => handleProductClick(e)"
-              >{{ getProductName() }}</a
+            <span
+              class="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-1 cursor-pointer"
+              @click="handleNavigate()"
+              >{{ getProductName() }}</span
             >
           </template>
 
@@ -228,11 +226,10 @@
         </template>
 
         <template v-if="showName !== false">
-          <a
-            class="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-2"
-            :href="getProductUrl()"
-            @click="async (e) => handleProductClick(e)"
-            >{{ getProductName() }}</a
+          <span
+            class="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-2 cursor-pointer"
+            @click="handleNavigate()"
+            >{{ getProductName() }}</span
           >
         </template>
 
@@ -327,6 +324,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import {
   GraphQLClient,
@@ -608,6 +606,7 @@ const props = withDefaults(defineProps<ProductCardProps>(), {
   showStock: false,
   enableAddFavorite: false,
 });
+const router = useRouter();
 const isFavorite = ref<ProductCardState["isFavorite"]>(false);
 const includeTax = ref<ProductCardState["includeTax"]>(false);
 const priceListener = ref<ProductCardState["priceListener"]>(null);
@@ -670,6 +669,13 @@ function getAttributeValue(
     (a: AttributeResult) => a.attributeDescription?.name === code,
   );
   return found?.value?.value || "";
+}
+function handleNavigate(): void {
+  if (props.onProductClick) {
+    props.onProductClick(props.product);
+  } else {
+    router.push(getProductUrl());
+  }
 }
 function handleProductClick(
   e: any,
