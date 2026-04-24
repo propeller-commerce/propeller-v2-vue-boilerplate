@@ -181,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import {
   GraphQLClient,
@@ -435,6 +435,13 @@ watch(
     }
   },
 );
+
+watch(isLoading, async (loading) => {
+  if (!loading) {
+    await nextTick();
+    if (sliderRef.value) sliderOnScroll(sliderRef.value);
+  }
+});
 
 function items(): (Product | Cluster)[] {
   if (props.products && props.products.length > 0) {
