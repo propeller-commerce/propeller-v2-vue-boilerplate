@@ -18,6 +18,7 @@
       <ProductSlider
         :graphqlClient="graphqlClient"
         :user="authStore.user as Contact | Customer"
+        :companyId="companyStore.selectedCompany?.companyId"
         :productIds="[140, 64, 1382, 142, 146, 145]"
         :taxZone="configuration.taxZone"
         :cartId="cartStore.cartId || undefined"
@@ -26,9 +27,39 @@
         :language="languageStore.language"
         :includeTax="priceStore.includeTax"
         :configuration="configuration"
+        :showStock="true"
+        :showAvailability="true"
         :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
         :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-        title="Featured Products"
+        :title="'Featured Products'"
+        :onProductClick="
+          (product: Product) =>
+            router.push(
+              configuration.urls.getProductUrl(
+                product,
+                languageStore.language,
+              ),
+            )
+        "
+        :onClusterClick="
+          (cluster: Cluster) =>
+            router.push(
+              configuration.urls.getClusterUrl(
+                cluster,
+                languageStore.language,
+              ),
+            )
+        "
+        :onProceedToCheckout="
+          () =>
+            router.push(localizeHref('/checkout', languageStore.language))
+        "
+        :onRequestQuoteClick="
+          () =>
+            router.push(
+              localizeHref('/checkout?mode=quote', languageStore.language),
+            )
+        "
       />
     </div>
   </div>
@@ -36,12 +67,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
+import { useCompanyStore } from '@/stores/company'
 import { graphqlClient, productService } from '@/lib/api'
-import { configuration } from '@/lib/config'
+import { configuration, localizeHref } from '@/lib/config'
 import ProductSlider from '@/components/propeller/ProductSlider.vue'
 import type { Cart, Cluster, Contact, Customer, Product } from 'propeller-sdk-v2'
 
@@ -49,5 +82,7 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
+const companyStore = useCompanyStore()
+const router = useRouter();
 
 </script>
