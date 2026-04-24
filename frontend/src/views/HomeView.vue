@@ -86,5 +86,4 @@ const cartStore = useCartStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
 const companyStore = useCompanyStore();
-const router = useRouter();
 </script>
