@@ -123,7 +123,7 @@
           :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
           :language="languageStore.language"
-          :taxZone="NL"
+          taxZone="NL"
           :includeTax="priceStore.includeTax"
           :configuration="configuration"
           :createCart="true"

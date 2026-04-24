@@ -779,7 +779,7 @@ async function handleAddToCart(
       }
       const existingCartId = props.cartId || composableCartId.value;
       const result = await addBundleToCart(
-        Number(bundle.id),
+        bundle.id as unknown as number,
         existingCartId || undefined,
       );
       if (!result.success) {

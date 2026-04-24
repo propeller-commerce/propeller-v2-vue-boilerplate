@@ -32,6 +32,7 @@
                 async (e) => handleMinChange(parseFloat(e.target.value) || 0)
               "
               @blur="async (event) => applyPrice()"
+              @keyup.enter="(e) => (e.target as HTMLInputElement).blur()"
             />
           </div>
           <span
@@ -52,6 +53,7 @@
                 async (e) => handleMaxChange(parseFloat(e.target.value) || 0)
               "
               @blur="async (event) => applyPrice()"
+              @keyup.enter="(e) => (e.target as HTMLInputElement).blur()"
             />
           </div>
         </div>
@@ -62,18 +64,20 @@
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMin"
-            @change="(e) => handleMinChange(parseFloat(e.target.value))"
+            @input="(e) => handleMinChange(parseFloat((e.target as HTMLInputElement).value))"
             @pointerup="applyPrice()"
             @touchend="applyPrice()"
+            @keyup.enter="applyPrice()"
           /><input
             type="range"
             class="propeller-grid-filters__price-slider-thumb absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMax"
-            @change="(e) => handleMaxChange(parseFloat(e.target.value))"
+            @input="(e) => handleMaxChange(parseFloat((e.target as HTMLInputElement).value))"
             @pointerup="applyPrice()"
             @touchend="applyPrice()"
+            @keyup.enter="applyPrice()"
           />
           <div
             class="propeller-grid-filters__price-slider-track absolute top-1.5 left-0 right-0 h-1.5 bg-surface-hover rounded z-10"

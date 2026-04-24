@@ -2,7 +2,7 @@
   <div class="py-8 bg-background">
     <div class="container-width">
       <GridTitle
-        :title="searchTerm ? `Search results for &quot;${searchTerm}&quot;` : 'Search Products'"
+        :title="searchTerm ? `Search Products: '${searchTerm}'` : 'Search Products'"
         :language="languageStore.language"
       />
 
@@ -51,7 +51,8 @@
 
           <ProductGrid
             :graphqlClient="graphqlClient"
-            :term="searchTerm"
+            :term="effectiveTerm"
+            :categoryId="effectiveCategoryId"
             :user="authStore.user as Contact | Customer"
             :companyId="companyStore.selectedCompany?.companyId"
             :configuration="configuration"
@@ -143,6 +144,15 @@ const searchTerm = computed(() => {
   return Array.isArray(term) ? term.join(' ') : (term || '')
 })
 
+// When the user hits /search with no term, show all products under the
+// store's base category. When a term is present, use full-text search
+// without a categoryId filter (mirrors React's isAllProducts branching).
+const isAllProducts = computed(() => !searchTerm.value)
+const effectiveTerm = computed(() => (isAllProducts.value ? undefined : searchTerm.value))
+const effectiveCategoryId = computed(() =>
+  isAllProducts.value ? configuration.baseCategoryId : undefined,
+)
+
 // Populated via ProductGrid callbacks
 const productsResponse = ref<ProductsResponse | null>(null)
 const gridFilters = ref<AttributeFilter[]>([])
@@ -160,7 +170,7 @@ const currentPage = ref(1)
 const offset = ref(12)
 const sortField = ref<string>(Enums.ProductSortField.RELEVANCE)
 const sortOrder = ref<string>(Enums.SortOrder.DESC)
-const viewMode = ref<'grid' | 'list'>('grid')
+const viewMode = ref<'grid' | 'list'>('list')
 
 const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
   Object.entries(filters.value)
