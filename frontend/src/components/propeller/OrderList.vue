@@ -19,8 +19,8 @@
               :value="searchForm.term || ''"
               @change="
                 async (e) => {
-                  searchForm.value = {
-                    ...searchForm.value,
+                  searchForm = {
+                    ...searchForm,
                     term: e.target.value,
                   };
                 }
@@ -63,8 +63,8 @@
                         const val = e.target.value
                           ? `${e.target.value}T00:00:00Z`
                           : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           createdAt: {
                             ...current,
                             greaterThan: val,
@@ -87,8 +87,8 @@
                         const val = e.target.value
                           ? `${e.target.value}T23:59:59Z`
                           : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           createdAt: {
                             ...current,
                             lessThan: val,
@@ -117,8 +117,8 @@
                         const val = e.target.value
                           ? `${e.target.value}T00:00:00Z`
                           : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           lastModifiedAt: {
                             ...current,
                             greaterThan: val,
@@ -141,8 +141,8 @@
                         const val = e.target.value
                           ? `${e.target.value}T23:59:59Z`
                           : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           lastModifiedAt: {
                             ...current,
                             lessThan: val,
@@ -164,8 +164,8 @@
                     @change="
                       async (e) => {
                         const current = searchForm.price || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           price: {
                             ...current,
                             greaterThan: parseFloat(e.target.value),
@@ -181,8 +181,8 @@
                     @change="
                       async (e) => {
                         const current = searchForm.price || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           price: {
                             ...current,
                             lessThan: parseFloat(e.target.value),
@@ -202,8 +202,8 @@
                     @change="
                       async (e) => {
                         const current = searchForm.sortInput || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           sortInput: {
                             ...current,
                             field: e.target.value,
@@ -227,8 +227,8 @@
                     @change="
                       async (e) => {
                         const current = searchForm.sortInput || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           sortInput: {
                             ...current,
                             order: e.target.value,
@@ -255,8 +255,8 @@
                     :value="searchForm.type || ''"
                     @change="
                       async (e) => {
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           type: e.target.value,
                         };
                       }
