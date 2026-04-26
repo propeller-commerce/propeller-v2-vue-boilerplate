@@ -194,7 +194,7 @@
                           >
                             <tr>
                               <td class="px-3 py-2">
-                                {{ item.product?.names?.[0]?.value ?? "" }}
+                                {{ getProductName(item) }}
                               </td>
                               <td class="px-3 py-2 text-right">
                                 {{ item.quantity ?? 0 }}
@@ -284,6 +284,7 @@ import { computed } from "vue";
 import { usePurchaseAuthorizationRequests } from "../../composables/usePurchaseAuthorization";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
+import { getLanguageString } from "../../composables/shared/utils/languageResolver";
 
 import {
   Contact,
@@ -323,6 +324,9 @@ export interface PurchaseAuthorizationRequestsProps {
 
   /** Labels for the component */
   labels?: Record<string, string>;
+
+  /** Language used to resolve localized product names in the items table. Defaults to 'NL'. */
+  language?: string;
 
   /** Additional CSS class for the root element */
   className?: string;
@@ -368,6 +372,18 @@ const {
 
 function getLabel(key: string, fallback: string): string {
   return _getLabel(props.labels, key, fallback);
+}
+
+function getProductName(item: CartMainItem | any): string {
+  // First-class lookup: localized names array on the line item's product.
+  // Falls back to bundle name (bundle items) and finally to the SKU so the
+  // cell never renders empty for an item that does have data.
+  const lang = props.language || 'NL';
+  const fromNames = getLanguageString((item as any)?.product?.names, lang, '');
+  if (fromNames) return fromNames;
+  const fromBundle = getLanguageString((item as any)?.bundle?.names, lang, '');
+  if (fromBundle) return fromBundle;
+  return (item as any)?.product?.sku || '';
 }
 
 function formatDate(dateStr: string): string {

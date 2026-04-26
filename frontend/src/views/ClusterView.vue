@@ -38,6 +38,8 @@
                   (cluster as any).defaultProduct?.price
                 "
                 :includeTax="priceStore.includeTax"
+                :options="(cluster as any).options"
+                :selectedOptionProducts="Object.values(selectedOptionProducts)"
               />
 
               <ProductBulkPrices
@@ -87,6 +89,7 @@
                   :clusterId="clusterId"
                   :options="(cluster as any).options"
                   :onOptionSelect="handleOptionSelect"
+                  :onOptionClear="handleOptionClear"
                   :showErrors="showClusterErrors"
                 />
               </div>
@@ -252,6 +255,13 @@ function handleOptionSelect(product: any) {
       [option.id]: product,
     };
   }
+}
+
+function handleOptionClear(optionId: number) {
+  if (!(optionId in selectedOptionProducts.value)) return;
+  const next = { ...selectedOptionProducts.value };
+  delete next[optionId];
+  selectedOptionProducts.value = next;
 }
 
 function validateClusterOptions(): boolean {

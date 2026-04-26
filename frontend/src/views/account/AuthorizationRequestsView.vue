@@ -9,6 +9,7 @@
       :user="authStore.user"
       :companyId="companyStore.companyId"
       :configuration="configuration"
+      :language="languageStore.language"
       :afterAcceptRequest="handleAfterAccept"
       :labels="{
         title: 'Authorization Requests',
@@ -44,6 +45,7 @@ import { Contact, Customer, Cart } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
+import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration } from '@/lib/config'
 import PurchaseAuthorizationRequests from '@/components/propeller/PurchaseAuthorizationRequests.vue'
@@ -52,6 +54,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
+const languageStore = useLanguageStore()
 
 function isContact(u: Contact | Customer | null): u is Contact {
   return u !== null && 'contactId' in u

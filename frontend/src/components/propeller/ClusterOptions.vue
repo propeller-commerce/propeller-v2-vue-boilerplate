@@ -192,6 +192,14 @@ export interface ClusterOptionsProps {
    */
   onOptionSelect?: (optionProduct: Product) => void;
 
+  /**
+   * Fired whenever the user clears an option (picks the empty/default entry
+   * in a non-required dropdown). Receives the option's `id`. Parents should
+   * remove that key from their `selectedOptionProducts` map so the price
+   * display drops the option's add-on price.
+   */
+  onOptionClear?: (optionId: number) => void;
+
   /** Override any UI string. Available keys: required, selectRequired, selectOptional, requiredError */
   labels?: Record<string, string>;
 
@@ -316,6 +324,8 @@ function handleOptionChange(
     if (product) {
       props.onOptionSelect(product);
     }
+  } else if (!productIdStr && props.onOptionClear) {
+    props.onOptionClear(parseInt(optionIdStr, 10));
   }
 }
 </script>

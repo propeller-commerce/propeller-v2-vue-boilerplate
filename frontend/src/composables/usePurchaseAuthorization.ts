@@ -420,7 +420,7 @@ export function usePurchaseAuthorizationRequests(
       const service = new CartService(graphqlClient);
       const fullCart = await service.getCart({
         cartId: cart.cartId,
-        language: configuration?.language || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+        language: configuration?.language || (import.meta.env.VITE_DEFAULT_LANGUAGE as string | undefined) || 'NL',
         imageSearchFilters: configuration?.imageSearchFiltersGrid,
         imageVariantFilters: configuration?.imageVariantFiltersSmall,
       });

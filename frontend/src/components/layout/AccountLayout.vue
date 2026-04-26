@@ -41,21 +41,16 @@ const route = useRoute();
 
 const currentPath = computed(() => "/" + route.path.replace(/^\//, ""));
 
-function isAuthManagerForCompany(): boolean {
-  const user = authStore.user;
-  const company = companyStore.selectedCompany;
-  if (!user || !company) return false;
-  const contact = user as any;
-  return (
-    contact?.roles?.includes("PURCHASE_AUTH_MANAGER") ||
-    contact?.companyRoles?.some(
-      (r: any) =>
-        r.companyId === company.companyId &&
-        r.roles?.includes("PURCHASE_AUTH_MANAGER"),
-    ) ||
-    false
-  );
-}
+// Delegate the auth-manager check to the auth store. The store reads the
+// real SDK schema (purchaseAuthorizationConfigs.items[].purchaseRole) — the
+// older local version checked non-existent `roles` / `companyRoles` fields
+// and always returned false, hiding the manager-only menu items.
+const isAuthManagerForCompany = computed(() =>
+  authStore.isAuthManagerForCompany(
+    authStore.user,
+    companyStore.selectedCompany?.companyId,
+  ),
+);
 
 const menuLinks = computed(() => [
   { label: "Dashboard", href: "/account" },
@@ -64,8 +59,7 @@ const menuLinks = computed(() => [
   { label: "Quotes", href: "/account/quotes" },
   { label: "Quote requests", href: "/account/quote-requests" },
   { label: "Favorites", href: "/account/favorites" },
-  { label: "Invoices", href: "/account/invoices" },
-  ...(isAuthManagerForCompany()
+  ...(isAuthManagerForCompany.value
     ? [
         {
           label: "Authorization settings",

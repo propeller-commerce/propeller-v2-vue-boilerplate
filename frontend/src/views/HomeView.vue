@@ -31,7 +31,7 @@
         :includeTax="priceStore.includeTax"
         :configuration="configuration"
         :showStock="true"
-        :showAvailability="true"
+        :showAvailability="false"
         :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
         :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
         :title="'Featured Products'"
