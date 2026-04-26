@@ -10,7 +10,7 @@
       <p class="text-sm text-muted-foreground mb-8">{{ post.publishedAt }}</p>
       <div class="prose max-w-none" v-html="renderedContent"></div>
     </article>
-    <div v-else class="text-center py-12 text-muted-foreground">Post not found.</div>
+    <CmsFallback v-else />
   </div>
 </template>
 
@@ -18,6 +18,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const route = useRoute()
 const router = useRouter()

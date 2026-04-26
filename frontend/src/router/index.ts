@@ -1,13 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useLanguageStore } from '@/stores/language'
+import { DEFAULT_LANGUAGE, PREFIXED_LANGUAGES, localizeHref } from '@/lib/config'
+
+// Regex segment of all non-default supported languages, lowercased.
+// Update this list when adding languages — keep in sync with SUPPORTED_LANGUAGES in @/lib/config.
+const langSegmentRegex = PREFIXED_LANGUAGES.map((l) => l.toLowerCase()).join('|')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior: () => ({ top: 0 }),
   routes: [
-    // Public routes
     {
-      path: '/',
+      // Optional language prefix. Default-language URLs (NL) stay unprefixed;
+      // /en/... routes match this with params.lang = 'en'.
+      path: `/:lang(${langSegmentRegex})?`,
       component: () => import('@/components/layout/AppLayout.vue'),
       children: [
         { path: '', name: 'home', component: () => import('@/views/HomeView.vue') },
@@ -68,19 +75,34 @@ const router = createRouter({
           ],
         },
 
-        // CMS catch-all (must be last)
+        // CMS catch-all (must be last child so it doesn't shadow named routes).
+        // Lives inside the :lang group, so /en/<slug> also resolves to a CMS page.
         { path: ':slug+', name: 'cms-page', component: () => import('@/views/CmsPageView.vue') },
       ],
     },
   ],
 })
 
-// Navigation guard for protected routes
-router.beforeEach(async (to) => {
+router.beforeEach((to) => {
+  // Sync the language store with the URL's :lang param. When the user deep-links
+  // to /en/cart, the store flips to EN before the component mounts so GraphQL
+  // queries fire in the right language.
+  const language = useLanguageStore()
+  const urlLang = (to.params.lang as string | undefined)?.toUpperCase()
+  const targetLang = urlLang || DEFAULT_LANGUAGE
+  if (language.language !== targetLang) {
+    language.setLanguage(targetLang)
+  }
+
+  // Auth gate for protected routes — preserves the original redirect behavior
+  // and prefixes the redirect target so /en/account doesn't lose the language.
   if (to.meta.requiresAuth) {
     const auth = useAuthStore()
     if (!auth.isAuthenticated) {
-      return { name: 'login', query: { redirect: to.fullPath } }
+      return {
+        path: localizeHref('/login', targetLang),
+        query: { redirect: to.fullPath },
+      }
     }
   }
 })

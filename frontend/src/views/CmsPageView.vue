@@ -10,16 +10,14 @@
         <pre class="text-xs text-foreground-subtle">{{ block.__component }}</pre>
       </div>
     </div>
-    <div v-else class="text-center py-12">
-      <h1 class="text-2xl font-bold mb-4">Page Not Found</h1>
-      <router-link to="/" class="text-primary hover:underline">Go Home</router-link>
-    </div>
+    <CmsFallback v-else />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const route = useRoute()
 const page = ref<any>(null)

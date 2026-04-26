@@ -47,7 +47,7 @@
             </svg>
             <select
               :value="languageStore.language"
-              @change="(e) => languageStore.setLanguage((e.target as HTMLSelectElement).value)"
+              @change="(e) => switchLanguage((e.target as HTMLSelectElement).value)"
               class="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
             >
               <option v-for="lang in availableLanguages" :key="lang" :value="lang">{{ lang }}</option>
@@ -231,7 +231,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { Menu as MenuIcon } from 'lucide-vue-next'
 import { Enums } from 'propeller-sdk-v2'
 import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
@@ -243,7 +243,7 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { useCart } from '@/composables/useCart'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import { configuration, localizeHref } from '@/lib/config'
+import { configuration, localizeHref, stripLanguagePrefix } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 
 import SearchBar from '@/components/propeller/SearchBar.vue'
@@ -254,6 +254,7 @@ import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu.vue'
 import CompanySwitcher from '@/components/propeller/CompanySwitcher.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
@@ -386,6 +387,18 @@ function handleAfterRequestAuthorization(cart: Cart) {
 
 function handleSearch(term: string) {
   router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', languageStore.language))
+}
+
+function switchLanguage(lang: string) {
+  // Update the store first so the next navigation has the right language for
+  // any URL builders called during render. The router guard would also do this
+  // post-navigation, but updating now avoids a one-frame mismatch.
+  languageStore.setLanguage(lang)
+  // Compute "the same page in the new language" by stripping any existing prefix
+  // off the current path, then re-applying via localizeHref. Preserve query/hash.
+  const canonical = stripLanguagePrefix(route.path)
+  const target = localizeHref(canonical, lang)
+  router.push({ path: target, query: route.query, hash: route.hash })
 }
 
 function handleCategoryClick(category: Category) {

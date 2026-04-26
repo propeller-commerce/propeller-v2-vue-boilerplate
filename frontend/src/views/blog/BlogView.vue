@@ -4,9 +4,7 @@
     <div v-if="loading" class="flex justify-center py-12">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
     </div>
-    <div v-else-if="!posts.length" class="text-center py-12 text-muted-foreground">
-      No posts found.
-    </div>
+    <CmsFallback v-else-if="!posts.length" />
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="post in posts"
@@ -28,6 +26,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const router = useRouter()
 const posts = ref<any[]>([])
