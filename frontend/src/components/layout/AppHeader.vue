@@ -410,7 +410,7 @@ function handleCategoryClick(category: Category) {
 function handleLogout() {
   authStore.logout()
   cartStore.setCart(null)
-  router.push('/')
+  router.push(localizeHref('/', languageStore.language))
 }
 
 onMounted(() => {

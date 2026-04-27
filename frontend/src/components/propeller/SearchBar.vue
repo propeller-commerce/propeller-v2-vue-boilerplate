@@ -101,6 +101,7 @@ import {
 import { useProductSearch } from '../../composables/useProductSearch';
 import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import { localizeHref as _localizeHref } from '@/lib/config';
 
 export interface SearchBarResult {
   /** Unique identifier */
@@ -282,7 +283,10 @@ function mapProductToResult(
   const displayItem = isCluster ? (item as Cluster).defaultProduct : item;
   const id = isCluster ? (item as Cluster).clusterId : (item as Product).productId;
   const slug = item.slugs?.[0]?.value || '';
-  const url = isCluster ? '/cluster/' + id + '/' + slug : '/product/' + id + '/' + slug;
+  // Build a language-prefixed URL so /en/... navigation stays in EN when the
+  // user clicks a search result. localizeHref no-ops for the default language.
+  const basePath = isCluster ? '/cluster/' + id + '/' + slug : '/product/' + id + '/' + slug;
+  const url = _localizeHref(basePath, props.language);
   return {
     id: id,
     name: item.names?.[0]?.value || 'Product',

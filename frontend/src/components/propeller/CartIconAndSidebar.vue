@@ -431,6 +431,7 @@ import {
 import { useCart } from "../../composables/useCart";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
+import { localizeHref as _localizeHref } from "@/lib/config";
 
 export interface CartIconAndSidebarProps {
   /**
@@ -537,6 +538,9 @@ export interface CartIconAndSidebarProps {
 
   /** Configuration object for image filters */
   configuration?: any;
+
+  /** Language used to build localized URLs for cart-item links. Defaults to 'NL'. */
+  language?: string;
 }
 interface CartIconAndSidebarState {
   isMounted: boolean;
@@ -632,10 +636,10 @@ function getItemProductUrl(
   if (!product) return "#";
   if (product.class === Enums.ProductClass.PRODUCT) {
     const slug = product.slugs?.[0]?.value || "";
-    return `/product/${product.productId}/${slug}`;
+    return _localizeHref(`/product/${product.productId}/${slug}`, props.language);
   } else if (product.class === Enums.ProductClass.CLUSTER) {
     const slug = product.slugs?.[0]?.value || "";
-    return `/cluster/${product.clusterId || product.productId}/${slug}`;
+    return _localizeHref(`/cluster/${product.clusterId || product.productId}/${slug}`, props.language);
   }
   return "#";
 }

@@ -89,8 +89,8 @@
                 :enableIncrementDecrement="true"
                 :onCartCreated="(cart: any) => cartStore.setCart(cart)"
                 :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
-                :onProceedToCheckout="() => router.push('/checkout')"
-                :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+                :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+                :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
                 :configuration="configuration"
               />
               <AddToFavorite
@@ -131,7 +131,7 @@
           :showModal="true"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterBundleAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-          :onProceedToCheckout="() => router.push('/checkout')"
+          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
         />
 
         <!-- Accessories -->
@@ -151,8 +151,8 @@
           :companyId="companyStore.companyId || undefined"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-          :onProceedToCheckout="() => router.push('/checkout')"
-          :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
           :onProductClick="
             (p: Product) =>
               router.push(
@@ -184,8 +184,8 @@
           :companyId="companyStore.companyId || undefined"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-          :onProceedToCheckout="() => router.push('/checkout')"
-          :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
           :onProductClick="
             (p: Product) =>
               router.push(
@@ -224,6 +224,7 @@ import {
   configuration,
   imageVariantFiltersLarge,
   imageSearchFiltersGrid,
+  localizeHref,
 } from "@/lib/config";
 import { getLanguageString } from "@/composables/shared/utils/languageResolver";
 import {

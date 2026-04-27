@@ -6,7 +6,7 @@
         :language="languageStore.language"
         :countries="COUNTRIES_MAP"
         :onRegisterSuccess="handleRegisterSuccess"
-        :onNavigateToLogin="() => router.push('/login')"
+        :onNavigateToLogin="() => router.push(localizeHref('/login', languageStore.language))"
       />
     </div>
   </div>
@@ -18,11 +18,12 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import RegisterForm from "@/components/propeller/RegisterForm.vue";
 import { COUNTRIES_MAP } from "@/composables/shared/utils/countries";
+import { localizeHref } from "@/lib/config";
 
 const router = useRouter();
 const languageStore = useLanguageStore();
 
 function handleRegisterSuccess() {
-  router.push("/login");
+  router.push(localizeHref("/login", languageStore.language));
 }
 </script>

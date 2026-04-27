@@ -21,7 +21,9 @@
       "Bash(xargs grep *)",
       "Read(//c/Users/tinka/.claude/projects/c--workspace-vue-boilerplate/**)",
       "Read(//c/Users/tinka/.claude/projects//**)",
-      "Bash(awk '/const COUNTRIES = \\\\[/,/\\\\];/' c:/workspace/nextDemo/app/checkout/page.tsx)"
+      "Bash(awk '/const COUNTRIES = \\\\[/,/\\\\];/' c:/workspace/nextDemo/app/checkout/page.tsx)",
+      "Bash(awk '/^export interface CartIconAndSidebarProps {/,/^}/' c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)",
+      "Bash(grep -n \"^}\\\\s*$\" c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

@@ -148,7 +148,7 @@
       <!-- Actions -->
       <div class="flex justify-center pt-8">
         <router-link
-          to="/"
+          :to="localizeHref('/', languageStore.language)"
           class="px-8 py-3 bg-primary text-primary-foreground rounded-[var(--radius-container)] font-semibold hover:bg-primary/80 transition text-center"
         >
           Continue Shopping
@@ -168,9 +168,12 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { useCartStore } from "@/stores/cart";
+import { useLanguageStore } from "@/stores/language";
+import { localizeHref } from "@/lib/config";
 
 const route = useRoute();
 const cartStore = useCartStore();
+const languageStore = useLanguageStore();
 
 const cartItems = computed(
   () =>

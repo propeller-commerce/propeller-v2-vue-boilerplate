@@ -47,7 +47,7 @@ import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
-import { configuration } from '@/lib/config'
+import { configuration, localizeHref } from '@/lib/config'
 import PurchaseAuthorizationRequests from '@/components/propeller/PurchaseAuthorizationRequests.vue'
 
 const router = useRouter()
@@ -65,6 +65,6 @@ function handleAfterAccept(acceptedCart: Cart) {
     localStorage.setItem('manager_cart', JSON.stringify(cartStore.cart))
   }
   cartStore.setCart(acceptedCart)
-  router.push('/cart')
+  router.push(localizeHref('/cart', languageStore.language))
 }
 </script>

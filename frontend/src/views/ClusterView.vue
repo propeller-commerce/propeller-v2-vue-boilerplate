@@ -116,8 +116,8 @@
                 :configuration="configuration"
                 :onCartCreated="(cart: any) => cartStore.setCart(cart)"
                 :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
-                :onProceedToCheckout="() => router.push('/checkout')"
-                :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+                :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+                :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
               />
               <AddToFavorite
                 v-if="authStore.user"
@@ -159,8 +159,8 @@
         :createCart="true"
         :onCartCreated="(cart: any) => cartStore.setCart(cart)"
         :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
-        :onProceedToCheckout="() => router.push('/checkout')"
-        :onRequestQuoteClick="() => router.push('/checkout?mode=quote')"
+        :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+        :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
         :onProductClick="
           (p: any) =>
             router.push(
@@ -188,7 +188,7 @@ import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
-import { configuration } from "@/lib/config";
+import { configuration, localizeHref } from "@/lib/config";
 
 import Breadcrumbs from "@/components/propeller/Breadcrumbs.vue";
 import ProductGallery from "@/components/propeller/ProductGallery.vue";

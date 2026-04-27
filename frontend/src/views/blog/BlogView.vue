@@ -10,7 +10,7 @@
         v-for="post in posts"
         :key="post.slug"
         class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden hover:shadow-md transition cursor-pointer"
-        @click="router.push(`/blog/${post.slug}`)"
+        @click="router.push(localizeHref(`/blog/${post.slug}`, languageStore.language))"
       >
         <img v-if="post.cover?.url" :src="post.cover.url" :alt="post.title" class="w-full h-48 object-cover" />
         <div class="p-5">
@@ -26,9 +26,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useLanguageStore } from '@/stores/language'
+import { localizeHref } from '@/lib/config'
 import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const router = useRouter()
+const languageStore = useLanguageStore()
 const posts = ref<any[]>([])
 const loading = ref(true)
 

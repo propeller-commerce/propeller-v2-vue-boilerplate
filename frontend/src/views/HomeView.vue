@@ -11,7 +11,7 @@
           delivery.
         </p>
         <router-link
-          to="/search"
+          :to="localizeHref('/search', languageStore.language)"
           class="inline-block mt-6 bg-primary text-primary-foreground px-8 py-3 rounded-[var(--radius-container)] font-medium hover:bg-primary/90 transition"
         >
           Browse Products

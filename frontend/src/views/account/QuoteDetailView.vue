@@ -61,7 +61,7 @@
             :afterAccept="handleAfterAccept"
             :showTermsAndConditions="true"
             :onTermsAndConditionsClick="
-              () => window.open('/terms-conditions', '_blank')
+              () => window.open(localizeHref('/terms-conditions', languageStore.language), '_blank')
             "
           />
           <button

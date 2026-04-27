@@ -32,10 +32,13 @@ import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useCompanyStore } from "@/stores/company";
+import { useLanguageStore } from "@/stores/language";
+import { localizeHref } from "@/lib/config";
 import AccountIconAndMenu from "@/components/propeller/AccountIconAndMenu.vue";
 
 const authStore = useAuthStore();
 const companyStore = useCompanyStore();
+const languageStore = useLanguageStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -52,33 +55,41 @@ const isAuthManagerForCompany = computed(() =>
   ),
 );
 
-const menuLinks = computed(() => [
-  { label: "Dashboard", href: "/account" },
-  { label: "Addresses", href: "/account/addresses" },
-  { label: "Orders", href: "/account/orders" },
-  { label: "Quotes", href: "/account/quotes" },
-  { label: "Quote requests", href: "/account/quote-requests" },
-  { label: "Favorites", href: "/account/favorites" },
-  ...(isAuthManagerForCompany.value
-    ? [
-        {
-          label: "Authorization settings",
-          href: "/account/authorization-settings",
-        },
-        {
-          label: "Authorization requests",
-          href: "/account/authorization-requests",
-        },
-      ]
-    : []),
-]);
+// All hrefs go through localizeHref so they pick up the current language prefix
+// (e.g. NL stays unprefixed, EN becomes "/en/account/..."). The computed depends
+// on languageStore.language so the menu re-renders when the user switches.
+const menuLinks = computed(() => {
+  const lang = languageStore.language;
+  return [
+    { label: "Dashboard", href: localizeHref("/account", lang) },
+    { label: "Addresses", href: localizeHref("/account/addresses", lang) },
+    { label: "Orders", href: localizeHref("/account/orders", lang) },
+    { label: "Quotes", href: localizeHref("/account/quotes", lang) },
+    { label: "Quote requests", href: localizeHref("/account/quote-requests", lang) },
+    { label: "Favorites", href: localizeHref("/account/favorites", lang) },
+    ...(isAuthManagerForCompany.value
+      ? [
+          {
+            label: "Authorization settings",
+            href: localizeHref("/account/authorization-settings", lang),
+          },
+          {
+            label: "Authorization requests",
+            href: localizeHref("/account/authorization-requests", lang),
+          },
+        ]
+      : []),
+  ];
+});
 
 function handleMenuItemClick(href: string) {
+  // The href already carries the language prefix from menuLinks above, so
+  // router.push receives the canonical path directly — no second wrap needed.
   router.push(href);
 }
 
 async function handleLogout() {
   await authStore.logout();
-  router.push("/login");
+  router.push(localizeHref("/login", languageStore.language));
 }
 </script>
