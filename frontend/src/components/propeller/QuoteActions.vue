@@ -1,45 +1,55 @@
 <template>
   <div class="quote-actions space-y-4">
-    <template v-if="showTermsAndConditions">
-      <div class="flex items-center space-x-2 pt-2">
-        <input
-          type="checkbox"
-          id="quote-actions-terms"
-          class="propeller-quote-actions__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
-          :checked="termsAccepted"
-          @change="async (event) => handleTermsChange(event.target.checked)"
-        /><label for="quote-actions-terms" class="text-sm leading-none"
-          >{{ getLabel('termsPrefix', 'I agree to the')
-          }}<a
-            href="#"
-            class="text-primary hover:underline font-medium"
-            @click="async (event) => handleTermsLinkClick(event)"
-            >{{ getLabel('termsLink', 'Terms and Conditions') }}</a
-          ></label
-        >
+    <template v-if="isExpired">
+      <div
+        class="propeller-quote-actions__expired text-sm text-muted-foreground bg-surface-hover/50 border border-border rounded-[var(--radius-container)] p-3"
+      >
+        {{ getLabel('expiredMessage', 'This quote has expired.') }}
       </div>
     </template>
 
-    <button
-      type="button"
-      class="propeller-quote-actions__submit flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground text-center py-3 rounded-[var(--radius-container)] hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-      @click="async (event) => handleAcceptClick()"
-      :disabled="isAcceptDisabled"
-    >
-      <template v-if="loading">
-        <div
-          class="propeller-quote-actions__spinner w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
-        ></div>
+    <template v-else>
+      <template v-if="showTermsAndConditions">
+        <div class="flex items-center space-x-2 pt-2">
+          <input
+            type="checkbox"
+            id="quote-actions-terms"
+            class="propeller-quote-actions__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
+            :checked="termsAccepted"
+            @change="async (event) => handleTermsChange(event.target.checked)"
+          /><label for="quote-actions-terms" class="text-sm leading-none"
+            >{{ getLabel('termsPrefix', 'I agree to the')
+            }}<a
+              href="#"
+              class="text-primary hover:underline font-medium"
+              @click="async (event) => handleTermsLinkClick(event)"
+              >{{ getLabel('termsLink', 'Terms and Conditions') }}</a
+            ></label
+          >
+        </div>
       </template>
 
-      <template v-if="loading">
-        {{ getLabel('processing', 'Processing...') }}
-      </template>
+      <button
+        type="button"
+        class="propeller-quote-actions__submit flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground text-center py-3 rounded-[var(--radius-container)] hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+        @click="async (event) => handleAcceptClick()"
+        :disabled="isAcceptDisabled"
+      >
+        <template v-if="loading">
+          <div
+            class="propeller-quote-actions__spinner w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
+          ></div>
+        </template>
 
-      <template v-if="!loading">
-        {{ getLabel('acceptButton', 'Accept Quotation') }}
-      </template>
-    </button>
+        <template v-if="loading">
+          {{ getLabel('processing', 'Processing...') }}
+        </template>
+
+        <template v-if="!loading">
+          {{ getLabel('acceptButton', 'Accept Quotation') }}
+        </template>
+      </button>
+    </template>
   </div>
 </template>
 
@@ -101,6 +111,13 @@ const { setQuoteStatus } = useOrders({
 const showTermsAndConditions = computed(() => {
   return props.showTermsAndConditions !== undefined ? props.showTermsAndConditions : true;
 });
+const isExpired = computed(() => {
+  const validUntil = (props.quote as any)?.validUntil;
+  if (!validUntil) return false;
+  const validUntilDate = new Date(validUntil);
+  if (Number.isNaN(validUntilDate.getTime())) return false;
+  return validUntilDate.getTime() < Date.now();
+});
 const isAcceptDisabled = computed(() => {
   if (showTermsAndConditions && !termsAccepted.value) return true;
   if (loading.value) return true;
@@ -126,7 +143,7 @@ async function handleAcceptClick(): ReturnType<QuoteActionsState['handleAcceptCl
     if (props.onAccept) {
       props.onAccept(props.quote);
     } else if (props.quote?.id) {
-      await setQuoteStatus(props.quote.id, { isQuoteAccepted: true });
+      await setQuoteStatus(props.quote.id, { status: 'NEW' });
     }
     if (props.afterAccept) {
       props.afterAccept(props.quote);
