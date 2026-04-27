@@ -22,7 +22,7 @@
               anonymousCart,
             )
         "
-        :onLoginClick="() => router.push('/login')"
+        :onLoginClick="() => router.push(localizeHref('/login', languageStore.language))"
       />
     </div>
   </div>
@@ -45,7 +45,6 @@ import { useCart } from "@/composables/useCart";
 import type { AnyUser } from "@/composables/shared/utils/userIdentity";
 import RegisterForm from "@/components/propeller/RegisterForm.vue";
 import { COUNTRIES_MAP } from "@/composables/shared/utils/countries";
-import { localizeHref } from "@/lib/config";
 
 const router = useRouter();
 const authStore = useAuthStore();
