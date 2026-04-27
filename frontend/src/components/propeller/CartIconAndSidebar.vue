@@ -46,7 +46,7 @@
           >
         </template>
       </button>
-      <template v-if="showTotals && isHovered">
+      <template v-if="showTotals && isHovered && getTotalItems() > 0">
         <div
           class="propeller-cart-icon__popover absolute top-full right-0 mt-1 z-40 bg-card border border-border rounded-[var(--radius-container)] shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap"
         >

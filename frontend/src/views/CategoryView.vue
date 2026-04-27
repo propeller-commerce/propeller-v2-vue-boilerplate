@@ -199,16 +199,86 @@ const priceBoundsMax = ref<number | undefined>();
 const itemsFound = ref(0);
 const filtersLoading = ref(false);
 
-// Local filter / pagination state
-const filters = ref<Record<string, string[]>>({});
-const minPrice = ref<number | undefined>();
-const maxPrice = ref<number | undefined>();
+const RESERVED_QUERY_KEYS = ['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'];
+
+function parseFiltersFromQuery(query: Record<string, any>): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (RESERVED_QUERY_KEYS.includes(key)) continue;
+    const raw = Array.isArray(value) ? value[0] : value;
+    if (typeof raw !== 'string') continue;
+    try {
+      const parsed = JSON.parse(raw);
+      result[key] = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
+    } catch {
+      result[key] = [raw];
+    }
+  }
+  return result;
+}
+
+function readNumberQuery(value: any): number | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (typeof raw !== 'string' || raw === '') return undefined;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+// Local filter / pagination state — initialised from URL so back-navigation restores
+const filters = ref<Record<string, string[]>>(parseFiltersFromQuery(route.query as any));
+const minPrice = ref<number | undefined>(readNumberQuery(route.query.minPrice));
+const maxPrice = ref<number | undefined>(readNumberQuery(route.query.maxPrice));
 const clearSignal = ref(0);
-const currentPage = ref(1);
-const offset = ref(12);
-const sortField = ref<string>(Enums.ProductSortField.CATEGORY_ORDER);
-const sortOrder = ref<string>(Enums.SortOrder.DESC);
+const currentPage = ref(readNumberQuery(route.query.page) ?? 1);
+const offset = ref(readNumberQuery(route.query.offset) ?? 12);
+const sortField = ref<string>(
+  (route.query.sortField as string) || Enums.ProductSortField.CATEGORY_ORDER,
+);
+const sortOrder = ref<string>(
+  (route.query.sortOrder as string) || Enums.SortOrder.DESC,
+);
 const viewMode = ref<"grid" | "list">("list");
+
+// Sync local state to URL — uses router.push so each navigation enters history
+// and the browser back button can restore the filtered view after visiting a product.
+let suppressQuerySync = false;
+function syncStateToUrl() {
+  const query: Record<string, string> = {};
+  if (currentPage.value > 1) query.page = String(currentPage.value);
+  for (const [key, values] of Object.entries(filters.value)) {
+    if (values.length > 0) query[key] = JSON.stringify(values);
+  }
+  if (minPrice.value !== undefined) query.minPrice = String(minPrice.value);
+  if (maxPrice.value !== undefined) query.maxPrice = String(maxPrice.value);
+  if (offset.value !== 12) query.offset = String(offset.value);
+  if (sortField.value !== Enums.ProductSortField.CATEGORY_ORDER) query.sortField = sortField.value;
+  if (sortOrder.value !== Enums.SortOrder.DESC) query.sortOrder = sortOrder.value;
+  const currentJson = JSON.stringify(route.query);
+  const nextJson = JSON.stringify(query);
+  if (currentJson === nextJson) return;
+  suppressQuerySync = true;
+  router.push({ path: route.path, query }).finally(() => {
+    suppressQuerySync = false;
+  });
+}
+
+// Restore state when the user navigates via back/forward (route.query changes externally)
+watch(
+  () => route.query,
+  (q) => {
+    if (suppressQuerySync) return;
+    const nextFilters = parseFiltersFromQuery(q as any);
+    if (JSON.stringify(nextFilters) !== JSON.stringify(filters.value)) {
+      filters.value = nextFilters;
+    }
+    minPrice.value = readNumberQuery(q.minPrice);
+    maxPrice.value = readNumberQuery(q.maxPrice);
+    currentPage.value = readNumberQuery(q.page) ?? 1;
+    offset.value = readNumberQuery(q.offset) ?? 12;
+    sortField.value = (q.sortField as string) || Enums.ProductSortField.CATEGORY_ORDER;
+    sortOrder.value = (q.sortOrder as string) || Enums.SortOrder.DESC;
+  },
+);
 
 // Convert local filters state → ProductGrid textFilters prop format
 const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
@@ -274,6 +344,7 @@ function handleFilterChange(filter: AttributeFilter, value: string | number) {
     filters.value = { ...filters.value, [name]: next };
   }
   currentPage.value = 1;
+  syncStateToUrl();
 }
 
 function handleFilterRemove(filterName: string, value: string) {
@@ -287,18 +358,21 @@ function handleFilterRemove(filterName: string, value: string) {
     filters.value = { ...filters.value, [filterName]: next };
   }
   currentPage.value = 1;
+  syncStateToUrl();
 }
 
 function handlePriceFilterRemove() {
   minPrice.value = undefined;
   maxPrice.value = undefined;
   currentPage.value = 1;
+  syncStateToUrl();
 }
 
 function handlePriceChange(min: number, max: number) {
   minPrice.value = min;
   maxPrice.value = max;
   currentPage.value = 1;
+  syncStateToUrl();
 }
 
 function handleClearFilters() {
@@ -307,6 +381,7 @@ function handleClearFilters() {
   maxPrice.value = undefined;
   clearSignal.value++;
   currentPage.value = 1;
+  syncStateToUrl();
 }
 
 // ── GridToolbar callbacks ─────────────────────────────────────────────────────
@@ -314,33 +389,37 @@ function handleClearFilters() {
 function handleOffsetChange(val: number) {
   offset.value = val;
   currentPage.value = 1;
+  syncStateToUrl();
 }
 
 function handleSortChange(field: string, order?: string) {
   sortField.value = field;
   if (order) sortOrder.value = order;
   currentPage.value = 1;
+  syncStateToUrl();
 }
 
 // ── GridPagination callback ───────────────────────────────────────────────────
 
 function handleGridPaginationPageChange(page: number) {
   currentPage.value = page;
+  syncStateToUrl();
 }
 
 // Reset state when navigating to a different category
 watch(
   () => route.params.id,
-  () => {
+  (newId, oldId) => {
+    if (newId === oldId) return;
     category.value = null;
     productsResponse.value = null;
-    filters.value = {};
+    filters.value = parseFiltersFromQuery(route.query as any);
     gridFilters.value = [];
     priceBoundsMin.value = undefined;
     priceBoundsMax.value = undefined;
-    minPrice.value = undefined;
-    maxPrice.value = undefined;
-    currentPage.value = 1;
+    minPrice.value = readNumberQuery(route.query.minPrice);
+    maxPrice.value = readNumberQuery(route.query.maxPrice);
+    currentPage.value = readNumberQuery(route.query.page) ?? 1;
     clearSignal.value++;
   },
 );

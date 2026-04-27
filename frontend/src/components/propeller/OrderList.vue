@@ -17,7 +17,7 @@
               placeholder="Search..."
               class="propeller-order-list__search-input block w-full rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
               :value="searchForm.term || ''"
-              @change="
+              @input="
                 async (e) => {
                   searchForm = {
                     ...searchForm,
@@ -28,6 +28,11 @@
               @keydown="
                 async (e) => {
                   if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchForm = {
+                      ...searchForm,
+                      term: e.target.value,
+                    };
                     fetchOrders(1);
                   }
                 }
@@ -51,6 +56,8 @@
                   <input
                     type="date"
                     placeholder="From"
+                    :min="dateMin"
+                    :max="dateMax"
                     class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.greaterThan
@@ -60,14 +67,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T00:00:00Z`
-                          : undefined;
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.greaterThan
+                            ? current.greaterThan.split('T')[0]
+                            : '';
+                          return;
+                        }
                         searchForm = {
                           ...searchForm,
                           createdAt: {
                             ...current,
-                            greaterThan: val,
+                            greaterThan: sanitized ? `${sanitized}T00:00:00Z` : undefined,
                           },
                         };
                       }
@@ -75,6 +86,8 @@
                   /><input
                     type="date"
                     placeholder="To"
+                    :min="dateMin"
+                    :max="dateMax"
                     class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.lessThan
@@ -84,14 +97,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T23:59:59Z`
-                          : undefined;
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.lessThan
+                            ? current.lessThan.split('T')[0]
+                            : '';
+                          return;
+                        }
                         searchForm = {
                           ...searchForm,
                           createdAt: {
                             ...current,
-                            lessThan: val,
+                            lessThan: sanitized ? `${sanitized}T23:59:59Z` : undefined,
                           },
                         };
                       }
@@ -105,6 +122,8 @@
                   <input
                     type="date"
                     placeholder="From"
+                    :min="dateMin"
+                    :max="dateMax"
                     class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.greaterThan
@@ -114,14 +133,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T00:00:00Z`
-                          : undefined;
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.greaterThan
+                            ? current.greaterThan.split('T')[0]
+                            : '';
+                          return;
+                        }
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {
                             ...current,
-                            greaterThan: val,
+                            greaterThan: sanitized ? `${sanitized}T00:00:00Z` : undefined,
                           },
                         };
                       }
@@ -129,6 +152,8 @@
                   /><input
                     type="date"
                     placeholder="To"
+                    :min="dateMin"
+                    :max="dateMax"
                     class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.lessThan
@@ -138,14 +163,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T23:59:59Z`
-                          : undefined;
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.lessThan
+                            ? current.lessThan.split('T')[0]
+                            : '';
+                          return;
+                        }
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {
                             ...current,
-                            lessThan: val,
+                            lessThan: sanitized ? `${sanitized}T23:59:59Z` : undefined,
                           },
                         };
                       }
@@ -641,6 +670,23 @@ const searchFields = computed(() => {
   }
   return fields;
 });
+
+const dateMin = "1970-01-01";
+const dateMax = computed(() => new Date().toISOString().split("T")[0]);
+
+// Returns a YYYY-MM-DD string only when the input value is a valid date in the
+// allowed range; otherwise returns null. Native <input type="date"> happily
+// accepts year-6 inputs ("0006-05-04") via keyboard, so we guard at the model layer.
+function sanitizeDateInput(value: string): string | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  if (year < 1970 || year > new Date().getFullYear()) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return value;
+}
 
 function formatDate(
   dateString: string,
