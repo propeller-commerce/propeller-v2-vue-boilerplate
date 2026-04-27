@@ -179,7 +179,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
+import type { Cart, Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import { useAuth } from '../../composables/useAuth';
 import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
@@ -269,8 +269,14 @@ import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpe
  /** Callback before the login process starts */
  beforeLogin?: () => void;
 
- /** Callback after successful login with user data */
- afterLogin?: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string) => void;
+ /** Callback after successful login with user data.
+  * `anonymousCart` is the cart held in the parent's store/state at the moment of submission,
+  * forwarded so the parent can merge it into the authenticated user's cart.
+  */
+ afterLogin?: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string, anonymousCart?: Cart | null) => void;
+
+ /** Anonymous cart snapshot from the parent's store/state — forwarded to `afterLogin`. */
+ cart?: Cart | null;
 
  /**
   * Show login form in dropdown for immediate login when user is not logged in.
@@ -379,7 +385,7 @@ async function handleSubmit(e: any) {
     email.value = '';
     password.value = '';
     if (props.afterLogin) {
-      props.afterLogin(result.user as Contact | Customer, result.accessToken, result.refreshToken, result.expiresAt);
+      props.afterLogin(result.user as Contact | Customer, result.accessToken, result.refreshToken, result.expiresAt, props.cart ?? null);
     }
   }
 }
