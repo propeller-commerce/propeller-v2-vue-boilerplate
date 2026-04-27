@@ -24,7 +24,11 @@
       "Bash(awk '/const COUNTRIES = \\\\[/,/\\\\];/' c:/workspace/nextDemo/app/checkout/page.tsx)",
       "Bash(awk '/^export interface CartIconAndSidebarProps {/,/^}/' c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)",
       "Bash(grep -n \"^}\\\\s*$\" c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)",
-      "Bash(awk '/^export interface CartOverviewProps {/,/^}/' c:/workspace/nextDemo/components/propeller/CartOverview.tsx)"
+      "Bash(awk '/^export interface CartOverviewProps {/,/^}/' c:/workspace/nextDemo/components/propeller/CartOverview.tsx)",
+      "Bash(awk '/exports\\\\.OrderItemFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
+      "Bash(awk '/exports\\\\.ProductCartFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
+      "Bash(awk '/exports\\\\.IBaseProductCartFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
+      "Bash(kill %1)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

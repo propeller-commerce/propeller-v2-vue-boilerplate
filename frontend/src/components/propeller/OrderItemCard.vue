@@ -288,7 +288,16 @@ const productId = computed(() => {
 const productSlug = computed(() => {
   return props.orderItem?.product?.slugs?.[0]?.value || "";
 });
+const clusterUrl = computed(() => {
+  const cluster = (props.orderItem?.product as any)?.cluster;
+  if (!cluster) return "";
+  const id = cluster.clusterId ?? cluster.urlId;
+  const slug = cluster.slugs?.[0]?.value || cluster.slug?.[0]?.value || "";
+  if (!id || !slug) return "";
+  return "/cluster/" + id + "/" + slug;
+});
 const productUrl = computed(() => {
+  if (clusterUrl.value) return clusterUrl.value;
   if (productId.value && productSlug.value) {
     return "/product/" + productId.value + "/" + productSlug.value;
   }

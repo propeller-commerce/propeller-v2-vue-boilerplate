@@ -199,7 +199,7 @@ const requestLoading = ref<CartSummaryState['requestLoading']>(false);
 
 const userRef = computed(() => props.user ?? null);
 const companyRef = computed(() => props.companyId);
-const { requestAuthorization, checkoutAllowed } = useCart({
+const { requestAuthorization } = useCart({
   graphqlClient: props.graphqlClient!,
   user: userRef,
   cartId: props.cart?.cartId,
@@ -265,7 +265,34 @@ const totalVat = computed(() => {
 const totalInclVat = computed(() => {
   return props.cart?.total?.totalNet || 0;
 });
-const showRequestAuthorizationButton = computed(() => !checkoutAllowed.value);
+// Compute inline against props.cart instead of useCart.checkoutAllowed:
+// useCart's `cart` ref is internal to the composable instance and stays null
+// when CartSummary just consumes the computed (we never call addItem/resolveCart
+// here). That made checkoutAllowed always return true in CartView, putting the
+// "Continue to Checkout" button up even when the user was over their auth limit.
+// Mirrors the field-tolerant lookup used in CartIconAndSidebar so the cart page
+// and the header sidebar always agree.
+const showRequestAuthorizationButton = computed(() => {
+  const u = props.user as any;
+  if (!u || !('contactId' in u)) return false;
+  if (!props.companyId) return false;
+  if (!props.cart) return false;
+  const pacData = u.purchaseAuthorizationConfigs ?? u._purchaseAuthorizationConfigs;
+  const items: any[] = pacData?.items ?? pacData?._items ?? [];
+  const purchaserPac = items.find((pac: any) => {
+    const role = pac.purchaseRole ?? pac._purchaseRole;
+    const pacCompanyId =
+      pac.company?.companyId
+      ?? pac.company?._companyId
+      ?? pac._company?.companyId
+      ?? pac._company?._companyId;
+    return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+  });
+  if (!purchaserPac) return false;
+  const limit = (purchaserPac as any).authorizationLimit ?? (purchaserPac as any)._authorizationLimit ?? 0;
+  const totalGross = (props.cart as any)?.total?.totalGross ?? (props.cart as any)?._total?._totalGross ?? 0;
+  return totalGross > limit;
+});
 
 function getLabel(key: string, fallback: string): ReturnType<CartSummaryState['getLabel']> {
   return _getLabel(props.labels, key, fallback);

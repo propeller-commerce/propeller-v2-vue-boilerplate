@@ -304,7 +304,7 @@
               {{ getLabel("continueShopping", "Continue shopping") }}
             </button>
             <template
-              v-if="!!onRequestQuoteClick && !!user && 'contactId' in user"
+              v-if="checkoutAllowed && !!onRequestQuoteClick && !!user && 'contactId' in user"
             >
               <button
                 type="button"
