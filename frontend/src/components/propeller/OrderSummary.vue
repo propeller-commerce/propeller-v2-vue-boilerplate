@@ -415,11 +415,10 @@ const requestDate = computed(() => {
     return props.formatDate(date);
   }
   try {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    // Short locale format (e.g. 4/27/2026 in en-US) — matches CartOverview's
+    // delivery-date rendering so checkout review and order confirmation stay
+    // consistent. Override via the `formatDate` prop if a longer layout is needed.
+    return new Date(date).toLocaleDateString("en-US");
   } catch {
     return date;
   }
@@ -451,11 +450,9 @@ function formatOrderDate(
     return props.formatDate(dateString);
   }
   try {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    // Short locale format (e.g. 4/27/2026 in en-US) for visual consistency
+    // with the delivery-date row directly above. Override via `formatDate`.
+    return new Date(dateString).toLocaleDateString("en-US");
   } catch {
     return dateString;
   }

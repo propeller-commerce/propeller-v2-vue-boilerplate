@@ -23,7 +23,8 @@
       "Read(//c/Users/tinka/.claude/projects//**)",
       "Bash(awk '/const COUNTRIES = \\\\[/,/\\\\];/' c:/workspace/nextDemo/app/checkout/page.tsx)",
       "Bash(awk '/^export interface CartIconAndSidebarProps {/,/^}/' c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)",
-      "Bash(grep -n \"^}\\\\s*$\" c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)"
+      "Bash(grep -n \"^}\\\\s*$\" c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)",
+      "Bash(awk '/^export interface CartOverviewProps {/,/^}/' c:/workspace/nextDemo/components/propeller/CartOverview.tsx)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

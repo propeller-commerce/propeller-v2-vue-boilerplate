@@ -54,7 +54,7 @@
               }}
             </p>
             <template v-if="invoiceAddress.country">
-              <p>{{ invoiceAddress.country }}</p>
+              <p>{{ getCountryName(invoiceAddress.country) }}</p>
             </template>
 
             <template v-if="invoiceAddress.email">
@@ -112,7 +112,7 @@
               }}
             </p>
             <template v-if="deliveryAddress.country">
-              <p>{{ deliveryAddress.country }}</p>
+              <p>{{ getCountryName(deliveryAddress.country) }}</p>
             </template>
 
             <template v-if="deliveryAddress.email">
@@ -254,6 +254,7 @@ import { computed, ref } from "vue";
 
 import { Cart, CartAddress, GraphQLClient } from "propeller-sdk-v2";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { getCountryName as _getCountryName } from "../../composables/shared/utils/countries";
 
 export interface CartOverviewProps {
   /** GraphQL client for the Propeller SDK */
@@ -292,6 +293,13 @@ export interface CartOverviewProps {
     reference: string,
     notes: string,
   ) => void;
+
+  /**
+   * Optional list of countries used to resolve ISO codes (e.g. 'NL') to display
+   * names (e.g. 'Netherlands') in the address blocks. When omitted, the shared
+   * built-in COUNTRIES list is used as a fallback.
+   */
+  countries?: { code: string; name: string }[];
 }
 interface CartOverviewState {
   reference: string;
@@ -398,8 +406,12 @@ function formatAddress(
   if (streetLine) parts.push(streetLine);
   const cityLine = [addr.postalCode, addr.city].filter(Boolean).join(" ");
   if (cityLine) parts.push(cityLine);
-  if (addr.country) parts.push(addr.country);
+  if (addr.country) parts.push(getCountryName(addr.country));
   return parts.join(", ");
+}
+
+function getCountryName(code: string): string {
+  return _getCountryName(code, props.countries);
 }
 function handleReferenceChange(
   value: string,

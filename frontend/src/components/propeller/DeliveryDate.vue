@@ -82,12 +82,21 @@
           <input
             type="date"
             class="propeller-delivery-date__input w-full border border-input rounded-[var(--radius-container)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
+            :class="customDateError ? 'border-destructive focus:ring-destructive focus:border-destructive' : ''"
             :min="minDate"
             :value="customDateValue"
             @change="
               async (event) => handleCustomDateChange(event.target.value)
             "
           />
+          <template v-if="customDateError">
+            <p
+              class="propeller-delivery-date__input-error text-sm text-destructive mt-2"
+              role="alert"
+            >
+              {{ customDateError }}
+            </p>
+          </template>
           <div
             class="propeller-delivery-date__modal-actions flex justify-end gap-3 mt-4"
           >
@@ -168,6 +177,7 @@ const props = withDefaults(defineProps<DeliveryDateProps>(), {
 const selectedDate = ref<DeliveryDateState["selectedDate"]>("");
 const modalOpen = ref<DeliveryDateState["modalOpen"]>(false);
 const customDateValue = ref<DeliveryDateState["customDateValue"]>("");
+const customDateError = ref<string>("");
 
 const upcomingDays = computed(() => {
   return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
@@ -246,7 +256,12 @@ function formatDisplay(
   if (props.formatDateDisplay) {
     return props.formatDateDisplay(isoDate);
   }
+  // Guard against bad input: invalid dates produce NaN/undefined and render
+  // as "undefined, undefined NaN". Return an empty string so the caller can
+  // decide what to show.
+  if (!isoDate) return "";
   const date = new Date(isoDate);
+  if (isNaN(date.getTime())) return "";
   const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
     date.getDay()
   ];
@@ -278,17 +293,45 @@ function handleSelect(
 function handleCustomDateChange(
   value: string,
 ): ReturnType<DeliveryDateState["handleCustomDateChange"]> {
+  // Validate before committing. The native date input doesn't reliably enforce
+  // the `min` attribute on typed input across browsers, and historical or
+  // out-of-range dates parse to a real Date that crashes downstream rendering
+  // ("undefined, undefined NaN"). On any failure we keep the typed value in
+  // the input so the user can fix it, and surface a single error message.
   customDateValue.value = value;
-  if (value) {
-    const date = new Date(value + "T00:00:00");
-    const isoDate = toApiDate(date);
-    handleSelect(isoDate);
+  if (!value) {
+    customDateError.value = "";
+    return;
   }
+  const parsed = new Date(value + "T00:00:00");
+  const year = parsed.getFullYear();
+  const isParseable = !isNaN(parsed.getTime()) && year >= 1900 && year <= 9999;
+  if (!isParseable) {
+    customDateError.value = getLabel(
+      "invalidDate",
+      "Please enter a valid date.",
+    );
+    return;
+  }
+  // Reject anything earlier than minDate (tomorrow). String comparison works
+  // because both sides are ISO-formatted YYYY-MM-DD.
+  if (value < minDate.value) {
+    customDateError.value = getLabel(
+      "pastDate",
+      "Please select a date in the future.",
+    );
+    return;
+  }
+  customDateError.value = "";
+  const isoDate = toApiDate(parsed);
+  handleSelect(isoDate);
 }
 function openModal(): ReturnType<DeliveryDateState["openModal"]> {
+  customDateError.value = "";
   modalOpen.value = true;
 }
 function closeModal(): ReturnType<DeliveryDateState["closeModal"]> {
+  customDateError.value = "";
   modalOpen.value = false;
 }
 function handleBackdropClick(
