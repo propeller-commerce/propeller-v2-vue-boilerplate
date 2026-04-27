@@ -66,7 +66,7 @@
       </template>
 
       <template v-if="!!error">
-        <p class="propeller-action-code__error text-sm text-destructive">{{ error }}</p>
+        <p class="propeller-action-code__error text-sm text-destructive">{{ errorMessage }}</p>
       </template>
     </template>
   </div>
@@ -164,6 +164,18 @@ const hasAppliedCode = computed(() => {
 function getLabel(key: string, fallback: string): ReturnType<ActionCodeState['getLabel']> {
   return _getLabel(props.labels, key, fallback);
 }
+
+// Surface a friendly fixed message for any action-code failure — server-side
+// error strings can be cryptic ("Code not found", GraphQL "Bad Request", etc.)
+// and aren't safe to show to end users. Override via `labels.invalidActionCode`
+// if a specific copy is needed.
+const errorMessage = computed(() => {
+  if (!error.value) return '';
+  return getLabel(
+    'invalidActionCode',
+    'This action code is not found. Please add a valid action code.',
+  );
+});
 async function handleApply(): ReturnType<ActionCodeState['handleApply']> {
   if (!code.value.trim() || loading.value) return;
   error.value = '';

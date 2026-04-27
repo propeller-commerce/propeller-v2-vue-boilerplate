@@ -66,10 +66,12 @@
           />
           <button
             type="button"
-            class="text-sm text-primary hover:underline px-2 py-1"
+            class="text-sm text-primary hover:underline px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleDownloadPDF"
+            :disabled="downloading"
           >
-            Download Quote (PDF)
+            <template v-if="downloading">Downloading...</template>
+            <template v-else>Download Quote (PDF)</template>
           </button>
         </div>
       </div>
@@ -197,11 +199,46 @@
         <OrderTotals :order="quote" />
       </div>
     </div>
+
+    <!-- PDF download toast (success / error feedback) -->
+    <template v-if="toastVisible">
+      <div
+        :class="`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-[var(--radius-container)] shadow-lg p-4 ${
+          toastType === 'success'
+            ? 'bg-success border border-success text-success-foreground'
+            : 'bg-destructive border border-destructive text-destructive-foreground'
+        }`"
+        :data-toast-type="toastType"
+      >
+        <div class="flex-shrink-0 w-5 h-5 mt-0.5">
+          <svg v-if="toastType === 'success'" fill="none" viewBox="0 0 24 24" stroke="currentColor" :stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <svg v-else fill="none" viewBox="0 0 24 24" stroke="currentColor" :stroke-width="2">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
+          </svg>
+        </div>
+        <p class="flex-1 text-sm font-medium">{{ toastMessage }}</p>
+        <button
+          type="button"
+          class="flex-shrink-0 rounded focus:outline-none hover:opacity-80"
+          @click="toastVisible = false"
+        >
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4" :stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { usePriceStore } from "@/stores/price";
@@ -280,8 +317,39 @@ function handleAfterAccept(acceptedQuote: any) {
   );
 }
 
+// PDF download UX state — shows "Downloading..." while the request is in
+// flight, then a success or error toast based on the result. Mirrors the
+// pattern OrderActions uses for the order-confirmation PDF.
+const downloading = ref(false);
+const toastVisible = ref(false);
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
+
+function showDownloadToast(message: string, type: "success" | "error") {
+  toastMessage.value = message;
+  toastType.value = type;
+  toastVisible.value = true;
+  setTimeout(() => {
+    toastVisible.value = false;
+  }, 4000);
+}
+
 async function handleDownloadPDF() {
-  await downloadQuotePdf(Number(quoteId));
+  if (downloading.value) return;
+  downloading.value = true;
+  try {
+    const result = await downloadQuotePdf(Number(quoteId));
+    if (result?.success) {
+      showDownloadToast("PDF downloaded successfully", "success");
+    } else {
+      showDownloadToast(result?.error || "Failed to download PDF", "error");
+    }
+  } catch (e) {
+    console.error("Error downloading quote PDF:", e);
+    showDownloadToast("Failed to download PDF", "error");
+  } finally {
+    downloading.value = false;
+  }
 }
 
 onMounted(async () => {

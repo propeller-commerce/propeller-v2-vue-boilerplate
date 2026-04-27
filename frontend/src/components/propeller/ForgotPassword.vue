@@ -31,9 +31,9 @@
             :disabled="loading"
           />
         </div>
-        <template v-if="error">
+        <template v-if="errorMessage">
           <div class="text-sm text-destructive bg-destructive/10 p-3 rounded-[var(--radius-control)]">
-            {{ error }}
+            {{ errorMessage }}
           </div>
         </template>
 
@@ -171,6 +171,16 @@ const emailLabel = computed(() => {
 });
 const emailPlaceholder = computed(() => {
   return props.labels?.emailPlaceholder || 'name@example.com';
+});
+// Surface a friendly fixed message for any forgot-password failure — server
+// errors can be cryptic (HTTP 4xx / GraphQL "Unauthorized" / etc.) and aren't
+// safe to show to end users. Override via `labels.emailNotFound` if needed.
+const errorMessage = computed(() => {
+  if (!error.value) return '';
+  return (
+    props.labels?.emailNotFound ||
+    "We couldn't find an account with that email address. Please double-check and try again. If you don't receive an email within a few minutes, please check that you entered the correct email address and try again."
+  );
 });
 
 async function handleSubmit(e: any) {

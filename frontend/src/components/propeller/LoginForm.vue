@@ -354,11 +354,17 @@ const isLoading = computed(() => {
   }
   return loading.value;
 });
+// Surface a friendly fixed message for any login failure — server-side error
+// strings can be cryptic ("HTTP 401", GraphQL "Unauthorized", etc.) and aren't
+// safe to show to end users. Override via the `labels.invalidCredentials` prop
+// if a specific copy is needed.
 const errorMessage = computed(() => {
-  if (props.onLoginSubmit) {
-    return props.loginError || '';
-  }
-  return error.value || '';
+  const raw = props.onLoginSubmit ? props.loginError : error.value;
+  if (!raw) return '';
+  return getLabel(
+    'invalidCredentials',
+    "The credentials you entered don't match our records. Please try again.",
+  );
 });
 
 
