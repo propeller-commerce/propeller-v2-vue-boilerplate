@@ -104,6 +104,7 @@
               v-if="showAccount"
               :graphqlClient="graphqlClient"
               :user="authStore.user as Contact | Customer"
+              :cart="cartStore.cart as Cart"
               :language="languageStore.language"
               :afterLogin="handleAfterLogin"
               :onMenuItemClick="(href: string) => router.push(href)"
@@ -233,7 +234,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Menu as MenuIcon } from 'lucide-vue-next'
-import { Enums } from 'propeller-sdk-v2'
+import { CartService, Enums } from 'propeller-sdk-v2'
 import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
@@ -245,6 +246,7 @@ import { useCart } from '@/composables/useCart'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import { configuration, localizeHref, stripLanguagePrefix } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
+import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
 
 import SearchBar from '@/components/propeller/SearchBar.vue'
 import PropellerMenu from '@/components/propeller/Menu.vue'
@@ -261,7 +263,7 @@ const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 
-const { fetchActiveCart } = useCart({
+const { fetchActiveCart, resolveCart } = useCart({
   graphqlClient,
   user: computed(() => authStore.user as AnyUser),
   companyId: computed(() => companyStore.selectedCompany?.companyId ?? undefined),
@@ -345,7 +347,8 @@ async function handleAfterLogin(
   user: Contact | Customer,
   accessToken?: string,
   refreshToken?: string,
-  expiresAt?: string
+  expiresAt?: string,
+  anonymousCart?: Cart | null
 ) {
   const cleanUser = stripLeadingUnderscores(user) as Contact | Customer
   authStore.setUser(cleanUser)
@@ -368,7 +371,34 @@ async function handleAfterLogin(
     languageStore.setLanguage(userLang)
   }
 
-  await fetchActiveCart()
+  let targetCart = await fetchActiveCart()
+
+  if (anonymousCart?.items?.length) {
+    if (!targetCart) {
+      targetCart = await resolveCart()
+    }
+    await mergeAnonymousCart({
+      graphqlClient,
+      targetCartId: targetCart.cartId,
+      anonymousCart,
+      language: languageStore.language,
+      imageSearchFilters: configuration.imageSearchFiltersGrid,
+      imageVariantFilters: configuration.imageVariantFiltersSmall,
+    })
+
+    if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
+      try {
+        await new CartService(graphqlClient).deleteCart({ id: anonymousCart.cartId })
+      } catch (e) {
+        console.error('[auth] Failed to delete anonymous cart', e)
+      }
+    }
+
+    targetCart = await fetchActiveCart()
+  }
+
+  cartStore.setCart(targetCart ?? null)
+
   router.push(localizeHref('/account', userLang || languageStore.language))
 }
 

@@ -159,6 +159,7 @@
               <template v-if="accountHeaderLoginForm !== false">
                 <LoginForm
                   :graphqlClient="graphqlClient"
+                  :cart="cart"
                   :title="
                     loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')
                   "
@@ -223,7 +224,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
-import { Contact, Customer, GraphQLClient } from "propeller-sdk-v2";
+import { Cart, Contact, Customer, GraphQLClient } from "propeller-sdk-v2";
 import LoginForm from "./LoginForm.vue";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
@@ -329,7 +330,11 @@ export interface AccountIconAndMenuProps {
     accessToken?: string,
     refreshToken?: string,
     expiresAt?: string,
+    anonymousCart?: Cart | null,
   ) => void;
+
+  /** Anonymous cart snapshot — forwarded to the embedded `LoginForm` so its `afterLogin` receives it. */
+  cart?: Cart | null;
 
   // ── Existing callbacks ──────────────────────────────────────────────────
 
