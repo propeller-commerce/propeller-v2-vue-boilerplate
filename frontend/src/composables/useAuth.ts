@@ -85,6 +85,12 @@ export interface RegisterCustomerInput {
   postalCode?: string;
   city?: string;
   country?: string;
+  deliveryStreet?: string;
+  deliveryNumber?: string;
+  deliveryPostalCode?: string;
+  deliveryCity?: string;
+  deliveryCountry?: string;
+  sameDeliveryAsBilling?: boolean;
 }
 
 export interface UseAuthOptions {
@@ -98,8 +104,8 @@ export interface UseAuthReturn {
   loading: Ref<boolean>;
   error: Ref<string | null>;
   login: (email: string, password: string, onLoginSubmit?: (email: string, password: string) => Promise<Contact | Customer>) => Promise<LoginResult>;
-  registerContact: (input: RegisterContactInput, preferredLanguage?: string) => Promise<LoginResult>;
-  registerCustomer: (input: RegisterCustomerInput, preferredLanguage?: string) => Promise<LoginResult>;
+  registerContact: (input: RegisterContactInput, preferredLanguage?: string, autoLogin?: boolean) => Promise<LoginResult>;
+  registerCustomer: (input: RegisterCustomerInput, preferredLanguage?: string, autoLogin?: boolean) => Promise<LoginResult>;
   forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -171,6 +177,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
   async function registerContact(
     input: RegisterContactInput,
     preferredLanguage = language,
+    autoLogin = true,
   ): Promise<LoginResult> {
     loading.value = true;
     error.value = null;
@@ -271,7 +278,10 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         }
       }
 
-      return await login(input.email, input.password);
+      if (autoLogin) {
+        return await login(input.email, input.password);
+      }
+      return { success: true };
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Registration failed';
       error.value = msg;
@@ -288,6 +298,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
   async function registerCustomer(
     input: RegisterCustomerInput,
     preferredLanguage = language,
+    autoLogin = true,
   ): Promise<LoginResult> {
     loading.value = true;
     error.value = null;
@@ -313,6 +324,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
       const loginResult = await login(input.email, input.password);
       if (!loginResult.success) return loginResult;
 
+      let addressesCreated = false;
       if (input.street && isCustomer(loginResult.user ?? null)) {
         const customer = loginResult.user as Customer;
         const invoiceAddress: CustomerAddressCreateInput = {
@@ -328,8 +340,63 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
           customerId: customer.customerId,
         };
         await addressService.createCustomerAddress(invoiceAddress);
+        addressesCreated = true;
+
+        // Mirror the contact flow: when "same as billing" is checked, copy the
+        // billing fields into a delivery-typed record so Propeller has a
+        // dedicated default delivery address. Otherwise, use the separately
+        // entered delivery fields (skip if the user left them empty).
+        if (input.sameDeliveryAsBilling) {
+          const deliveryAddress: CustomerAddressCreateInput = {
+            ...invoiceAddress,
+            type: Enums.AddressType.delivery,
+          };
+          await addressService.createCustomerAddress(deliveryAddress);
+        } else if (input.deliveryStreet) {
+          const deliveryAddress: CustomerAddressCreateInput = {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            street: input.deliveryStreet,
+            number: input.deliveryNumber,
+            postalCode: input.deliveryPostalCode ?? '',
+            city: input.deliveryCity ?? '',
+            country: input.deliveryCountry ?? 'NL',
+            type: Enums.AddressType.delivery,
+            isDefault: Enums.YesNo.Y,
+            customerId: customer.customerId,
+          };
+          await addressService.createCustomerAddress(deliveryAddress);
+        }
       }
 
+      if (!autoLogin) {
+        // Address creation needed the customerId from login(); now drop the
+        // session so the caller doesn't see this as a logged-in flow.
+        graphqlClient.setAccessToken('');
+        onAuthHeaderUpdate?.('');
+        return { success: true };
+      }
+
+      // Re-fetch the viewer so the returned user includes the just-created
+      // addresses. The user object captured by login() above is a snapshot
+      // taken before the addresses existed, and consumers that store it
+      // (authStore, dashboard, /account/addresses) would otherwise see no
+      // addresses until the next page load.
+      if (addressesCreated) {
+        try {
+          const viewerInput: ViewerInput = {
+            ...(configuration?.customerTrackAttributes?.length && {
+              customerAttributesInput: { attributeDescription: { names: configuration.customerTrackAttributes } },
+            }),
+          };
+          const refreshedViewer = await userService.getViewer(viewerInput);
+          const refreshedUser = refreshedViewer as Contact | Customer;
+          return { ...loginResult, user: refreshedUser };
+        } catch {
+          // Fall through to original loginResult — addresses still exist
+          // server-side; only the local snapshot is stale.
+        }
+      }
       return loginResult;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Registration failed';

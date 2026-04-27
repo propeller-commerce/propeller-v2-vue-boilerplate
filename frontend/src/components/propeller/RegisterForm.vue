@@ -727,7 +727,12 @@ import type { RegisterContactInput, RegisterCustomerInput } from '../../composab
  requiredFields?: string[];
 
  /**
-  * Contact or Customer is automatically logged in upon registration.
+  * When true (default) the new contact/customer is automatically logged in
+  * after registration: the SDK access token is set on the GraphQL client and
+  * forwarded to `afterRegistration` so the parent can populate auth state.
+  * When false, registration completes server-side but no session is kept;
+  * `afterRegistration` is called without tokens so the parent can redirect
+  * the user to the login page.
   * @default true
   */
  automaticLogin?: boolean;
@@ -985,18 +990,19 @@ async function handleSubmit(e: Event | any) {
     sameDeliveryAsBilling: sameAsDelivery.value,
   };
 
+  const autoLogin = props.automaticLogin !== false;
   const result = isContact.value
-    ? await registerContact(input as RegisterContactInput)
-    : await registerCustomer(input as RegisterCustomerInput);
+    ? await registerContact(input as RegisterContactInput, props.preferredLanguage, autoLogin)
+    : await registerCustomer(input as RegisterCustomerInput, props.preferredLanguage, autoLogin);
 
-  if (result.success && result.user) {
+  if (result.success) {
     submitted.value = true;
     if (props.afterRegistration) {
       props.afterRegistration(
-        result.user as Contact | Customer,
-        result.accessToken,
-        result.refreshToken,
-        result.expiresAt,
+        (result.user ?? null) as Contact | Customer,
+        autoLogin ? result.accessToken : undefined,
+        autoLogin ? result.refreshToken : undefined,
+        autoLogin ? result.expiresAt : undefined,
         props.cart ?? null
       );
     }

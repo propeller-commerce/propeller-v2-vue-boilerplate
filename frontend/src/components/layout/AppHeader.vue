@@ -95,6 +95,7 @@
               :onViewAllClick="handleSearch"
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
               :configuration="configuration"
+              :clearSignal="searchClearSignal"
             />
           </div>
 
@@ -199,6 +200,7 @@
           :onViewAllClick="(term: string) => { showMobileMenu = false; handleSearch(term) }"
           :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
           :configuration="configuration"
+          :clearSignal="searchClearSignal"
         />
       </div>
 
@@ -231,7 +233,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Menu as MenuIcon } from 'lucide-vue-next'
 import { CartService, Enums } from 'propeller-sdk-v2'
@@ -418,6 +420,19 @@ function handleAfterRequestAuthorization(cart: Cart) {
 function handleSearch(term: string) {
   router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', languageStore.language))
 }
+
+// Bumped on every route change away from the search results page so the
+// SearchBar(s) reset their input. This is what gives users an empty search
+// box when they navigate via product clicks, the homepage logo, the menu, etc.
+const searchClearSignal = ref(0)
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    if (newPath === oldPath) return
+    const onSearchRoute = stripLanguagePrefix(newPath).startsWith('/search')
+    if (!onSearchRoute) searchClearSignal.value++
+  },
+)
 
 function switchLanguage(lang: string) {
   // Update the store first so the next navigation has the right language for

@@ -69,12 +69,17 @@ async function handleAfterRegistration(
   expiresAt?: string,
   anonymousCart?: Cart | null,
 ) {
+  // No token means the form was used with `automaticLogin: false`. The user
+  // exists server-side but isn't signed in here — send them to the login page.
+  if (!accessToken) {
+    router.push(localizeHref("/login", languageStore.language));
+    return;
+  }
+
   const cleanUser = stripLeadingUnderscores(user) as Contact | Customer;
   authStore.setUser(cleanUser);
-  if (accessToken) {
-    authStore.setToken(accessToken);
-    localStorage.setItem("accessToken", accessToken);
-  }
+  authStore.setToken(accessToken);
+  localStorage.setItem("accessToken", accessToken);
   if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
   if (expiresAt) localStorage.setItem("expiresAt", expiresAt);
 
