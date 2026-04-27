@@ -413,15 +413,16 @@ onMounted(() => {
 });
 
 watch(
-  () => [
-    JSON.stringify(props.productIds),
-    JSON.stringify(props.clusterIds),
-    JSON.stringify(props.crossUpsellTypes),
-    props.productId,
-    props.clusterId,
-    props.language,
-    props.companyId,
-  ],
+  () =>
+    JSON.stringify([
+      props.productIds,
+      props.clusterIds,
+      props.crossUpsellTypes,
+      props.productId,
+      props.clusterId,
+      props.language,
+      props.companyId,
+    ]),
   () => {
     if (props.products && props.products.length > 0) return;
     if (isCrossUpsellMode()) {

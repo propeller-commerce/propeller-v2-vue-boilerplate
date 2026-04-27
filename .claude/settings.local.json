@@ -28,7 +28,8 @@
       "Bash(awk '/exports\\\\.OrderItemFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
       "Bash(awk '/exports\\\\.ProductCartFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
       "Bash(awk '/exports\\\\.IBaseProductCartFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
-      "Bash(kill %1)"
+      "Bash(kill %1)",
+      "Bash(grep -n 'watch\\\\|effect\\\\|$on' src/components/propeller/ProductSlider.vue)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

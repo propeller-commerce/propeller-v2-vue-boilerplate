@@ -30,9 +30,14 @@
         totalExclVat: 'Total excl. VAT:',
         totalVat: 'VAT:',
         total: 'Total:',
-        cancel: 'Cancel',
         acceptRequest: 'Accept request',
         accepting: 'Accepting...',
+        delete: 'Delete',
+        deleting: 'Deleting...',
+        deleteConfirmTitle: 'Delete authorization request?',
+        deleteConfirmBody: 'Are you sure you want to delete this authorization request? The cart will be permanently removed.',
+        deleteConfirmYes: 'Yes, delete',
+        deleteConfirmNo: 'No',
         empty: 'No pending authorization requests',
       }"
     />

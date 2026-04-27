@@ -251,15 +251,16 @@
                 >
                   <button
                     type="button"
-                    class="propeller-purchase-authorization-requests__modal-cancel flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-input bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    @click="async (event) => closeModal()"
+                    class="propeller-purchase-authorization-requests__modal-delete flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    @click="async (event) => openDeleteConfirm()"
+                    :disabled="deleteLoading || acceptLoading"
                   >
-                    {{ getLabel("cancel", "Cancel") }}</button
+                    {{ getLabel("delete", "Delete") }}</button
                   ><button
                     type="button"
                     class="propeller-purchase-authorization-requests__modal-accept flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     @click="async (event) => handleAcceptRequest()"
-                    :disabled="acceptLoading"
+                    :disabled="acceptLoading || deleteLoading"
                   >
                     <template v-if="acceptLoading">
                       {{ getLabel("accepting", "Accepting...") }}
@@ -270,6 +271,76 @@
                     </template>
                   </button>
                 </div>
+
+                <!--
+                  Delete confirmation overlay. Shown on top of the preview
+                  modal when the user clicks Delete; matches the two-step
+                  flow in playground-v2's `delete_purchase_authorization`
+                  Bootstrap modal so destructive action requires explicit
+                  consent before the cart is removed.
+                -->
+                <template v-if="showDeleteConfirm">
+                  <div
+                    class="propeller-purchase-authorization-requests__delete-confirm fixed inset-0 z-[60] flex items-center justify-center px-4"
+                  >
+                    <div
+                      class="propeller-purchase-authorization-requests__delete-confirm-backdrop fixed inset-0 bg-foreground/40"
+                      @click="async (event) => closeDeleteConfirm()"
+                    ></div>
+                    <div
+                      class="propeller-purchase-authorization-requests__delete-confirm-content relative w-full max-w-md bg-card rounded-[var(--radius-container)] shadow-2xl overflow-hidden"
+                    >
+                      <div class="px-6 py-4 border-b border-border-subtle">
+                        <h4
+                          class="propeller-purchase-authorization-requests__delete-confirm-title text-base font-semibold text-foreground"
+                        >
+                          {{
+                            getLabel(
+                              "deleteConfirmTitle",
+                              "Delete authorization request?",
+                            )
+                          }}
+                        </h4>
+                      </div>
+                      <div class="px-6 py-4">
+                        <p class="text-sm text-muted-foreground">
+                          {{
+                            getLabel(
+                              "deleteConfirmBody",
+                              "Are you sure you want to delete this authorization request? The cart will be permanently removed.",
+                            )
+                          }}
+                        </p>
+                      </div>
+                      <div
+                        class="flex gap-3 px-6 py-4 border-t border-border-subtle"
+                      >
+                        <button
+                          type="button"
+                          class="flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-input bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                          @click="async (event) => closeDeleteConfirm()"
+                          :disabled="deleteLoading"
+                        >
+                          {{ getLabel("deleteConfirmNo", "No") }}
+                        </button>
+                        <button
+                          type="button"
+                          class="flex-1 inline-flex justify-center rounded-[var(--radius-control)] border border-transparent bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          @click="async (event) => confirmDelete()"
+                          :disabled="deleteLoading"
+                        >
+                          <template v-if="deleteLoading">
+                            {{ getLabel("deleting", "Deleting...") }}
+                          </template>
+
+                          <template v-if="!deleteLoading">
+                            {{ getLabel("deleteConfirmYes", "Yes, delete") }}
+                          </template>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
               </template>
             </div>
           </div>
@@ -280,7 +351,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { usePurchaseAuthorizationRequests } from "../../composables/usePurchaseAuthorization";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
@@ -315,6 +386,18 @@ export interface PurchaseAuthorizationRequestsProps {
    * Receives the full accepted Cart object (or the selectedCart if onAcceptRequest override was used).
    */
   afterAcceptRequest?: (cart: Cart) => void;
+
+  /**
+   * Override: fires instead of the default CartService.deleteCart() call.
+   * Receives the cartId string.
+   */
+  onDeleteRequest?: (cartId: string) => void;
+
+  /**
+   * Fires after a purchase authorization request has been deleted (cart removed).
+   * Receives the deleted cart's id.
+   */
+  afterDeleteRequest?: (cartId: string) => void;
 
   /** Format date */
   formatDate?: (dateString: string) => string;
@@ -352,6 +435,7 @@ const {
   selectedCart,
   modalLoading,
   acceptLoading,
+  deleteLoading,
   isAuthManager,
   getTotalQuantity,
   getContactName,
@@ -359,6 +443,7 @@ const {
   loadCarts,
   handleViewCart,
   handleAcceptRequest,
+  handleDeleteRequest,
   closeModal,
 } = usePurchaseAuthorizationRequests({
   graphqlClient: props.graphqlClient,
@@ -367,8 +452,25 @@ const {
   configuration: props.configuration,
   onAcceptRequest: props.onAcceptRequest,
   afterAcceptRequest: props.afterAcceptRequest,
+  onDeleteRequest: props.onDeleteRequest,
+  afterDeleteRequest: props.afterDeleteRequest,
   onError: props.onError,
 });
+
+// Two-step delete UX: clicking Delete in the preview modal opens a small
+// confirmation overlay. Mirrors playground-v2's `delete_purchase_authorization`
+// modal so the destructive action requires explicit user confirmation.
+const showDeleteConfirm = ref(false);
+function openDeleteConfirm() {
+  showDeleteConfirm.value = true;
+}
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false;
+}
+async function confirmDelete() {
+  await handleDeleteRequest();
+  showDeleteConfirm.value = false;
+}
 
 function getLabel(key: string, fallback: string): string {
   return _getLabel(props.labels, key, fallback);
