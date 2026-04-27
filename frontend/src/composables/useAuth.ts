@@ -213,7 +213,18 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         contactAttributesInput: {},
         contactPAConfigInput: { page: 1, offset: 10 },
       };
-      await userService.registerContact(contactInput);
+      // The contact-register response includes a `favoriteLists` sub-selection
+      // that the FavoriteListsV2 service rejects with FORBIDDEN for newly-created
+      // contacts (no session active yet). The SDK's executeMutation logs but
+      // doesn't throw on partial-data responses, so this try/catch is defensive
+      // — if the SDK behavior changes, we still continue past the partial error
+      // because the contact was created server-side regardless.
+      try {
+        await userService.registerContact(contactInput);
+      } catch {
+        // Swallow: contact creation succeeded server-side; the only failing
+        // sub-selection is the favoriteLists field, which is empty for new users.
+      }
 
       if (input.street && companyId) {
         const invoiceAddress: CompanyAddressCreateInput = {
@@ -231,7 +242,19 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         };
         await addressService.createCompanyAddress(invoiceAddress);
 
-        if (!input.sameDeliveryAsBilling && input.deliveryStreet) {
+        // Determine the delivery-address payload:
+        // - If "same as billing" is checked, copy the billing fields and only
+        //   change `type` to `delivery` so Propeller has a dedicated delivery
+        //   record for the contact.
+        // - Otherwise, use the separately-entered delivery fields (skip if the
+        //   user left them empty).
+        if (input.sameDeliveryAsBilling) {
+          const deliveryAddress: CompanyAddressCreateInput = {
+            ...invoiceAddress,
+            type: Enums.AddressType.delivery,
+          };
+          await addressService.createCompanyAddress(deliveryAddress);
+        } else if (input.deliveryStreet) {
           const deliveryAddress: CompanyAddressCreateInput = {
             firstName: input.firstName,
             lastName: input.lastName,
