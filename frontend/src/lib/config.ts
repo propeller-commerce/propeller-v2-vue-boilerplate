@@ -1,7 +1,14 @@
 import { Enums } from 'propeller-sdk-v2'
 import type { Category, Cluster, Product } from 'propeller-sdk-v2'
 
+// Offset 1 = "first image only" — used in product cards / grids where a single
+// thumbnail is enough.
 export const imageSearchFiltersGrid = { page: 1, offset: 1 }
+
+// Offset 20 = "all images for this product" — used on detail pages so the
+// gallery can render the full set. Keep in sync with nextDemo's data/defaults.ts
+// `imageSearchFilters` constant.
+export const imageSearchFilters = { page: 1, offset: 20 }
 
 export const imageVariantFiltersSmall = {
   transformations: [{ name: 'thumb', transformation: { format: Enums.Format.WEBP, height: 100, width: 100, fit: Enums.Fit.BOUNDS } }],
@@ -86,6 +93,7 @@ export function detectLanguageFromPath(pathname: string): SupportedLanguage {
 }
 
 export const configuration = {
+  imageSearchFilters,
   imageSearchFiltersGrid,
   imageVariantFiltersSmall,
   imageVariantFiltersMedium,

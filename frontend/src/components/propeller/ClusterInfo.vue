@@ -146,7 +146,11 @@ onMounted(() => {
     return;
   }
   if (props.clusterId) {
-    fetchCluster(props.clusterId).then(() => {
+    fetchCluster(
+      props.clusterId,
+      props.imageSearchFilters,
+      props.imageVariantFilters,
+    ).then(() => {
       if (cluster.value && props.onClusterLoaded) {
         props.onClusterLoaded(cluster.value);
       }
@@ -164,7 +168,11 @@ watch(
       return;
     }
     if (!props.clusterId) return;
-    fetchCluster(props.clusterId).then(() => {
+    fetchCluster(
+      props.clusterId,
+      props.imageSearchFilters,
+      props.imageVariantFilters,
+    ).then(() => {
       if (cluster.value && props.onClusterLoaded) {
         props.onClusterLoaded(cluster.value);
       }

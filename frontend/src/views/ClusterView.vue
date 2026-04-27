@@ -29,6 +29,8 @@
               :onClusterLoaded="handleClusterLoaded"
               :language="languageStore.language"
               :configuration="configuration"
+              :imageSearchFilters="configuration.imageSearchFilters"
+              :imageVariantFilters="configuration.imageVariantFiltersLarge"
             />
 
             <template v-if="cluster">
@@ -232,10 +234,9 @@ const displayProduct = computed(
 
 const displayImages = computed(
   () =>
-    displayProduct.value?.media?.images?.items?.flatMap(
-      (img: any) =>
-        img.imageVariants?.map((v: any) => v.url).filter(Boolean) ?? [],
-    ) ?? [],
+    displayProduct.value?.media?.images?.items
+      ?.map((img: any) => img.imageVariants?.[0]?.url)
+      .filter((url: any): url is string => !!url) ?? [],
 );
 
 function handleClusterLoaded(loadedCluster: any) {

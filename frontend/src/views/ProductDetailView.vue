@@ -223,7 +223,7 @@ import { graphqlClient, productService } from "@/lib/api";
 import {
   configuration,
   imageVariantFiltersLarge,
-  imageSearchFiltersGrid,
+  imageSearchFilters,
   localizeHref,
 } from "@/lib/config";
 import { getLanguageString } from "@/composables/shared/utils/languageResolver";
@@ -263,10 +263,9 @@ const error = ref<string | null>(null);
 
 const images = computed(
   () =>
-    product.value?.media?.images?.items?.flatMap(
-      (img: any) =>
-        img.imageVariants?.map((v: any) => v.url).filter(Boolean) ?? [],
-    ) ?? [],
+    product.value?.media?.images?.items
+      ?.map((img: any) => img.imageVariants?.[0]?.url)
+      .filter((url: any): url is string => !!url) ?? [],
 );
 
 const productName = computed(() =>
@@ -283,7 +282,10 @@ async function loadProduct() {
     const result = await productService.getProduct({
       productId,
       language: languageStore.language,
-      imageSearchFilters: imageSearchFiltersGrid,
+      // imageSearchFilters (offset 20) returns the full set of product images
+      // for the gallery; imageSearchFiltersGrid (offset 1) would only return
+      // the first one and the gallery would render a single thumbnail.
+      imageSearchFilters,
       imageVariantFilters: imageVariantFiltersLarge,
     });
     product.value = result || null;
