@@ -136,7 +136,9 @@
       <!-- Product Tabs -->
       <ProductTabs
         v-if="displayProduct"
+        :graphqlClient="graphqlClient"
         :product="displayProduct"
+        :productId="displayProduct.productId"
         :language="languageStore.language"
         :includeTax="priceStore.includeTax"
         class="pb-8"

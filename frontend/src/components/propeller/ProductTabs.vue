@@ -419,9 +419,13 @@ const { attributes: fetchedAttributes, fetchSpecs } = useProductSpecs({
   language: computed(() => props.language || 'NL'),
 });
 
+const hasDescription = computed(() => {
+  return !!getLanguageString(props.product?.descriptions, props.language || 'NL', '');
+});
+
 onMounted(() => {
   // Set the first visible tab as active
-  if (props.showDescription !== false && hasDescription) {
+  if (props.showDescription !== false && hasDescription.value) {
     activeTab.value = 'description';
   } else if (props.showSpecifications !== false) {
     activeTab.value = 'specifications';
@@ -433,16 +437,22 @@ onMounted(() => {
   }
 });
 
-const hasDescription = computed(() => {
-  return !!getLanguageString(props.product?.descriptions, props.language || 'NL', '');
-});
-
 watch(
   () => [props.product, props.language],
   () => {
-    // Re-evaluate first visible tab when product data or language changes
-    if (props.showDescription !== false && hasDescription) {
+    // Re-evaluate first visible tab when product data or language changes.
+    // If the description is missing in the new language, fall back to specs.
+    if (props.showDescription !== false && hasDescription.value) {
       activeTab.value = 'description';
+    } else if (props.showSpecifications !== false) {
+      activeTab.value = 'specifications';
+      specsVisited.value = true;
+      // Auto-selecting the specs tab on mount must also kick off the fetch —
+      // without this, the user sees only the small attribute subset bundled
+      // with the product (no full public-attribute table).
+      if (props.productId && !fetchedAttributes.value.length) {
+        fetchSpecs(props.productId);
+      }
     }
   },
   { immediate: true }
@@ -459,7 +469,7 @@ function onSpecificationsTabSelected(): void {
   }
 }
 function isTabVisible(tab: string): ReturnType<ProductTabsState['isTabVisible']> {
-  if (tab === 'description') return props.showDescription !== false && hasDescription;
+  if (tab === 'description') return props.showDescription !== false && hasDescription.value;
   if (tab === 'specifications') return props.showSpecifications !== false;
   if (tab === 'downloads') return props.showDownloads !== false;
   if (tab === 'videos') return props.showVideos !== false;
