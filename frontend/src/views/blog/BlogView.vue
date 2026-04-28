@@ -4,15 +4,13 @@
     <div v-if="loading" class="flex justify-center py-12">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
     </div>
-    <div v-else-if="!posts.length" class="text-center py-12 text-muted-foreground">
-      No posts found.
-    </div>
+    <CmsFallback v-else-if="!posts.length" />
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="post in posts"
         :key="post.slug"
-        class="bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition cursor-pointer"
-        @click="router.push(`/blog/${post.slug}`)"
+        class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden hover:shadow-md transition cursor-pointer"
+        @click="router.push(localizeHref(`/blog/${post.slug}`, languageStore.language))"
       >
         <img v-if="post.cover?.url" :src="post.cover.url" :alt="post.title" class="w-full h-48 object-cover" />
         <div class="p-5">
@@ -28,8 +26,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useLanguageStore } from '@/stores/language'
+import { localizeHref } from '@/lib/config'
+import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const router = useRouter()
+const languageStore = useLanguageStore()
 const posts = ref<any[]>([])
 const loading = ref(true)
 

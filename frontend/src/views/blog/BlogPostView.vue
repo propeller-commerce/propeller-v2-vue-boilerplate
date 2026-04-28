@@ -5,12 +5,12 @@
     </div>
     <article v-else-if="post">
       <button @click="router.back()" class="text-primary hover:underline text-sm mb-6 block">← Back to Blog</button>
-      <img v-if="post.cover?.url" :src="post.cover.url" :alt="post.title" class="w-full h-64 object-cover rounded-lg mb-8" />
+      <img v-if="post.cover?.url" :src="post.cover.url" :alt="post.title" class="w-full h-64 object-cover rounded-[var(--radius-container)] mb-8" />
       <h1 class="text-4xl font-bold mb-4">{{ post.title }}</h1>
       <p class="text-sm text-muted-foreground mb-8">{{ post.publishedAt }}</p>
       <div class="prose max-w-none" v-html="renderedContent"></div>
     </article>
-    <div v-else class="text-center py-12 text-muted-foreground">Post not found.</div>
+    <CmsFallback v-else />
   </div>
 </template>
 
@@ -18,6 +18,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const route = useRoute()
 const router = useRouter()

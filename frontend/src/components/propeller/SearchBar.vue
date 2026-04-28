@@ -1,16 +1,20 @@
 <template>
-  <div :data-search-bar="true" :class="containerClassName || 'relative flex-1 max-w-2xl mx-8'">
-    <form @submit="async (e) => handleSubmit(e)">
-      <div class="relative">
+  <div
+    :data-search-bar="true"
+    :class="`propeller-search-bar ${containerClassName || 'relative flex-1 max-w-2xl mx-8'}`"
+    :data-open="showDropdown ? 'true' : 'false'"
+  >
+    <form class="propeller-search-bar__form" @submit="async (e) => handleSubmit(e)">
+      <div class="propeller-search-bar__input-wrapper relative">
         <button
           type="submit"
-          class="absolute left-3 top-1/2 transform -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer"
+          class="propeller-search-bar__submit absolute left-3 top-1/2 transform -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer"
         >
           <svg
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            class="w-5 h-5 text-gray-400 hover:text-gray-600"
+            class="propeller-search-bar__submit-icon w-5 h-5 text-foreground-subtle hover:text-muted-foreground"
           >
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
@@ -18,55 +22,57 @@
         ><input
           type="search"
           autoComplete="off"
-          class="w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-gray-500"
+          class="propeller-search-bar__input w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-[var(--radius-container)] focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-muted-foreground"
           :placeholder="placeholder"
           :value="searchTerm"
-          @change="async (e) => handleInputChange(e.target.value)"
+          @input="async (e) => handleInputChange((e.target as HTMLInputElement).value)"
         />
         <template v-if="isLoading">
-          <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+          <div class="propeller-search-bar__spinner-wrapper absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div class="propeller-search-bar__spinner animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
           </div>
         </template>
       </div>
     </form>
     <template v-if="showDropdown">
       <div
-        class="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border max-h-96 overflow-y-auto z-50"
+        class="propeller-search-bar__dropdown absolute top-full left-0 right-0 mt-2 bg-card rounded-[var(--radius-container)] shadow-xl border z-50 flex flex-col max-h-96"
       >
         <template v-if="results.length > 0">
-          <template :key="result.id + '-' + index" v-for="(result, index) in results">
-            <div
-              class="flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
-              @click="async (event) => handleResultClick(result)"
-            >
-              <template v-if="result.imageUrl || noImageUrl">
-                <div class="relative w-16 h-16 flex-shrink-0">
-                  <img
-                    class="w-full h-full object-contain"
-                    :src="result.imageUrl || noImageUrl"
-                    :alt="result.name"
-                  />
-                </div>
-              </template>
+          <div class="propeller-search-bar__results flex-1 overflow-y-auto">
+            <template :key="result.id + '-' + index" v-for="(result, index) in results">
+              <div
+                class="propeller-search-bar__result flex items-center gap-4 p-3 hover:bg-surface-hover cursor-pointer border-b border-border last:border-b-0"
+                @click="async (event) => handleResultClick(result)"
+              >
+                <template v-if="result.imageUrl || noImageUrl">
+                  <div class="propeller-search-bar__result-media relative w-16 h-16 flex-shrink-0">
+                    <img
+                      class="propeller-search-bar__result-image w-full h-full object-contain"
+                      :src="result.imageUrl || noImageUrl"
+                      :alt="result.name"
+                    />
+                  </div>
+                </template>
 
-              <div class="flex-1 min-w-0">
-                <div class="font-semibold truncate">{{ result.name }}</div>
-                <template v-if="result.sku">
-                  <div class="text-sm text-gray-500">SKU: {{ result.sku }}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="propeller-search-bar__result-name font-semibold truncate">{{ result.name }}</div>
+                  <template v-if="result.sku">
+                    <div class="propeller-search-bar__result-sku text-sm text-muted-foreground">SKU: {{ result.sku }}</div>
+                  </template>
+                </div>
+                <template v-if="result.price !== undefined && result.price !== null">
+                  <div class="propeller-search-bar__result-price text-sm font-semibold text-foreground flex-shrink-0">
+                    {{ formatItemPrice(result.price) }}
+                  </div>
                 </template>
               </div>
-              <template v-if="result.price !== undefined && result.price !== null">
-                <div class="text-sm font-semibold text-foreground flex-shrink-0">
-                  {{ formatItemPrice(result.price) }}
-                </div>
-              </template>
-            </div>
-          </template>
+            </template>
+          </div>
 
-          <template v-if="itemsFound > maxResults">
+          <template v-if="itemsFound > results.length">
             <div
-              class="p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
+              class="propeller-search-bar__view-all flex-shrink-0 p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold border-t border-border bg-card rounded-b-[var(--radius-container)]"
               @click="async (event) => handleViewAllClick()"
             >
               {{ getLabel('viewAll', 'View all results') }} ({{ itemsFound }})
@@ -75,7 +81,7 @@
         </template>
 
         <template v-if="results.length === 0 && searchTerm.length >= minLength && !isLoading">
-          <div class="p-4 text-center text-gray-500">
+          <div class="propeller-search-bar__empty p-4 text-center text-muted-foreground">
             {{ getLabel('noResults', 'No products found for') }} &quot;{{ searchTerm }}&quot;
           </div>
         </template>
@@ -97,6 +103,7 @@ import {
 import { useProductSearch } from '../../composables/useProductSearch';
 import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import { localizeHref as _localizeHref } from '@/lib/config';
 
 export interface SearchBarResult {
   /** Unique identifier */
@@ -174,6 +181,12 @@ export interface SearchBarProps {
    *   urls.getProductUrl / urls.getClusterUrl — for card URL generation
    */
   configuration?: any;
+
+  /**
+   * Bump this counter to clear the search input from outside (e.g. on route
+   * change). Each unique value triggers a one-time reset of the local term.
+   */
+  clearSignal?: number;
 }
 interface SearchBarState {
   searchTerm: string;
@@ -204,7 +217,7 @@ const props = defineProps<SearchBarProps>();
 
 const companyRef = computed(() => props.companyId);
 
-const { search, searchResults, searchLoading } = useProductSearch({
+const { search, searchResults, searchItemsFound, searchLoading } = useProductSearch({
   graphqlClient: props.graphqlClient,
   language: computed(() => props.language || 'NL'),
   configuration: props.configuration || {},
@@ -258,9 +271,24 @@ watch(searchResults, (rawItems) => {
     mapped.push(mapProductToResult(rawItems[i] as Product | Cluster));
   }
   results.value = mapped;
-  itemsFound.value = rawItems.length;
   showDropdown.value = mapped.length > 0 || searchTerm.value.length >= minLength.value;
 });
+
+watch(searchItemsFound, (total) => {
+  itemsFound.value = total;
+});
+
+// Parents bump `clearSignal` (e.g. on route change) to reset the input. We
+// also stop any in-flight search and close the dropdown.
+watch(
+  () => props.clearSignal,
+  () => {
+    searchTerm.value = '';
+    results.value = [];
+    showDropdown.value = false;
+    search('');
+  },
+);
 
 function getLabel(key: string, fallback: string): ReturnType<SearchBarState['getLabel']> {
   return _getLabel(props.labels, key, fallback);
@@ -278,7 +306,10 @@ function mapProductToResult(
   const displayItem = isCluster ? (item as Cluster).defaultProduct : item;
   const id = isCluster ? (item as Cluster).clusterId : (item as Product).productId;
   const slug = item.slugs?.[0]?.value || '';
-  const url = isCluster ? '/cluster/' + id + '/' + slug : '/product/' + id + '/' + slug;
+  // Build a language-prefixed URL so /en/... navigation stays in EN when the
+  // user clicks a search result. localizeHref no-ops for the default language.
+  const basePath = isCluster ? '/cluster/' + id + '/' + slug : '/product/' + id + '/' + slug;
+  const url = _localizeHref(basePath, props.language);
   return {
     id: id,
     name: item.names?.[0]?.value || 'Product',

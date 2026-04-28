@@ -86,6 +86,7 @@ export interface UseProductSearchReturn {
   // Search bar
   searchTerm: Ref<string>;
   searchResults: Ref<(Product | Cluster)[]>;
+  searchItemsFound: Ref<number>;
   searchLoading: Ref<boolean>;
   // Actions
   fetchProducts: () => Promise<void>;
@@ -123,6 +124,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
   // Search bar state
   const searchTerm = ref('');
   const searchResults = ref<(Product | Cluster)[]>([]) as Ref<(Product | Cluster)[]>;
+  const searchItemsFound = ref(0);
   const searchLoading = ref(false);
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -334,6 +336,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     if (searchTimer) clearTimeout(searchTimer);
     if (!term.trim()) {
       searchResults.value = [];
+      searchItemsFound.value = 0;
       return;
     }
     searchTimer = setTimeout(async () => {
@@ -389,8 +392,10 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         };
         const result = await service.getProducts(variables);
         searchResults.value = (result?.items ?? []) as (Product | Cluster)[];
+        searchItemsFound.value = (result as any)?.itemsFound ?? searchResults.value.length;
       } catch {
         searchResults.value = [];
+        searchItemsFound.value = 0;
       } finally {
         searchLoading.value = false;
       }
@@ -440,6 +445,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     totalPages: pagination.totalPages,
     searchTerm,
     searchResults,
+    searchItemsFound,
     searchLoading,
     fetchProducts,
     search,

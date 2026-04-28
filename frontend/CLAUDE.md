@@ -10,8 +10,8 @@ Vue 3 + Vite ecommerce storefront. This is the **Vue counterpart** of `d:/larago
 |---|---|
 | Vue UI components | `src/components/propeller/` |
 | Vue composables | `src/composables/` |
-| Shared utilities | `src/shared/utils/`, `src/shared/types/` |
-| Vue-specific composable utils | `src/composables/shared/` |
+| Framework-portable utils & types | `src/composables/shared/utils/`, `src/composables/shared/types/` |
+| Vue-reactive wrappers over shared utils | `src/composables/shared/` (e.g. `useUserIdentity.ts`, `usePagination.ts`, `useServiceFetch.ts`) |
 | Pinia stores | `src/stores/` |
 | SDK client + services | `src/lib/api.ts` |
 | Configuration (image filters, URL builders) | `src/lib/config.ts` |

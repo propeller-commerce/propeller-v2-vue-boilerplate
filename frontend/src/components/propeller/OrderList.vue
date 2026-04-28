@@ -1,21 +1,26 @@
 <template>
-  <div :class="className">
+  <div
+    :class="`propeller-order-list ${className || ''}`"
+    :data-loading="loading ? 'true' : 'false'"
+  >
     <template v-if="enableSearch && searchFields.length > 0">
-      <div class="mb-6 bg-white p-4 rounded-lg shadow space-y-4">
+      <div
+        class="propeller-order-list__filters mb-6 bg-card p-4 rounded-[var(--radius-container)] shadow space-y-4"
+      >
         <template v-if="searchFields.includes('term')">
-          <div class="w-full">
-            <label class="block text-sm font-medium text-gray-700 capitalize mb-1">{{
-              getColumnLabel('term')
-            }}</label
+          <div class="propeller-order-list__search-field w-full">
+            <label
+              class="propeller-order-list__filter-label block text-sm font-medium text-muted-foreground capitalize mb-1"
+              >{{ getColumnLabel("term") }}</label
             ><input
               type="text"
               placeholder="Search..."
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+              class="propeller-order-list__search-input block w-full rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
               :value="searchForm.term || ''"
-              @change="
+              @input="
                 async (e) => {
-                  searchForm.value = {
-                    ...searchForm.value,
+                  searchForm = {
+                    ...searchForm,
                     term: e.target.value,
                   };
                 }
@@ -23,6 +28,11 @@
               @keydown="
                 async (e) => {
                   if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchForm = {
+                      ...searchForm,
+                      term: e.target.value,
+                    };
                     fetchOrders(1);
                   }
                 }
@@ -32,17 +42,23 @@
         </template>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-          <template :key="field" v-for="(field, index) in searchFields.filter((f) => f !== 'term')">
+          <template
+            :key="field"
+            v-for="(field, index) in searchFields.filter((f) => f !== 'term')"
+          >
             <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700 capitalize">{{
-                getColumnLabel(field)
-              }}</label>
+              <label
+                class="propeller-order-list__filter-label block text-sm font-medium text-muted-foreground capitalize"
+                >{{ getColumnLabel(field) }}</label
+              >
               <template v-if="field === 'createdAt'">
                 <div class="flex space-x-2 w-full">
                   <input
                     type="date"
                     placeholder="From"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    :min="dateMin"
+                    :max="dateMax"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.greaterThan
                         ? searchForm.createdAt.greaterThan.split('T')[0]
@@ -51,12 +67,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.greaterThan
+                            ? current.greaterThan.split('T')[0]
+                            : '';
+                          return;
+                        }
+                        searchForm = {
+                          ...searchForm,
                           createdAt: {
                             ...current,
-                            greaterThan: val,
+                            greaterThan: sanitized ? `${sanitized}T00:00:00Z` : undefined,
                           },
                         };
                       }
@@ -64,7 +86,9 @@
                   /><input
                     type="date"
                     placeholder="To"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    :min="dateMin"
+                    :max="dateMax"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.lessThan
                         ? searchForm.createdAt.lessThan.split('T')[0]
@@ -73,12 +97,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.lessThan
+                            ? current.lessThan.split('T')[0]
+                            : '';
+                          return;
+                        }
+                        searchForm = {
+                          ...searchForm,
                           createdAt: {
                             ...current,
-                            lessThan: val,
+                            lessThan: sanitized ? `${sanitized}T23:59:59Z` : undefined,
                           },
                         };
                       }
@@ -92,7 +122,9 @@
                   <input
                     type="date"
                     placeholder="From"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    :min="dateMin"
+                    :max="dateMax"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.greaterThan
                         ? searchForm.lastModifiedAt.greaterThan.split('T')[0]
@@ -101,12 +133,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.greaterThan
+                            ? current.greaterThan.split('T')[0]
+                            : '';
+                          return;
+                        }
+                        searchForm = {
+                          ...searchForm,
                           lastModifiedAt: {
                             ...current,
-                            greaterThan: val,
+                            greaterThan: sanitized ? `${sanitized}T00:00:00Z` : undefined,
                           },
                         };
                       }
@@ -114,7 +152,9 @@
                   /><input
                     type="date"
                     placeholder="To"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    :min="dateMin"
+                    :max="dateMax"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.lessThan
                         ? searchForm.lastModifiedAt.lessThan.split('T')[0]
@@ -123,12 +163,18 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
-                        searchForm.value = {
-                          ...searchForm.value,
+                        const sanitized = sanitizeDateInput(e.target.value);
+                        if (e.target.value && !sanitized) {
+                          e.target.value = current.lessThan
+                            ? current.lessThan.split('T')[0]
+                            : '';
+                          return;
+                        }
+                        searchForm = {
+                          ...searchForm,
                           lastModifiedAt: {
                             ...current,
-                            lessThan: val,
+                            lessThan: sanitized ? `${sanitized}T23:59:59Z` : undefined,
                           },
                         };
                       }
@@ -142,13 +188,13 @@
                   <input
                     type="number"
                     placeholder="Min"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.price?.greaterThan || ''"
                     @change="
                       async (e) => {
                         const current = searchForm.price || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           price: {
                             ...current,
                             greaterThan: parseFloat(e.target.value),
@@ -159,13 +205,13 @@
                   /><input
                     type="number"
                     placeholder="Max"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.price?.lessThan || ''"
                     @change="
                       async (e) => {
                         const current = searchForm.price || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           price: {
                             ...current,
                             lessThan: parseFloat(e.target.value),
@@ -180,13 +226,13 @@
               <template v-if="field === 'sortInput'">
                 <div class="flex space-x-2 w-full">
                   <select
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.sortInput?.field || ''"
                     @change="
                       async (e) => {
                         const current = searchForm.sortInput || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           sortInput: {
                             ...current,
                             field: e.target.value,
@@ -198,18 +244,20 @@
                     <option value="">Sort Field</option>
                     <template
                       :key="sortField"
-                      v-for="(sortField, index) in Object.values(Enums.OrderSortField)"
+                      v-for="(sortField, index) in Object.values(
+                        Enums.OrderSortField,
+                      )"
                     >
                       <option :value="sortField">{{ sortField }}</option>
                     </template></select
                   ><select
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.sortInput?.order || ''"
                     @change="
                       async (e) => {
                         const current = searchForm.sortInput || {};
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           sortInput: {
                             ...current,
                             order: e.target.value,
@@ -219,7 +267,10 @@
                     "
                   >
                     <option value="">Order</option>
-                    <template :key="order" v-for="(order, index) in Object.values(Enums.SortOrder)">
+                    <template
+                      :key="order"
+                      v-for="(order, index) in Object.values(Enums.SortOrder)"
+                    >
                       <option :value="order">{{ order }}</option>
                     </template>
                   </select>
@@ -229,19 +280,22 @@
               <template v-if="field === 'type'">
                 <div class="flex space-x-2">
                   <select
-                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                    class="propeller-order-list__filter-input block w-full rounded-[var(--radius-control)] border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.type || ''"
                     @change="
                       async (e) => {
-                        searchForm.value = {
-                          ...searchForm.value,
+                        searchForm = {
+                          ...searchForm,
                           type: e.target.value,
                         };
                       }
                     "
                   >
                     <option value="">Type</option>
-                    <template :key="type" v-for="(type, index) in Object.values(Enums.OrderType)">
+                    <template
+                      :key="type"
+                      v-for="(type, index) in Object.values(Enums.OrderType)"
+                    >
                       <option :value="type">{{ type }}</option>
                     </template>
                   </select>
@@ -250,9 +304,11 @@
             </div>
           </template>
         </div>
-        <div class="flex justify-end space-x-2">
+        <div
+          class="propeller-order-list__filter-actions flex justify-end space-x-2"
+        >
           <button
-            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="propeller-order-list__clear-btn inline-flex items-center px-4 py-2 border border-input text-sm font-medium rounded-[var(--radius-control)] shadow-sm text-muted-foreground bg-card hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             @click="
               async (event) => {
                 resetSearch();
@@ -261,7 +317,7 @@
           >
             Clear</button
           ><button
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            class="propeller-order-list__search-btn inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-[var(--radius-control)] shadow-sm text-primary-foreground bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             @click="async (event) => fetchOrders(1)"
           >
             Search
@@ -272,14 +328,19 @@
 
     <template v-if="!loading || orders.length > 0">
       <template v-if="orders.length > 0">
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div
+          class="propeller-order-list__results bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
+        >
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+            <table
+              class="propeller-order-list__table min-w-full divide-y divide-gray-200"
+            >
+              <thead class="propeller-order-list__thead bg-surface-hover">
                 <tr>
                   <template :key="col" v-for="(col, index) in columns">
                     <th
-                      :class="`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                      :data-column="col"
+                      :class="`propeller-order-list__th px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider ${
                         col === 'action' || col === 'total' ? 'text-right' : ''
                       }`"
                     >
@@ -288,30 +349,42 @@
                   </template>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
+              <tbody
+                class="propeller-order-list__tbody bg-card divide-y divide-gray-200"
+              >
                 <template :key="order.id" v-for="(order, index) in orders">
                   <tr
-                    class="hover:bg-gray-50"
-                    @click="async (event) => rowsClickable && onOrderClick(order.id)"
+                    class="propeller-order-list__row hover:bg-surface-hover"
+                    :data-clickable="rowsClickable ? 'true' : 'false'"
+                    @click="
+                      async (event) => rowsClickable && onOrderClick(order.id)
+                    "
                   >
                     <template :key="col" v-for="(col, index) in columns">
                       <td
-                        :class="`px-6 py-4 whitespace-nowrap text-sm ${
-                          col === 'id' || col === 'action' ? 'font-medium' : 'text-gray-500'
+                        :data-column="col"
+                        :class="`propeller-order-list__cell px-6 py-4 whitespace-nowrap text-sm ${
+                          col === 'id' || col === 'action'
+                            ? 'font-medium'
+                            : 'text-muted-foreground'
                         } ${col === 'action' || col === 'total' ? 'text-right' : ''}`"
                       >
                         <template v-if="col === 'id'">
-                          <span class="text-gray-900">{{ order.id }}</span>
+                          <span
+                            class="propeller-order-list__order-id text-foreground"
+                            >{{ order.id }}</span
+                          >
                         </template>
 
                         <template v-if="col === 'date'">
-                          {{ formatDate(order.date || order.createdAt || '') }}
+                          {{ formatDate(order.date || order.createdAt || "") }}
                         </template>
 
                         <template v-if="col === 'status'">
                           <span
-                            :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                              order.status
+                            :data-status="order.status"
+                            :class="`propeller-order-list__status px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                              order.status,
                             )}`"
                             >{{ order.status }}</span
                           >
@@ -323,7 +396,7 @@
 
                         <template v-if="col === 'action' && !rowsClickable">
                           <button
-                            class="text-primary hover:text-primary/70 cursor-pointer"
+                            class="propeller-order-list__action-btn text-primary hover:text-primary/70 cursor-pointer"
                             @click="
                               async (event) => {
                                 event.preventDefault();
@@ -331,17 +404,24 @@
                               }
                             "
                           >
-                            {{ getLabel('view', 'View') }}
+                            {{ getLabel("view", "View") }}
                           </button>
                         </template>
 
                         <template v-if="col === 'validUntil'">
-                          {{ formatDate(order.validUntil || '') }}
+                          {{ formatDate(order.validUntil || "") }}
                         </template>
 
                         <template
                           v-if="
-                            !['id', 'date', 'status', 'total', 'action', 'validUntil'].includes(col)
+                            ![
+                              'id',
+                              'date',
+                              'status',
+                              'total',
+                              'action',
+                              'validUntil',
+                            ].includes(col)
                           "
                         >
                           {{ order[col] }}
@@ -355,51 +435,58 @@
           </div>
           <template v-if="!hidePagination && totalPages > 1">
             <div
-              class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
+              class="propeller-order-list__pagination bg-card px-4 py-3 flex items-center justify-between border-t border-border sm:px-6"
             >
-              <div class="flex-1 flex justify-between sm:hidden">
+              <div
+                class="propeller-order-list__pagination-mobile flex-1 flex justify-between sm:hidden"
+              >
                 <button
-                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  class="propeller-order-list__pagination-btn relative inline-flex items-center px-4 py-2 border border-input text-sm font-medium rounded-[var(--radius-control)] text-muted-foreground bg-card hover:bg-surface-hover disabled:opacity-50"
                   @click="async (event) => goToPage(currentPage - 1)"
                   :disabled="currentPage === 1"
                 >
-                  {{ getLabel('previous', 'Previous') }}</button
+                  {{ getLabel("previous", "Previous") }}</button
                 ><button
-                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  class="propeller-order-list__pagination-btn ml-3 relative inline-flex items-center px-4 py-2 border border-input text-sm font-medium rounded-[var(--radius-control)] text-muted-foreground bg-card hover:bg-surface-hover disabled:opacity-50"
                   @click="async (event) => goToPage(currentPage + 1)"
                   :disabled="currentPage === totalPages"
                 >
-                  {{ getLabel('next', 'Next') }}
+                  {{ getLabel("next", "Next") }}
                 </button>
               </div>
-              <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div
+                class="propeller-order-list__pagination-desktop hidden sm:flex-1 sm:flex sm:items-center sm:justify-between"
+              >
                 <div>
-                  <p class="text-sm text-gray-700">
-                    {{ getLabel('showingPage', 'Showing page') }}&nbsp;<span class="font-medium">{{
-                      currentPage
-                    }}</span
-                    >&nbsp;{{ getLabel('of', 'of') }}&nbsp;<span class="font-medium">{{
-                      totalPages
-                    }}</span>
+                  <p
+                    class="propeller-order-list__pagination-summary text-sm text-muted-foreground"
+                  >
+                    {{ getLabel("showingPage", "Showing page") }}&nbsp;<span
+                      class="font-medium"
+                      >{{ currentPage }}</span
+                    >&nbsp;{{ getLabel("of", "of") }}&nbsp;<span
+                      class="font-medium"
+                      >{{ totalPages }}</span
+                    >
                   </p>
                 </div>
                 <div>
                   <nav
                     aria-label="Pagination"
-                    class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                    class="propeller-order-list__pagination-nav relative z-0 inline-flex rounded-[var(--radius-control)] shadow-sm -space-x-px"
                   >
                     <button
-                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      class="propeller-order-list__pagination-btn relative inline-flex items-center px-2 py-2 rounded-l-[var(--radius-control)] border border-input bg-card text-sm font-medium text-muted-foreground hover:bg-surface-hover disabled:opacity-50"
                       @click="async (event) => goToPage(currentPage - 1)"
                       :disabled="currentPage === 1"
                     >
-                      {{ getLabel('previous', 'Previous') }}</button
+                      {{ getLabel("previous", "Previous") }}</button
                     ><button
-                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      class="propeller-order-list__pagination-btn relative inline-flex items-center px-2 py-2 rounded-r-[var(--radius-control)] border border-input bg-card text-sm font-medium text-muted-foreground hover:bg-surface-hover disabled:opacity-50"
                       @click="async (event) => goToPage(currentPage + 1)"
                       :disabled="currentPage === totalPages"
                     >
-                      {{ getLabel('next', 'Next') }}
+                      {{ getLabel("next", "Next") }}
                     </button>
                   </nav>
                 </div>
@@ -410,24 +497,28 @@
       </template>
 
       <template v-else>
-        <div class="bg-white rounded-lg shadow p-8 text-center">
-          <p class="text-gray-500 mb-4">
-            {{ getLabel('noOrders', 'No orders found.') }}
+        <div
+          class="propeller-order-list__empty bg-card rounded-[var(--radius-container)] shadow p-8 text-center"
+        >
+          <p class="text-muted-foreground mb-4">
+            {{ getLabel("noOrders", "No orders found.") }}
           </p>
         </div>
       </template>
     </template>
 
     <template v-else>
-      <div class="p-8 text-center text-gray-500">
-        {{ getLabel('loading', 'Loading orders...') }}
+      <div
+        class="propeller-order-list__loading p-8 text-center text-muted-foreground"
+      >
+        {{ getLabel("loading", "Loading orders...") }}
       </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue";
 
 import {
   Order,
@@ -435,11 +526,11 @@ import {
   Customer,
   GraphQLClient,
   Enums,
-} from 'propeller-sdk-v2';
+} from "propeller-sdk-v2";
 
-import { useOrders } from '../../composables/useOrders';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { useOrders } from "../../composables/useOrders";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface OrderListProps {
   /** The authenticated user (Contact or Customer) */
@@ -538,7 +629,7 @@ interface OrderListState {
 
 const props = defineProps<OrderListProps>();
 
-const userRef    = computed(() => props.user ?? null);
+const userRef = computed(() => props.user ?? null);
 const companyRef = computed(() => props.companyId);
 
 const {
@@ -565,50 +656,78 @@ const {
   afterReorder: props.afterReorder,
 });
 
-const columns = ref<OrderListState['columns']>(
-  props.columns || ['id', 'date', 'status', 'total']
+const columns = ref<OrderListState["columns"]>(
+  props.columns || ["id", "date", "status", "total"],
 );
-const rowsClickable = ref<OrderListState['rowsClickable']>(props.rowsClickable || false);
+const rowsClickable = ref<OrderListState["rowsClickable"]>(
+  props.rowsClickable || false,
+);
 
 const searchFields = computed(() => {
   const fields = props.searchFields || [];
-  if (props.enableSearch && !(fields as string[]).includes('term')) {
-    return ['term', ...fields] as string[];
+  if (props.enableSearch && !(fields as string[]).includes("term")) {
+    return ["term", ...fields] as string[];
   }
   return fields;
 });
 
-function formatDate(dateString: string): ReturnType<OrderListState['formatDate']> {
+const dateMin = "1970-01-01";
+const dateMax = computed(() => new Date().toISOString().split("T")[0]);
+
+// Returns a YYYY-MM-DD string only when the input value is a valid date in the
+// allowed range; otherwise returns null. Native <input type="date"> happily
+// accepts year-6 inputs ("0006-05-04") via keyboard, so we guard at the model layer.
+function sanitizeDateInput(value: string): string | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  if (year < 1970 || year > new Date().getFullYear()) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return value;
+}
+
+function formatDate(
+  dateString: string,
+): ReturnType<OrderListState["formatDate"]> {
   if (props.formatDate) return props.formatDate(dateString);
-  if (!dateString) return '-';
+  if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString();
 }
-function formatPrice(price: number): ReturnType<OrderListState['formatPrice']> {
+function formatPrice(price: number): ReturnType<OrderListState["formatPrice"]> {
   if (props.formatPrice) return props.formatPrice(price);
-  if (!price) return '-';
-  return _formatPrice(price, { symbol: '€' });
+  if (!price) return "-";
+  return _formatPrice(price, { symbol: "€" });
 }
-function getStatusColor(status: string): ReturnType<OrderListState['getStatusColor']> {
+function getStatusColor(
+  status: string,
+): ReturnType<OrderListState["getStatusColor"]> {
   if (props.getStatusColor) return props.getStatusColor(status);
   switch (status) {
-    case 'COMPLETE':
-    case 'QUOTE_ACCEPTED':
-      return 'bg-secondary/10 text-secondary';
-    case 'CANCELLED':
-    case 'QUOTE_REJECTED':
-      return 'bg-red-100 text-red-800';
+    case "COMPLETE":
+    case "QUOTE_ACCEPTED":
+      return "bg-secondary/10 text-secondary";
+    case "CANCELLED":
+    case "QUOTE_REJECTED":
+      return "bg-destructive/10 text-destructive";
     default:
-      return 'bg-yellow-100 text-yellow-800';
+      return "bg-warning/10 text-warning";
   }
 }
-function getColumnLabel(col: string): ReturnType<OrderListState['getColumnLabel']> {
+function getColumnLabel(
+  col: string,
+): ReturnType<OrderListState["getColumnLabel"]> {
   if (props.columnConfig && props.columnConfig[col]) {
     return props.columnConfig[col];
   }
   // Fallback: Capitalize first letter
   return col.charAt(0).toUpperCase() + col.slice(1);
 }
-function getLabel(key: string, fallback: string): ReturnType<OrderListState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<OrderListState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
 </script>

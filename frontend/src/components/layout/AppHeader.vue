@@ -47,7 +47,7 @@
             </svg>
             <select
               :value="languageStore.language"
-              @change="(e) => languageStore.setLanguage((e.target as HTMLSelectElement).value)"
+              @change="(e) => switchLanguage((e.target as HTMLSelectElement).value)"
               class="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
             >
               <option v-for="lang in availableLanguages" :key="lang" :value="lang">{{ lang }}</option>
@@ -95,6 +95,7 @@
               :onViewAllClick="handleSearch"
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
               :configuration="configuration"
+              :clearSignal="searchClearSignal"
             />
           </div>
 
@@ -104,6 +105,7 @@
               v-if="showAccount"
               :graphqlClient="graphqlClient"
               :user="authStore.user as Contact | Customer"
+              :cart="cartStore.cart as Cart"
               :language="languageStore.language"
               :afterLogin="handleAfterLogin"
               :onMenuItemClick="(href: string) => router.push(href)"
@@ -198,6 +200,7 @@
           :onViewAllClick="(term: string) => { showMobileMenu = false; handleSearch(term) }"
           :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
           :configuration="configuration"
+          :clearSignal="searchClearSignal"
         />
       </div>
 
@@ -230,10 +233,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Menu as MenuIcon } from 'lucide-vue-next'
-import { Enums } from 'propeller-sdk-v2'
+import { CartService, Enums } from 'propeller-sdk-v2'
 import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
@@ -243,8 +246,9 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { useCart } from '@/composables/useCart'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import { configuration, localizeHref } from '@/lib/config'
+import { configuration, localizeHref, stripLanguagePrefix } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
+import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
 
 import SearchBar from '@/components/propeller/SearchBar.vue'
 import PropellerMenu from '@/components/propeller/Menu.vue'
@@ -254,13 +258,14 @@ import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu.vue'
 import CompanySwitcher from '@/components/propeller/CompanySwitcher.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 
-const { fetchActiveCart } = useCart({
+const { fetchActiveCart, resolveCart } = useCart({
   graphqlClient,
   user: computed(() => authStore.user as AnyUser),
   companyId: computed(() => companyStore.selectedCompany?.companyId ?? undefined),
@@ -344,7 +349,8 @@ async function handleAfterLogin(
   user: Contact | Customer,
   accessToken?: string,
   refreshToken?: string,
-  expiresAt?: string
+  expiresAt?: string,
+  anonymousCart?: Cart | null
 ) {
   const cleanUser = stripLeadingUnderscores(user) as Contact | Customer
   authStore.setUser(cleanUser)
@@ -367,14 +373,42 @@ async function handleAfterLogin(
     languageStore.setLanguage(userLang)
   }
 
-  await fetchActiveCart()
+  let targetCart = await fetchActiveCart()
+
+  if (anonymousCart?.items?.length) {
+    if (!targetCart) {
+      targetCart = await resolveCart()
+    }
+    await mergeAnonymousCart({
+      graphqlClient,
+      targetCartId: targetCart.cartId,
+      anonymousCart,
+      language: languageStore.language,
+      imageSearchFilters: configuration.imageSearchFiltersGrid,
+      imageVariantFilters: configuration.imageVariantFiltersSmall,
+    })
+
+    if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
+      try {
+        await new CartService(graphqlClient).deleteCart({ id: anonymousCart.cartId })
+      } catch (e) {
+        console.error('[auth] Failed to delete anonymous cart', e)
+      }
+    }
+
+    targetCart = await fetchActiveCart()
+  }
+
+  cartStore.setCart(targetCart ?? null)
+
   router.push(localizeHref('/account', userLang || languageStore.language))
 }
 
 async function handleCompanyChange(company: Company) {
   companyStore.setSelectedCompany(company)
   if (authStore.user) {
-    await fetchActiveCart()
+    const newCart = await fetchActiveCart()
+    cartStore.setCart(newCart ?? null)
   }
 }
 
@@ -387,6 +421,31 @@ function handleSearch(term: string) {
   router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', languageStore.language))
 }
 
+// Bumped on every route change away from the search results page so the
+// SearchBar(s) reset their input. This is what gives users an empty search
+// box when they navigate via product clicks, the homepage logo, the menu, etc.
+const searchClearSignal = ref(0)
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    if (newPath === oldPath) return
+    const onSearchRoute = stripLanguagePrefix(newPath).startsWith('/search')
+    if (!onSearchRoute) searchClearSignal.value++
+  },
+)
+
+function switchLanguage(lang: string) {
+  // Update the store first so the next navigation has the right language for
+  // any URL builders called during render. The router guard would also do this
+  // post-navigation, but updating now avoids a one-frame mismatch.
+  languageStore.setLanguage(lang)
+  // Compute "the same page in the new language" by stripping any existing prefix
+  // off the current path, then re-applying via localizeHref. Preserve query/hash.
+  const canonical = stripLanguagePrefix(route.path)
+  const target = localizeHref(canonical, lang)
+  router.push({ path: target, query: route.query, hash: route.hash })
+}
+
 function handleCategoryClick(category: Category) {
   showMainMenu.value = false
   showMobileMenu.value = false
@@ -396,7 +455,7 @@ function handleCategoryClick(category: Category) {
 function handleLogout() {
   authStore.logout()
   cartStore.setCart(null)
-  router.push('/')
+  router.push(localizeHref('/', languageStore.language))
 }
 
 onMounted(() => {

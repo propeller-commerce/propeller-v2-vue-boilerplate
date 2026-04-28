@@ -1,15 +1,24 @@
 <template>
-  <div :class="`product-info ${className || ''}`">
+  <div
+    :class="`propeller-product-info ${className || ''}`"
+    :data-loading="loading ? 'true' : 'false'"
+  >
     <template v-if="loading && !product">
-      <div class="animate-pulse space-y-3">
-        <div class="h-4 bg-slate-100 rounded w-1/4"></div>
-        <div class="h-8 bg-slate-100 rounded w-3/4"></div>
+      <div class="propeller-product-info__skeleton animate-pulse space-y-3">
+        <div
+          class="propeller-product-info__skeleton-line h-4 bg-surface-hover rounded w-1/4"
+        ></div>
+        <div
+          class="propeller-product-info__skeleton-line h-8 bg-surface-hover rounded w-3/4"
+        ></div>
       </div>
     </template>
 
     <template v-if="!loading || !!product">
       <template v-if="showSku !== false && !!getProductSku()">
-        <div class="text-sm font-mono text-muted-foreground mb-2">SKU: {{ getProductSku() }}</div>
+        <div class="text-sm font-mono text-muted-foreground mb-2">
+          SKU: {{ getProductSku() }}
+        </div>
       </template>
 
       <template v-if="showTitle !== false && !!getProductName()">
@@ -22,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from "vue";
 
 import {
   GraphQLClient,
@@ -30,9 +39,12 @@ import {
   LocalizedString,
   Contact,
   Customer,
-} from 'propeller-sdk-v2';
-import { useProductInfo } from '../../composables/useProductInfo';
-import { getLanguageString, getLanguageUri } from '../../composables/shared/utils/languageResolver';
+} from "propeller-sdk-v2";
+import { useProductInfo } from "../../composables/useProductInfo";
+import {
+  getLanguageString,
+  getLanguageUri,
+} from "../../composables/shared/utils/languageResolver";
 
 export interface ProductInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────
@@ -131,18 +143,19 @@ const props = withDefaults(defineProps<ProductInfoProps>(), {
   showTitle: true,
 });
 
-const userRef    = computed(() => props.user ?? null);
+const userRef = computed(() => props.user ?? null);
 const companyRef = computed(() => props.companyId);
-const langRef    = computed(() => props.language || 'NL');
+const langRef = computed(() => props.language || "NL");
 
-const { product, cluster, loading, error, fetchProduct, fetchCluster } = useProductInfo({
-  graphqlClient: props.graphqlClient as GraphQLClient,
-  language: langRef,
-  taxZone: props.taxZone,
-  user: userRef,
-  companyId: companyRef,
-  configuration: props.configuration,
-});
+const { product, cluster, loading, error, fetchProduct, fetchCluster } =
+  useProductInfo({
+    graphqlClient: props.graphqlClient as GraphQLClient,
+    language: langRef,
+    taxZone: props.taxZone,
+    user: userRef,
+    companyId: companyRef,
+    configuration: props.configuration,
+  });
 
 onMounted(() => {
   if (props.product) {
@@ -161,7 +174,13 @@ onMounted(() => {
 });
 
 watch(
-  () => [props.productId, props.product, props.language, props.user, props.companyId],
+  () => [
+    props.productId,
+    props.product,
+    props.language,
+    props.user,
+    props.companyId,
+  ],
   () => {
     if (props.product) {
       if (props.onProductLoaded) {
@@ -175,7 +194,7 @@ watch(
         props.onProductLoaded(product.value);
       }
     });
-  }
+  },
 );
 
 function getDisplayProduct(): Product | null {
@@ -183,10 +202,10 @@ function getDisplayProduct(): Product | null {
 }
 function getProductName(): string {
   const p = getDisplayProduct();
-  if (!p) return '';
-  return getLanguageString(p.names, props.language || 'NL', '');
+  if (!p) return "";
+  return getLanguageString(p.names, props.language || "NL", "");
 }
 function getProductSku(): string {
-  return getDisplayProduct()?.sku || '';
+  return getDisplayProduct()?.sku || "";
 }
 </script>

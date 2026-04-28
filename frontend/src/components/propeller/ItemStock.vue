@@ -1,11 +1,15 @@
 <template>
   <template v-if="hasInventory()">
-    <div :class="`flex flex-wrap items-center gap-1.5 ${className || ''}`">
+    <div
+      :class="`propeller-item-stock flex flex-wrap items-center gap-1.5 ${className || ''}`"
+      :data-available="isAvailable() ? 'true' : 'false'"
+      :data-stock="getStockStatusData()"
+    >
       <template v-if="showAvailability !== false">
         <span
-          :class="`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getAvailabilityClass()}`"
+          :class="`propeller-item-stock__availability inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getAvailabilityClass()}`"
           ><span
-            :class="`h-1.5 w-1.5 flex-shrink-0 rounded-full ${getAvailabilityDotClass()}`"
+            :class="`propeller-item-stock__availability-dot h-1.5 w-1.5 flex-shrink-0 rounded-full ${getAvailabilityDotClass()}`"
           ></span
           >{{ getAvailabilityLabel() }}</span
         >
@@ -13,10 +17,10 @@
 
       <template v-if="showStock !== false && !!getStockStatusLabel()">
         <span
-          :class="`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getStockStatusClass()}`"
+          :class="`propeller-item-stock__status inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getStockStatusClass()}`"
           >{{ getStockStatusLabel() }}
           <template v-if="getTotalQuantity() > 0">
-            <span class="opacity-70">
+            <span class="propeller-item-stock__count opacity-70">
               ({{ getTotalQuantity() }}{{ getLabel('pieces', 'pcs') }})
             </span>
           </template>
@@ -83,9 +87,15 @@ function getStockStatusLabel(): string {
 }
 function getStockStatusClass(): string {
   const qty = getTotalQuantity();
-  if (qty <= 0) return 'text-red-600 bg-red-50 border-red-100';
-  if (qty <= 5) return 'text-amber-600 bg-amber-50 border-amber-100';
-  return 'text-green-600 bg-green-50 border-green-100';
+  if (qty <= 0) return 'text-destructive bg-destructive/10 border-destructive';
+  if (qty <= 5) return 'text-warning bg-warning/10 border-warning';
+  return 'text-success bg-success/10 border-success';
+}
+function getStockStatusData(): string {
+  const qty = getTotalQuantity();
+  if (qty <= 0) return 'out';
+  if (qty <= 5) return 'low';
+  return 'in';
 }
 function getAvailabilityLabel(): string {
   return isAvailable()
@@ -94,11 +104,11 @@ function getAvailabilityLabel(): string {
 }
 function getAvailabilityClass(): string {
   return isAvailable()
-    ? 'text-green-600 bg-green-50 border-green-100'
-    : 'text-red-600 bg-red-50 border-red-100';
+    ? 'text-success bg-success/10 border-success'
+    : 'text-destructive bg-destructive/10 border-destructive';
 }
 function getAvailabilityDotClass(): string {
-  return isAvailable() ? 'bg-green-500' : 'bg-red-500';
+  return isAvailable() ? 'bg-success' : 'bg-destructive';
 }
 function hasInventory(): boolean {
   return !!(props.inventory as ProductInventory) && getTotalQuantity() >= 0;

@@ -1,13 +1,18 @@
 <template>
   <template v-if="product">
-    <div :class="`product-tabs ${className || ''}`">
-      <div class="hidden md:block">
-        <div class="flex border-b border-border">
+    <div
+      :class="`propeller-product-tabs ${className || ''}`"
+      :data-active-tab="activeTab"
+    >
+      <div class="propeller-product-tabs__desktop hidden md:block">
+        <div class="propeller-product-tabs__tablist flex border-b border-border">
           <template v-if="isTabVisible('description')">
             <button
               type="button"
               @click="async (event) => selectTab('description')"
-              :class="`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              data-tab="description"
+              :data-active="isActive('description') ? 'true' : 'false'"
+              :class="`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 isActive('description')
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -21,7 +26,9 @@
             <button
               type="button"
               @click="async (event) => selectTab('specifications')"
-              :class="`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              data-tab="specifications"
+              :data-active="isActive('specifications') ? 'true' : 'false'"
+              :class="`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 isActive('specifications')
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -35,7 +42,9 @@
             <button
               type="button"
               @click="async (event) => selectTab('downloads')"
-              :class="`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              data-tab="downloads"
+              :data-active="isActive('downloads') ? 'true' : 'false'"
+              :class="`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 isActive('downloads')
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -49,7 +58,9 @@
             <button
               type="button"
               @click="async (event) => selectTab('videos')"
-              :class="`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              data-tab="videos"
+              :data-active="isActive('videos') ? 'true' : 'false'"
+              :class="`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 isActive('videos')
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -59,7 +70,7 @@
             </button>
           </template>
         </div>
-        <div class="pt-6">
+        <div class="propeller-product-tabs__panel pt-6">
           <template v-if="isActive('description') && isTabVisible('description')">
             <ProductDescription
               :product="product"
@@ -97,12 +108,12 @@
           </template>
         </div>
       </div>
-      <div class="md:hidden divide-y divide-border border border-border rounded-lg">
+      <div class="propeller-product-tabs__mobile md:hidden divide-y divide-border border border-border rounded-[var(--radius-container)]">
         <template v-if="isTabVisible('description')">
           <div>
             <button
               type="button"
-              class="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              class="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
               @click="
                 async (event) => {
                   activeTab = activeTab === 'description' ? '' : 'description';
@@ -126,7 +137,7 @@
               </svg>
             </button>
             <template v-if="isActive('description')">
-              <div class="px-4 pb-4">
+              <div class="propeller-product-tabs__accordion-panel px-4 pb-4">
                 <ProductDescription
                   :product="product"
                   :language="language"
@@ -142,7 +153,7 @@
           <div>
             <button
               type="button"
-              class="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              class="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
               @click="
                 async (event) => {
                   if (activeTab.value !== 'specifications') {
@@ -171,7 +182,7 @@
               </svg>
             </button>
             <template v-if="specsVisited && isActive('specifications')">
-              <div class="px-4 pb-4">
+              <div class="propeller-product-tabs__accordion-panel px-4 pb-4">
                 <ProductSpecifications
                   :attributes="getSpecsAttributes()"
                   :language="language"
@@ -187,7 +198,7 @@
           <div>
             <button
               type="button"
-              class="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              class="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
               @click="
                 async (event) => {
                   activeTab = activeTab === 'downloads' ? '' : 'downloads';
@@ -211,7 +222,7 @@
               </svg>
             </button>
             <template v-if="isActive('downloads')">
-              <div class="px-4 pb-4">
+              <div class="propeller-product-tabs__accordion-panel px-4 pb-4">
                 <ProductDownloads
                   :downloads="product.media?.documents"
                   :language="language || 'NL'"
@@ -226,7 +237,7 @@
           <div>
             <button
               type="button"
-              class="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              class="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
               @click="
                 async (event) => {
                   activeTab = activeTab === 'videos' ? '' : 'videos';
@@ -250,7 +261,7 @@
               </svg>
             </button>
             <template v-if="isActive('videos')">
-              <div class="px-4 pb-4">
+              <div class="propeller-product-tabs__accordion-panel px-4 pb-4">
                 <ProductVideos
                   :videos="product.media?.videos"
                   :language="language || 'NL'"
@@ -408,9 +419,13 @@ const { attributes: fetchedAttributes, fetchSpecs } = useProductSpecs({
   language: computed(() => props.language || 'NL'),
 });
 
+const hasDescription = computed(() => {
+  return !!getLanguageString(props.product?.descriptions, props.language || 'NL', '');
+});
+
 onMounted(() => {
   // Set the first visible tab as active
-  if (props.showDescription !== false && hasDescription) {
+  if (props.showDescription !== false && hasDescription.value) {
     activeTab.value = 'description';
   } else if (props.showSpecifications !== false) {
     activeTab.value = 'specifications';
@@ -422,16 +437,22 @@ onMounted(() => {
   }
 });
 
-const hasDescription = computed(() => {
-  return !!getLanguageString(props.product?.descriptions, props.language || 'NL', '');
-});
-
 watch(
   () => [props.product, props.language],
   () => {
-    // Re-evaluate first visible tab when product data or language changes
-    if (props.showDescription !== false && hasDescription) {
+    // Re-evaluate first visible tab when product data or language changes.
+    // If the description is missing in the new language, fall back to specs.
+    if (props.showDescription !== false && hasDescription.value) {
       activeTab.value = 'description';
+    } else if (props.showSpecifications !== false) {
+      activeTab.value = 'specifications';
+      specsVisited.value = true;
+      // Auto-selecting the specs tab on mount must also kick off the fetch —
+      // without this, the user sees only the small attribute subset bundled
+      // with the product (no full public-attribute table).
+      if (props.productId && !fetchedAttributes.value.length) {
+        fetchSpecs(props.productId);
+      }
     }
   },
   { immediate: true }
@@ -448,7 +469,7 @@ function onSpecificationsTabSelected(): void {
   }
 }
 function isTabVisible(tab: string): ReturnType<ProductTabsState['isTabVisible']> {
-  if (tab === 'description') return props.showDescription !== false && hasDescription;
+  if (tab === 'description') return props.showDescription !== false && hasDescription.value;
   if (tab === 'specifications') return props.showSpecifications !== false;
   if (tab === 'downloads') return props.showDownloads !== false;
   if (tab === 'videos') return props.showVideos !== false;

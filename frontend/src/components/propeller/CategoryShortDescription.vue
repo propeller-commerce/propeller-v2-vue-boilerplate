@@ -1,8 +1,8 @@
 <template>
   <template v-if="!!html">
-    <div :class="`mb-6 ${className || ''}`">
+    <div :class="`propeller-category-short-description mb-6 ${className || ''}`">
       <div
-        class="prose prose-slate max-w-none text-muted-foreground"
+        class="propeller-category-short-description__content prose prose-slate max-w-none text-muted-foreground"
         v-html="html"
       ></div>
     </div>

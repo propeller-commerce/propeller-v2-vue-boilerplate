@@ -91,13 +91,7 @@ export interface UseOrdersReturn {
   reorder: (order: Order, cartId?: string) => Promise<{ success: boolean; cart?: Cart; error?: string }>;
   setQuoteStatus: (
     orderId: number,
-    flags: {
-      isQuoteAccepted?: boolean;
-      isCancelled?: boolean;
-      isRejected?: boolean;
-      isValidated?: boolean;
-      isConfirmed?: boolean;
-    }
+    flags: { status?: string }
   ) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -365,13 +359,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
 
   async function setQuoteStatus(
     orderId: number,
-    flags: {
-      isQuoteAccepted?: boolean;
-      isCancelled?: boolean;
-      isRejected?: boolean;
-      isValidated?: boolean;
-      isConfirmed?: boolean;
-    }
+    flags: { status?: string }
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const service = new OrderService(graphqlClient);

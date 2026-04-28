@@ -1,23 +1,27 @@
 <template>
-  <div class="company-switcher relative inline-block" ref="containerRef">
+  <div
+    class="propeller-company-switcher relative inline-block"
+    ref="containerRef"
+    :data-open="isOpen ? 'true' : 'false'"
+  >
     <button
       type="button"
       aria-haspopup="listbox"
       aria-label="Switch company"
-      class="company-switcher__trigger flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10"
+      class="propeller-company-switcher__trigger flex items-center gap-2 rounded-[var(--radius-control)] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10"
       @click="async (event) => toggleDropdown()"
       :aria-expanded="isOpen"
     >
       <span
         aria-hidden="true"
-        :class="`company-switcher__icon icon-${getIcon()} flex-shrink-0`"
+        :class="`propeller-company-switcher__icon icon-${getIcon()} flex-shrink-0`"
       ></span
-      ><span class="company-switcher__label truncate max-w-[160px]">{{
+      ><span class="propeller-company-switcher__label truncate max-w-[160px]">{{
         getActiveCompanyName()
       }}</span
       ><span
         aria-hidden="true"
-        :class="`company-switcher__chevron flex-shrink-0 transition-transform duration-200 ${
+        :class="`propeller-company-switcher__chevron flex-shrink-0 transition-transform duration-200 ${
           isOpen ? 'rotate-180' : 'rotate-0'
         }`"
         ><svg
@@ -37,18 +41,18 @@
       <ul
         role="listbox"
         aria-label="Companies"
-        class="company-switcher__dropdown absolute left-0 top-full z-[60] mt-1 min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
+        class="propeller-company-switcher__dropdown absolute left-0 top-full z-[60] mt-1 min-w-[220px] rounded-[var(--radius-control)] border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
       >
         <template :key="String(company.companyId)" v-for="(company, index) in getCompanies()">
           <li
             role="option"
             :aria-selected="isActive(company)"
             @click="async (event) => selectCompany(company)"
-            :class="`company-switcher__option flex items-center gap-3 px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground ${
+            :class="`propeller-company-switcher__option flex items-center gap-3 px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground ${
               isActive(company) ? 'font-semibold text-primary' : 'font-normal text-foreground'
             }`"
           >
-            <span class="company-switcher__option-name flex-1 truncate">{{ company.name }}</span>
+            <span class="propeller-company-switcher__option-name flex-1 truncate">{{ company.name }}</span>
             <template v-if="isActive(company)">
               <svg
                 viewBox="0 0 16 16"
@@ -58,7 +62,7 @@
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 aria-hidden="true"
-                class="company-switcher__option-check flex-shrink-0 w-4 h-4 text-primary"
+                class="propeller-company-switcher__option-check flex-shrink-0 w-4 h-4 text-primary"
               >
                 <path d="M2.5 8l4 4 7-7"></path>
               </svg>

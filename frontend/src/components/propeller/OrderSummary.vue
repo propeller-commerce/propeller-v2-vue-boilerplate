@@ -1,56 +1,82 @@
 <template>
-  <div :class="containerClass">
+  <div :class="`propeller-order-summary ${containerClass}`">
     <template v-if="title">
-      <h2 class="text-xl font-bold mb-4">{{ title }}</h2>
+      <h2 class="propeller-order-summary__title text-xl font-bold mb-4">
+        {{ title }}
+      </h2>
     </template>
 
     <div
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-5 border-b border-gray-200 mb-5"
+      class="propeller-order-summary__meta grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-5 border-b border-border mb-5"
     >
       <template v-if="showOrderNumber && orderNumber">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
-            {{ getLabel('orderNumber', 'Order Number') }}
+        <div
+          class="propeller-order-summary__meta-item"
+          data-meta="order-number"
+        >
+          <p
+            class="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1"
+          >
+            {{ getLabel("orderNumber", "Order Number") }}
           </p>
-          <p class="font-semibold">{{ orderNumber }}</p>
+          <p class="propeller-order-summary__meta-value font-semibold">
+            {{ orderNumber }}
+          </p>
         </div>
       </template>
 
       <template v-if="showOrderDate && orderDate">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
-            {{ getLabel('orderDate', 'Order Date') }}
+        <div class="propeller-order-summary__meta-item" data-meta="order-date">
+          <p
+            class="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1"
+          >
+            {{ getLabel("orderDate", "Order Date") }}
           </p>
-          <p class="font-semibold">{{ formatOrderDate(orderDate) }}</p>
+          <p class="propeller-order-summary__meta-value font-semibold">
+            {{ formatOrderDate(orderDate) }}
+          </p>
         </div>
       </template>
 
       <template v-if="showOrderStatus && orderStatus">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
-            {{ getLabel('status', 'Status') }}
+        <div class="propeller-order-summary__meta-item" data-meta="status">
+          <p
+            class="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1"
+          >
+            {{ getLabel("status", "Status") }}
           </p>
           <span
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary"
+            class="propeller-order-summary__status inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary"
             >{{ orderStatus }}</span
           >
         </div>
       </template>
 
       <template v-if="showOrderTotal">
-        <div>
-          <p class="text-sm text-gray-500 mb-1">
-            {{ getLabel('total', 'Total') }}
+        <div class="propeller-order-summary__meta-item" data-meta="total">
+          <p
+            class="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1"
+          >
+            {{ getLabel("total", "Total") }}
           </p>
-          <p class="font-bold text-lg">{{ formatItemPrice(orderTotal) }}</p>
+          <p class="propeller-order-summary__total font-bold text-lg">
+            {{ formatItemPrice(orderTotal) }}
+          </p>
         </div>
       </template>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
+    <div
+      class="propeller-order-summary__addresses grid grid-cols-1 md:grid-cols-2 gap-6 pb-5"
+    >
       <template v-if="showInvoiceAddress">
-        <div class="space-y-2">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-            {{ getLabel('invoiceAddress', 'Invoice Address') }}
+        <div
+          class="propeller-order-summary__address space-y-2"
+          data-address="invoice"
+        >
+          <h3
+            class="propeller-order-summary__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide"
+          >
+            {{ getLabel("invoiceAddress", "Invoice Address") }}
           </h3>
           <template v-if="invoiceAddress && invoiceAddress.street">
             <div class="text-sm space-y-1">
@@ -60,27 +86,43 @@
 
               <p>
                 {{
-                  [invoiceAddress.firstName, invoiceAddress.middleName, invoiceAddress.lastName]
+                  [
+                    invoiceAddress.firstName,
+                    invoiceAddress.middleName,
+                    invoiceAddress.lastName,
+                  ]
                     .filter(Boolean)
-                    .join(' ')
+                    .join(" ")
                 }}
               </p>
               <p>
                 {{
-                  [invoiceAddress.street, invoiceAddress.number, invoiceAddress.numberExtension]
+                  [
+                    invoiceAddress.street,
+                    invoiceAddress.number,
+                    invoiceAddress.numberExtension,
+                  ]
                     .filter(Boolean)
-                    .join(' ')
+                    .join(" ")
                 }}
               </p>
               <p>
-                {{ [invoiceAddress.postalCode, invoiceAddress.city].filter(Boolean).join(' ') }}
+                {{
+                  [invoiceAddress.postalCode, invoiceAddress.city]
+                    .filter(Boolean)
+                    .join(" ")
+                }}
               </p>
               <template v-if="invoiceAddress.country">
                 <p>{{ getCountryName(invoiceAddress.country) }}</p>
               </template>
 
               <template v-if="invoiceAddress.email">
-                <p class="text-gray-500">{{ invoiceAddress.email }}</p>
+                <p
+                  class="propeller-order-summary__address-email text-muted-foreground"
+                >
+                  {{ invoiceAddress.email }}
+                </p>
               </template>
             </div>
           </template>
@@ -88,9 +130,14 @@
       </template>
 
       <template v-if="showDeliveryAddress">
-        <div class="space-y-2">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-            {{ getLabel('deliveryAddress', 'Delivery Address') }}
+        <div
+          class="propeller-order-summary__address space-y-2"
+          data-address="delivery"
+        >
+          <h3
+            class="propeller-order-summary__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide"
+          >
+            {{ getLabel("deliveryAddress", "Delivery Address") }}
           </h3>
           <template v-if="deliveryAddress && deliveryAddress.street">
             <div class="text-sm space-y-1">
@@ -100,52 +147,78 @@
 
               <p>
                 {{
-                  [deliveryAddress.firstName, deliveryAddress.middleName, deliveryAddress.lastName]
+                  [
+                    deliveryAddress.firstName,
+                    deliveryAddress.middleName,
+                    deliveryAddress.lastName,
+                  ]
                     .filter(Boolean)
-                    .join(' ')
+                    .join(" ")
                 }}
               </p>
               <p>
                 {{
-                  [deliveryAddress.street, deliveryAddress.number, deliveryAddress.numberExtension]
+                  [
+                    deliveryAddress.street,
+                    deliveryAddress.number,
+                    deliveryAddress.numberExtension,
+                  ]
                     .filter(Boolean)
-                    .join(' ')
+                    .join(" ")
                 }}
               </p>
               <p>
-                {{ [deliveryAddress.postalCode, deliveryAddress.city].filter(Boolean).join(' ') }}
+                {{
+                  [deliveryAddress.postalCode, deliveryAddress.city]
+                    .filter(Boolean)
+                    .join(" ")
+                }}
               </p>
               <template v-if="deliveryAddress.country">
                 <p>{{ getCountryName(deliveryAddress.country) }}</p>
               </template>
 
               <template v-if="deliveryAddress.email">
-                <p class="text-gray-500">{{ deliveryAddress.email }}</p>
+                <p
+                  class="propeller-order-summary__address-email text-muted-foreground"
+                >
+                  {{ deliveryAddress.email }}
+                </p>
               </template>
             </div>
           </template>
         </div>
       </template>
     </div>
-    <template v-if="showDeliveryInfo && (paymentMethod || carrierName || requestDate)">
-      <div class="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm">
+    <template
+      v-if="showDeliveryInfo && (paymentMethod || carrierName || requestDate)"
+    >
+      <div
+        class="propeller-order-summary__info-panel bg-surface-hover p-4 rounded-[var(--radius-control)] border border-border space-y-2 text-sm"
+      >
         <template v-if="paymentMethod">
           <div class="flex justify-between">
-            <span class="font-medium">{{ getLabel('payment', 'Payment:') }}</span
+            <span class="font-medium">{{
+              getLabel("payment", "Payment:")
+            }}</span
             ><span>{{ paymentMethod }}</span>
           </div>
         </template>
 
         <template v-if="carrierName">
           <div class="flex justify-between">
-            <span class="font-medium">{{ getLabel('carrier', 'Carrier:') }}</span
+            <span class="font-medium">{{
+              getLabel("carrier", "Carrier:")
+            }}</span
             ><span>{{ carrierName }}</span>
           </div>
         </template>
 
         <template v-if="requestDate">
           <div class="flex justify-between">
-            <span class="font-medium">{{ getLabel('deliveryDate', 'Delivery Date:') }}</span
+            <span class="font-medium">{{
+              getLabel("deliveryDate", "Delivery Date:")
+            }}</span
             ><span>{{ requestDate }}</span>
           </div>
         </template>
@@ -153,17 +226,23 @@
     </template>
 
     <template v-if="showRemarks && (orderReference || orderRemarks)">
-      <div class="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm mt-4">
+      <div
+        class="propeller-order-summary__remarks-panel bg-surface-hover p-4 rounded-[var(--radius-control)] border border-border space-y-2 text-sm mt-4"
+      >
         <template v-if="orderReference">
           <div class="flex justify-between">
-            <span class="font-medium">{{ getLabel('reference', 'Reference:') }}</span
+            <span class="font-medium">{{
+              getLabel("reference", "Reference:")
+            }}</span
             ><span>{{ orderReference }}</span>
           </div>
         </template>
 
         <template v-if="orderRemarks">
           <div class="flex justify-between">
-            <span class="font-medium">{{ getLabel('remarks', 'Remarks:') }}</span
+            <span class="font-medium">{{
+              getLabel("remarks", "Remarks:")
+            }}</span
             ><span>{{ orderRemarks }}</span>
           </div>
         </template>
@@ -173,10 +252,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Order } from 'propeller-sdk-v2';
-import { computed } from 'vue';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import type { Order } from "propeller-sdk-v2";
+import { computed } from "vue";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
+import { getCountryName as _getCountryName } from "../../composables/shared/utils/countries";
 
 export interface OrderSummaryProps {
   /** The order object from propeller-sdk-v2 */
@@ -266,7 +346,7 @@ const props = withDefaults(defineProps<OrderSummaryProps>(), {
 });
 
 const containerClass = computed(() => {
-  return props.orderSummaryContainerClass || 'order-summary';
+  return props.orderSummaryContainerClass || "order-summary";
 });
 const showOrderNumber = computed(() => {
   return props.showOrderNumber !== undefined ? props.showOrderNumber : true;
@@ -278,10 +358,14 @@ const showOrderStatus = computed(() => {
   return props.showOrderStatus !== undefined ? props.showOrderStatus : true;
 });
 const showInvoiceAddress = computed(() => {
-  return props.showInvoiceAddress !== undefined ? props.showInvoiceAddress : true;
+  return props.showInvoiceAddress !== undefined
+    ? props.showInvoiceAddress
+    : true;
 });
 const showDeliveryAddress = computed(() => {
-  return props.showDeliveryAddress !== undefined ? props.showDeliveryAddress : true;
+  return props.showDeliveryAddress !== undefined
+    ? props.showDeliveryAddress
+    : true;
 });
 const showOrderTotal = computed(() => {
   return props.showOrderTotal !== undefined ? props.showOrderTotal : true;
@@ -293,81 +377,82 @@ const showRemarks = computed(() => {
   return props.showRemarks !== undefined ? props.showRemarks : true;
 });
 const orderReference = computed(() => {
-  return props.order?.reference || '';
+  return props.order?.reference || "";
 });
 const orderRemarks = computed(() => {
-  return props.order?.remarks || '';
+  return props.order?.remarks || "";
 });
 const orderNumber = computed(() => {
-  return props.order?.id || '';
+  return props.order?.id || "";
 });
 const orderDate = computed(() => {
-  return props.order?.createdAt || '';
+  return props.order?.createdAt || "";
 });
 const orderStatus = computed(() => {
-  return props.order?.status || '';
+  return props.order?.status || "";
 });
 const orderTotal = computed(() => {
   return Number(props.order?.total?.net || 0);
 });
 const invoiceAddress = computed(() => {
   const addresses = props.order?.addresses || [];
-  return addresses.find((a: any) => a.type === 'invoice') || null;
+  return addresses.find((a: any) => a.type === "invoice") || null;
 });
 const deliveryAddress = computed(() => {
   const addresses = props.order?.addresses || [];
-  return addresses.find((a: any) => a.type === 'delivery') || null;
+  return addresses.find((a: any) => a.type === "delivery") || null;
 });
 const paymentMethod = computed(() => {
-  return props.order?.paymentData?.method || '';
+  return props.order?.paymentData?.method || "";
 });
 const carrierName = computed(() => {
-  return props.order?.postageData?.carrier || '';
+  return props.order?.postageData?.carrier || "";
 });
 const requestDate = computed(() => {
   const date = props.order?.postageData?.requestDate;
-  if (!date) return '';
+  if (!date) return "";
   if (props.formatDate) {
     return props.formatDate(date);
   }
   try {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    // Short locale format (e.g. 4/27/2026 in en-US) — matches CartOverview's
+    // delivery-date rendering so checkout review and order confirmation stay
+    // consistent. Override via the `formatDate` prop if a longer layout is needed.
+    return new Date(date).toLocaleDateString("en-US");
   } catch {
     return date;
   }
 });
 
-function formatItemPrice(price: number): ReturnType<OrderSummaryState['formatItemPrice']> {
+function formatItemPrice(
+  price: number,
+): ReturnType<OrderSummaryState["formatItemPrice"]> {
   if (props.formatPrice) {
     return props.formatPrice(price);
   }
-  return _formatPrice(price || 0, { symbol: '€' });
+  return _formatPrice(price || 0, { symbol: "€" });
 }
-function getLabel(key: string, fallback: string): ReturnType<OrderSummaryState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<OrderSummaryState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function getCountryName(code: string): ReturnType<OrderSummaryState['getCountryName']> {
-  if (!code) return '';
-  const list = props.countries || [];
-  for (let i = 0; i < list.length; i++) {
-    if (list[i].code === code) return list[i].name;
-  }
-  return code;
+function getCountryName(
+  code: string,
+): ReturnType<OrderSummaryState["getCountryName"]> {
+  return _getCountryName(code, props.countries);
 }
-function formatOrderDate(dateString: string): ReturnType<OrderSummaryState['formatOrderDate']> {
+function formatOrderDate(
+  dateString: string,
+): ReturnType<OrderSummaryState["formatOrderDate"]> {
   if (props.formatDate) {
     return props.formatDate(dateString);
   }
   try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    // Short locale format (e.g. 4/27/2026 in en-US) for visual consistency
+    // with the delivery-date row directly above. Override via `formatDate`.
+    return new Date(dateString).toLocaleDateString("en-US");
   } catch {
     return dateString;
   }

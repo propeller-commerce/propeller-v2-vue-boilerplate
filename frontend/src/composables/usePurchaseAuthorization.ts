@@ -351,6 +351,14 @@ export interface UsePurchaseAuthorizationRequestsOptions {
   };
   onAcceptRequest?: (cartId: string) => void;
   afterAcceptRequest?: (cart: Cart) => void;
+  /**
+   * Called BEFORE deleting; receives the cart id. Lets the host short-circuit
+   * the SDK call and run its own deletion logic. Mirrors the onAcceptRequest
+   * pattern.
+   */
+  onDeleteRequest?: (cartId: string) => void;
+  /** Called AFTER a successful delete. Receives the deleted cart's id. */
+  afterDeleteRequest?: (cartId: string) => void;
   onError?: (err: Error) => void;
 }
 
@@ -360,6 +368,7 @@ export interface UsePurchaseAuthorizationRequestsReturn {
   selectedCart: Ref<Cart | null>;
   modalLoading: Ref<boolean>;
   acceptLoading: Ref<boolean>;
+  deleteLoading: Ref<boolean>;
   isAuthManager: ComputedRef<boolean>;
   getTotalQuantity: (cart: Cart) => number;
   getContactName: (contact: Contact | null | undefined) => string;
@@ -367,6 +376,7 @@ export interface UsePurchaseAuthorizationRequestsReturn {
   loadCarts: () => Promise<void>;
   handleViewCart: (cart: Cart) => Promise<void>;
   handleAcceptRequest: () => Promise<void>;
+  handleDeleteRequest: () => Promise<void>;
   closeModal: () => void;
 }
 
@@ -380,6 +390,7 @@ export function usePurchaseAuthorizationRequests(
   const selectedCart = ref<Cart | null>(null) as Ref<Cart | null>;
   const modalLoading = ref(false);
   const acceptLoading = ref(false);
+  const deleteLoading = ref(false);
 
   const isAuthManager = computed(() => checkIsAuthManager(user.value, companyId.value));
 
@@ -420,7 +431,7 @@ export function usePurchaseAuthorizationRequests(
       const service = new CartService(graphqlClient);
       const fullCart = await service.getCart({
         cartId: cart.cartId,
-        language: configuration?.language || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+        language: configuration?.language || (import.meta.env.VITE_DEFAULT_LANGUAGE as string | undefined) || 'NL',
         imageSearchFilters: configuration?.imageSearchFiltersGrid,
         imageVariantFilters: configuration?.imageVariantFiltersSmall,
       });
@@ -460,6 +471,27 @@ export function usePurchaseAuthorizationRequests(
     }
   }
 
+  async function handleDeleteRequest(): Promise<void> {
+    if (!selectedCart.value) return;
+    deleteLoading.value = true;
+    const cartId = selectedCart.value.cartId;
+    try {
+      if (options.onDeleteRequest) {
+        options.onDeleteRequest(cartId);
+      } else {
+        const service = new CartService(graphqlClient);
+        await service.deleteCart({ id: cartId });
+      }
+      options.afterDeleteRequest?.(cartId);
+      selectedCart.value = null;
+      await loadCarts();
+    } catch (err: any) {
+      options.onError?.(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      deleteLoading.value = false;
+    }
+  }
+
   function closeModal(): void {
     selectedCart.value = null;
   }
@@ -476,8 +508,8 @@ export function usePurchaseAuthorizationRequests(
   );
 
   return {
-    carts, loading, selectedCart, modalLoading, acceptLoading, isAuthManager,
+    carts, loading, selectedCart, modalLoading, acceptLoading, deleteLoading, isAuthManager,
     getTotalQuantity, getContactName, getModalItems,
-    loadCarts, handleViewCart, handleAcceptRequest, closeModal,
+    loadCarts, handleViewCart, handleAcceptRequest, handleDeleteRequest, closeModal,
   };
 }

@@ -2,30 +2,47 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <button @click="router.back()" class="text-sm text-primary hover:underline">← Back</button>
+        <button
+          @click="router.back()"
+          class="text-sm text-primary hover:underline"
+        >
+          ← Back
+        </button>
         <h1 class="text-3xl font-bold tracking-tight">Quote Details</h1>
       </div>
     </div>
 
     <div v-if="loading" class="p-8 text-center">
-      <div class="h-8 bg-slate-100 rounded w-1/3 mx-auto mb-4 animate-pulse"></div>
+      <div
+        class="h-8 bg-slate-100 rounded w-1/3 mx-auto mb-4 animate-pulse"
+      ></div>
       <div class="h-4 bg-slate-100 rounded w-1/2 mx-auto animate-pulse"></div>
     </div>
 
-    <div v-else-if="error" class="p-8 text-center border rounded-lg">
+    <div
+      v-else-if="error"
+      class="p-8 text-center border rounded-[var(--radius-container)]"
+    >
       <p class="text-destructive mb-4">{{ error }}</p>
-      <button @click="router.push(localizeHref('/account/quotes', languageStore.language))" class="text-primary hover:underline">Return to Quotes</button>
+      <button
+        @click="
+          router.push(localizeHref('/account/quotes', languageStore.language))
+        "
+        class="text-primary hover:underline"
+      >
+        Return to Quotes
+      </button>
     </div>
 
     <div v-else-if="quote" class="space-y-8">
       <!-- Quote Summary + Actions -->
-      <div class="border rounded-lg p-6 space-y-4">
+      <div class="border rounded-[var(--radius-container)] p-6 space-y-4">
         <OrderSummary
           :order="quote"
           :countries="COUNTRIES"
           :labels="{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
-          :includeTax="priceStore.includeTax" 
-          :language="languageStore.language" 
+          :includeTax="priceStore.includeTax"
+          :language="languageStore.language"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -43,10 +60,18 @@
             :quote="quote as Order"
             :afterAccept="handleAfterAccept"
             :showTermsAndConditions="true"
-            :onTermsAndConditionsClick="() => window.open('/terms-conditions', '_blank')"
+            :onTermsAndConditionsClick="
+              () => window.open(localizeHref('/terms-conditions', languageStore.language), '_blank')
+            "
           />
-          <button type="button" class="text-sm text-primary hover:underline px-2 py-1" @click="handleDownloadPDF">
-            Download Quote (PDF)
+          <button
+            type="button"
+            class="text-sm text-primary hover:underline px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="handleDownloadPDF"
+            :disabled="downloading"
+          >
+            <template v-if="downloading">Downloading...</template>
+            <template v-else>Download Quote (PDF)</template>
           </button>
         </div>
       </div>
@@ -56,50 +81,85 @@
         <h2 class="text-2xl font-bold mb-6 mt-6">Quote Overview</h2>
 
         <!-- Parent/child product items -->
-        <div v-if="parentItems.length > 0" class="bg-white rounded-lg shadow overflow-hidden mb-8">
+        <div
+          v-if="parentItems.length > 0"
+          class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden mb-8"
+        >
           <table class="w-full">
-            <thead class="bg-gray-50 border-b">
+            <thead class="bg-surface-hover border-b">
               <tr>
-                <th class="px-6 py-4 text-left text-sm font-medium text-gray-500">Products</th>
-                <th class="px-6 py-4 text-center text-sm font-medium text-gray-500">Quantity</th>
-                <th class="px-6 py-4 text-right text-sm font-medium text-gray-500">Discount</th>
-                <th class="px-6 py-4 text-right text-sm font-medium text-gray-500">Price</th>
+                <th
+                  class="px-6 py-4 text-left text-sm font-medium text-muted-foreground"
+                >
+                  Products
+                </th>
+                <th
+                  class="px-6 py-4 text-center text-sm font-medium text-muted-foreground"
+                >
+                  Quantity
+                </th>
+                <th
+                  class="px-6 py-4 text-right text-sm font-medium text-muted-foreground"
+                >
+                  Discount
+                </th>
+                <th
+                  class="px-6 py-4 text-right text-sm font-medium text-muted-foreground"
+                >
+                  Price
+                </th>
               </tr>
             </thead>
-            <tbody>
-              <OrderItemCard
-                v-for="item in parentItems"
-                :key="item.id"
-                :orderItem="item"
-                :childItems="childMap.get(item.id) || []"
-                :titleLinkable="true"
-                :showImage="true"
-                :showSku="true"
-                :showQuantity="true"
-                :showPrice="true"
-              />
-            </tbody>
+
+            <OrderItemCard
+              v-for="item in parentItems"
+              :key="item.id"
+              :orderItem="item"
+              :childItems="childMap.get(item.id) || []"
+              :titleLinkable="true"
+              :showImage="true"
+              :showSku="true"
+              :showQuantity="true"
+              :showDiscount="true"
+              :showPrice="true"
+            />
           </table>
         </div>
 
         <!-- Bonus Items -->
         <div v-if="bonusItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-gray-800">Bonus Items</h3>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
+          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
+            Bonus Items
+          </h3>
+          <div
+            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
+          >
             <table class="w-full">
-              <thead class="bg-gray-50 border-b">
+              <thead class="bg-surface-hover border-b">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase"
+                  >
+                    Product
+                  </th>
+                  <th
+                    class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase"
+                  >
+                    Quantity
+                  </th>
+                  <th
+                    class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase"
+                  >
+                    Price
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <OrderItemCard 
-                  v-for="item in bonusItems" 
-                  :key="item.id" 
-                  :orderItem="item" 
-                  :titleLinkable="false" 
+                <OrderItemCard
+                  v-for="item in bonusItems"
+                  :key="item.id"
+                  :orderItem="item"
+                  :titleLinkable="false"
                   :showImage="true"
                   :showSku="true"
                   :showQuantity="true"
@@ -112,11 +172,22 @@
 
         <!-- Surcharges -->
         <div v-if="surchargeItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
+          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
+            Surcharges
+          </h3>
+          <div
+            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
+          >
             <table class="w-full">
               <tbody>
-                <OrderItemCard v-for="item in surchargeItems" :key="item.id" :orderItem="item" :titleLinkable="false" :showImage="false" :showSku="false" />
+                <OrderItemCard
+                  v-for="item in surchargeItems"
+                  :key="item.id"
+                  :orderItem="item"
+                  :titleLinkable="false"
+                  :showImage="false"
+                  :showSku="false"
+                />
               </tbody>
             </table>
           </div>
@@ -128,83 +199,161 @@
         <OrderTotals :order="quote" />
       </div>
     </div>
+
+    <!-- PDF download toast (success / error feedback) -->
+    <template v-if="toastVisible">
+      <div
+        :class="`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-[var(--radius-container)] shadow-lg p-4 ${
+          toastType === 'success'
+            ? 'bg-success border border-success text-success-foreground'
+            : 'bg-destructive border border-destructive text-destructive-foreground'
+        }`"
+        :data-toast-type="toastType"
+      >
+        <div class="flex-shrink-0 w-5 h-5 mt-0.5">
+          <svg v-if="toastType === 'success'" fill="none" viewBox="0 0 24 24" stroke="currentColor" :stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <svg v-else fill="none" viewBox="0 0 24 24" stroke="currentColor" :stroke-width="2">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
+          </svg>
+        </div>
+        <p class="flex-1 text-sm font-medium">{{ toastMessage }}</p>
+        <button
+          type="button"
+          class="flex-shrink-0 rounded focus:outline-none hover:opacity-80"
+          @click="toastVisible = false"
+        >
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4" :stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { usePriceStore } from '@/stores/price'
-import { useLanguageStore } from '@/stores/language'
-import { graphqlClient } from '@/lib/api'
-import { configuration, localizeHref } from '@/lib/config'
-import type { Order } from 'propeller-sdk-v2'
-import { useOrders } from '@/composables/useOrders'
-import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import OrderSummary from '@/components/propeller/OrderSummary.vue'
-import OrderItemCard from '@/components/propeller/OrderItemCard.vue'
-import QuoteActions from '@/components/propeller/QuoteActions.vue'
-import OrderTotals from '@/components/propeller/OrderTotals.vue'
+import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { usePriceStore } from "@/stores/price";
+import { useLanguageStore } from "@/stores/language";
+import { graphqlClient } from "@/lib/api";
+import { configuration, localizeHref } from "@/lib/config";
+import type { Order } from "propeller-sdk-v2";
+import { useOrders } from "@/composables/useOrders";
+import type { AnyUser } from "@/composables/shared/utils/userIdentity";
+import OrderSummary from "@/components/propeller/OrderSummary.vue";
+import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
+import QuoteActions from "@/components/propeller/QuoteActions.vue";
+import OrderTotals from "@/components/propeller/OrderTotals.vue";
+import { COUNTRIES } from "@/composables/shared/utils/countries";
 
-const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-]
+// COUNTRIES imported from shared utils
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+const priceStore = usePriceStore();
+const languageStore = useLanguageStore();
 
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-const priceStore = usePriceStore()
-const languageStore = useLanguageStore()
+const quoteId = route.params.id as string;
 
-const quoteId = route.params.id as string
-
-const { fetchOrder, currentOrder: quote, orderLoading: loading, error, downloadQuotePdf } = useOrders({
+const {
+  fetchOrder,
+  currentOrder: quote,
+  orderLoading: loading,
+  error,
+  downloadQuotePdf,
+} = useOrders({
   graphqlClient,
   user: computed(() => authStore.user as AnyUser),
   language: computed(() => languageStore.language),
   configuration,
-})
+});
 
 const parentItems = computed(() => {
-  const allProducts = (quote.value?.items || []).filter((i: any) => i.class === 'product' && i.isBonus === 'N')
-  return allProducts.filter((i: any) => !i.parentOrderItemId)
-})
+  const allProducts = (quote.value?.items || []).filter(
+    (i: any) => i.class === "product" && i.isBonus === "N",
+  );
+  return allProducts.filter((i: any) => !i.parentOrderItemId);
+});
 
 const childMap = computed(() => {
-  const allProducts = (quote.value?.items || []).filter((i: any) => i.class === 'product' && i.isBonus === 'N')
-  const map = new Map<number, any[]>()
-  allProducts.filter((i: any) => i.parentOrderItemId).forEach((i: any) => {
-    const children = map.get(i.parentOrderItemId) || []
-    children.push(i)
-    map.set(i.parentOrderItemId, children)
-  })
-  return map
-})
+  const allProducts = (quote.value?.items || []).filter(
+    (i: any) => i.class === "product" && i.isBonus === "N",
+  );
+  const map = new Map<number, any[]>();
+  allProducts
+    .filter((i: any) => i.parentOrderItemId)
+    .forEach((i: any) => {
+      const children = map.get(i.parentOrderItemId) || [];
+      children.push(i);
+      map.set(i.parentOrderItemId, children);
+    });
+  return map;
+});
 
 const bonusItems = computed(() =>
-  (quote.value?.items || []).filter((i: any) => i.class === 'product' && i.isBonus === 'Y')
-)
+  (quote.value?.items || []).filter(
+    (i: any) => i.class === "product" && i.isBonus === "Y",
+  ),
+);
 
 const surchargeItems = computed(() =>
-  (quote.value?.items || []).filter((i: any) => i.class === 'surcharge')
-)
+  (quote.value?.items || []).filter((i: any) => i.class === "surcharge"),
+);
 
 function handleAfterAccept(acceptedQuote: any) {
-  router.push(localizeHref(`/checkout/thank-you/${acceptedQuote.id}`, languageStore.language))
+  router.push(
+    localizeHref(
+      `/checkout/thank-you/${acceptedQuote.id}`,
+      languageStore.language,
+    ),
+  );
+}
+
+// PDF download UX state — shows "Downloading..." while the request is in
+// flight, then a success or error toast based on the result. Mirrors the
+// pattern OrderActions uses for the order-confirmation PDF.
+const downloading = ref(false);
+const toastVisible = ref(false);
+const toastMessage = ref("");
+const toastType = ref<"success" | "error">("success");
+
+function showDownloadToast(message: string, type: "success" | "error") {
+  toastMessage.value = message;
+  toastType.value = type;
+  toastVisible.value = true;
+  setTimeout(() => {
+    toastVisible.value = false;
+  }, 4000);
 }
 
 async function handleDownloadPDF() {
-  await downloadQuotePdf(Number(quoteId))
+  if (downloading.value) return;
+  downloading.value = true;
+  try {
+    const result = await downloadQuotePdf(Number(quoteId));
+    if (result?.success) {
+      showDownloadToast("PDF downloaded successfully", "success");
+    } else {
+      showDownloadToast(result?.error || "Failed to download PDF", "error");
+    }
+  } catch (e) {
+    console.error("Error downloading quote PDF:", e);
+    showDownloadToast("Failed to download PDF", "error");
+  } finally {
+    downloading.value = false;
+  }
 }
 
 onMounted(async () => {
-  await fetchOrder(parseInt(quoteId))
-  if (!quote.value) error.value = 'Quote not found'
-})
+  await fetchOrder(parseInt(quoteId));
+  if (!quote.value) error.value = "Quote not found";
+});
 </script>

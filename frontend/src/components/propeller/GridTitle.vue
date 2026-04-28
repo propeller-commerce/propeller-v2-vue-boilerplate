@@ -1,14 +1,14 @@
 <template>
-  <div :class="`mb-8 ${className || ''}`">
-    <div class="flex items-baseline gap-3 mb-3">
+  <div :class="`propeller-grid-title mb-8 ${className || ''}`">
+    <div class="propeller-grid-title__row flex items-baseline gap-3 mb-3">
       <template v-if="headingLevel === 'h2'">
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">
+        <h2 class="propeller-grid-title__heading text-3xl sm:text-4xl font-bold tracking-tight">
           {{ title }}
         </h2>
       </template>
 
       <template v-if="headingLevel !== 'h2'">
-        <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">
+        <h1 class="propeller-grid-title__heading text-3xl sm:text-4xl font-bold tracking-tight">
           {{ title }}
         </h1>
       </template>

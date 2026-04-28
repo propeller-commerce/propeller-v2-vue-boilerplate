@@ -14,7 +14,23 @@
       "Bash(sed -i 's/imageSearchFilters: configuration?\\\\.imageSearchFiltersGrid,/imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,/g; s/imageVariantFilters: configuration?\\\\.imageVariantFiltersSmall,/imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput,/g' composables/react/useCart.ts)",
       "Bash(xargs cat:*)",
       "Bash(xargs head:*)",
-      "Bash(grep -l \"from '@/composables/vue/\" d:/laragon/www/propeller-next/output/vue/ui-components/*.vue)"
+      "Bash(grep -l \"from '@/composables/vue/\" d:/laragon/www/propeller-next/output/vue/ui-components/*.vue)",
+      "Read(//c/workspace/**)",
+      "Read(//c//**)",
+      "Bash(npx vue-tsc *)",
+      "Bash(xargs grep *)",
+      "Read(//c/Users/tinka/.claude/projects/c--workspace-vue-boilerplate/**)",
+      "Read(//c/Users/tinka/.claude/projects//**)",
+      "Bash(awk '/const COUNTRIES = \\\\[/,/\\\\];/' c:/workspace/nextDemo/app/checkout/page.tsx)",
+      "Bash(awk '/^export interface CartIconAndSidebarProps {/,/^}/' c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)",
+      "Bash(grep -n \"^}\\\\s*$\" c:/workspace/vue-boilerplate/frontend/src/components/propeller/CartIconAndSidebar.vue)",
+      "Bash(awk '/^export interface CartOverviewProps {/,/^}/' c:/workspace/nextDemo/components/propeller/CartOverview.tsx)",
+      "Bash(awk '/exports\\\\.OrderItemFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
+      "Bash(awk '/exports\\\\.ProductCartFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
+      "Bash(awk '/exports\\\\.IBaseProductCartFields = `fragment/,/^`;$/' c:/workspace/vue-boilerplate/frontend/node_modules/propeller-sdk-v2/dist/generated/fragments.js)",
+      "Bash(kill %1)",
+      "Bash(grep -n 'watch\\\\|effect\\\\|$on' src/components/propeller/ProductSlider.vue)",
+      "Bash(npm run *)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

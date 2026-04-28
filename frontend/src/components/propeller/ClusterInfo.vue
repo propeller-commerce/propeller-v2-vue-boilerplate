@@ -1,9 +1,12 @@
 <template>
-  <div :class="`cluster-info ${className || ''}`">
+  <div
+    :class="`propeller-cluster-info ${className || ''}`"
+    :data-loading="loading ? 'true' : 'false'"
+  >
     <template v-if="loading && !cluster">
-      <div class="animate-pulse space-y-3">
-        <div class="h-4 bg-slate-100 rounded w-1/4"></div>
-        <div class="h-8 bg-slate-100 rounded w-3/4"></div>
+      <div class="propeller-cluster-info__skeleton animate-pulse space-y-3">
+        <div class="propeller-cluster-info__skeleton-line h-4 bg-slate-100 rounded w-1/4"></div>
+        <div class="propeller-cluster-info__skeleton-line h-8 bg-slate-100 rounded w-3/4"></div>
       </div>
     </template>
 
@@ -143,7 +146,11 @@ onMounted(() => {
     return;
   }
   if (props.clusterId) {
-    fetchCluster(props.clusterId).then(() => {
+    fetchCluster(
+      props.clusterId,
+      props.imageSearchFilters,
+      props.imageVariantFilters,
+    ).then(() => {
       if (cluster.value && props.onClusterLoaded) {
         props.onClusterLoaded(cluster.value);
       }
@@ -161,7 +168,11 @@ watch(
       return;
     }
     if (!props.clusterId) return;
-    fetchCluster(props.clusterId).then(() => {
+    fetchCluster(
+      props.clusterId,
+      props.imageSearchFilters,
+      props.imageVariantFilters,
+    ).then(() => {
       if (cluster.value && props.onClusterLoaded) {
         props.onClusterLoaded(cluster.value);
       }

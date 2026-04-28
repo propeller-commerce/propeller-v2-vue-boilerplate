@@ -4,7 +4,7 @@
       <ForgotPassword
         :graphqlClient="graphqlClient"
         :language="languageStore.language"
-        :onNavigateToLogin="() => router.push('/login')"
+        :onNavigateToLogin="() => router.push(localizeHref('/login', languageStore.language))"
       />
     </div>
   </div>
@@ -15,6 +15,7 @@ import { useRouter } from 'vue-router'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import ForgotPassword from '@/components/propeller/ForgotPassword.vue'
+import { localizeHref } from '@/lib/config'
 
 const router = useRouter()
 const languageStore = useLanguageStore()

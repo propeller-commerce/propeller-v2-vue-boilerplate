@@ -1,20 +1,24 @@
 <template>
   <template v-if="!!html">
-    <div :class="`mb-6 ${className || ''}`">
+    <div
+      :class="`propeller-category-description mb-6 ${className || ''}`"
+      :data-expanded="expanded ? 'true' : 'false'"
+      :data-truncatable="shouldTruncate() ? 'true' : 'false'"
+    >
       <template v-if="!shouldTruncate() || expanded">
         <div
-          class="prose prose-slate max-w-none text-muted-foreground"
+          class="propeller-category-description__content prose prose-slate max-w-none text-muted-foreground"
           v-html="html"
         ></div>
       </template>
 
       <template v-if="shouldTruncate() && !expanded">
-        <p class="text-muted-foreground">{{ getTruncated() }}</p>
+        <p class="propeller-category-description__truncated text-muted-foreground">{{ getTruncated() }}</p>
       </template>
 
       <template v-if="shouldTruncate()">
         <button
-          class="mt-2 text-sm font-medium text-primary hover:underline"
+          class="propeller-category-description__toggle mt-2 text-sm font-medium text-primary hover:underline"
           @click="async (event) => toggle()"
         >
           <template v-if="expanded"> Read less </template>

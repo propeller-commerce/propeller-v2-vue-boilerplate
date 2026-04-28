@@ -3,7 +3,8 @@
     <div class="w-full max-w-md">
       <LoginForm
         :graphqlClient="graphqlClient"
-        :afterLogin="(user: any, accessToken: any, refreshToken: any, expiresAt: any) => handleLoginSuccess(user, accessToken, refreshToken, expiresAt)"
+        :cart="cartStore.cart as Cart | null"
+        :afterLogin="(user: any, accessToken: any, refreshToken: any, expiresAt: any, anonymousCart: any) => handleLoginSuccess(user, accessToken, refreshToken, expiresAt, anonymousCart)"
         :onForgotPasswordClick="() => router.push(localizeHref('/forgot-password', languageStore.language))"
         :onRegisterClick="() => router.push(localizeHref('/register', languageStore.language))"
         :accountHeaderLoginForm="false"
@@ -16,7 +17,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import type { Contact, Customer } from 'propeller-sdk-v2'
+import { CartService } from 'propeller-sdk-v2'
+import type { Cart, Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
@@ -24,6 +26,7 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
+import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
 import { useCart } from '@/composables/useCart'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import LoginForm from '@/components/propeller/LoginForm.vue'
@@ -35,7 +38,7 @@ const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const languageStore = useLanguageStore()
 
-const { fetchActiveCart } = useCart({
+const { fetchActiveCart, resolveCart } = useCart({
   graphqlClient,
   user: computed(() => authStore.user as AnyUser),
   companyId: computed(() => companyStore.selectedCompany?.companyId ?? undefined),
@@ -48,6 +51,7 @@ async function handleLoginSuccess(
   accessToken?: string,
   refreshToken?: string,
   expiresAt?: string,
+  anonymousCart?: Cart | null,
 ) {
   const cleanUser = stripLeadingUnderscores(user) as Contact | Customer
   authStore.setUser(cleanUser)
@@ -70,9 +74,33 @@ async function handleLoginSuccess(
     languageStore.setLanguage(userLang)
   }
 
-  const cart = await fetchActiveCart()
-  if (cart) cartStore.setCart(cart)
-  else cartStore.setCart(null)
+  let targetCart = await fetchActiveCart()
+
+  if (anonymousCart?.items?.length) {
+    if (!targetCart) {
+      targetCart = await resolveCart()
+    }
+    await mergeAnonymousCart({
+      graphqlClient,
+      targetCartId: targetCart.cartId,
+      anonymousCart,
+      language: languageStore.language,
+      imageSearchFilters: configuration.imageSearchFiltersGrid,
+      imageVariantFilters: configuration.imageVariantFiltersSmall,
+    })
+
+    if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
+      try {
+        await new CartService(graphqlClient).deleteCart({ id: anonymousCart.cartId })
+      } catch (e) {
+        console.error('[auth] Failed to delete anonymous cart', e)
+      }
+    }
+
+    targetCart = await fetchActiveCart()
+  }
+
+  cartStore.setCart(targetCart ?? null)
 
   const redirect = (route.query.redirect as string) || localizeHref('/account', userLang || languageStore.language)
   router.push(redirect)

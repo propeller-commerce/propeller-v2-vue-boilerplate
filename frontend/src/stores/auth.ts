@@ -70,8 +70,15 @@ export const useAuthStore = defineStore('auth', () => {
   }, { immediate: true })
 
   function setUser(u: User | null) {
-    user.value = u
-    if (u) localStorage.setItem('user', JSON.stringify(u))
+    // Always sanitize so the store never holds the SDK's underscore-prefixed
+    // private-field representation. Without this, any caller that forgets to
+    // strip the underscores can poison the store and break code that reads
+    // `purchaseAuthorizationConfigs.items`, `company.companyId`, etc. on the
+    // canonical (non-underscored) keys — e.g. useCart.checkoutAllowed silently
+    // returns true for users who actually need authorization.
+    const clean = u ? sanitizeUser(u) : null
+    user.value = clean
+    if (clean) localStorage.setItem('user', JSON.stringify(clean))
     else localStorage.removeItem('user')
     localStorage.removeItem('auth_user')
   }

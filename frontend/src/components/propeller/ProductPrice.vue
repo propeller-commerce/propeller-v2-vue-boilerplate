@@ -1,22 +1,37 @@
 <template>
-  <div :class="`product-price ${className || ''}`">
+  <div
+    :class="`propeller-product-price ${className || ''}`"
+    :data-hidden="isHidden() ? 'true' : 'false'"
+  >
     <template v-if="isHidden()">
-      <p class="text-sm text-muted-foreground italic">
-        {{ getLabel('loginToSeePrices', 'Log in to see prices') }}
+      <p
+        class="propeller-product-price__login-prompt text-sm text-muted-foreground italic"
+      >
+        {{ getLabel("loginToSeePrices", "Log in to see prices") }}
       </p>
     </template>
 
     <template v-if="!isHidden() && !!getLeadingPrice()">
-      <div class="flex flex-col gap-0.5">
-        <div class="flex items-baseline gap-2">
-          <span :class="`${priceSize || 'text-3xl'} font-bold text-foreground`">{{
-            getLeadingPrice()
-          }}</span
-          ><span class="text-sm text-muted-foreground">{{ getTaxLabel() }}</span>
+      <div class="propeller-product-price__content flex flex-col gap-0.5">
+        <div class="propeller-product-price__primary flex items-baseline gap-2">
+          <span
+            :class="`propeller-product-price__amount ${priceSize || 'text-3xl'} font-bold text-foreground`"
+            >{{ getLeadingPrice() }}</span
+          ><span
+            class="propeller-product-price__tax-label text-sm text-muted-foreground"
+            >{{ getTaxLabel() }}</span
+          >
         </div>
         <template v-if="!!getSecondaryPrice()">
-          <div class="text-sm text-muted-foreground">
-            {{ getSecondaryPrice() }}{{ getSecondaryTaxLabel() }}
+          <div
+            class="propeller-product-price__secondary text-sm text-muted-foreground flex items-baseline gap-1"
+          >
+            <span class="propeller-product-price-secondary__amount">{{
+              getSecondaryPrice()
+            }}</span>
+            <span class="propeller-product-price-secondary__tax-label">{{
+              getSecondaryTaxLabel()
+            }}</span>
           </div>
         </template>
       </div>
@@ -25,10 +40,17 @@
 </template>
 
 <script setup lang="ts">
-import { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
-import { isContentHidden as _isContentHidden } from '../../composables/shared/utils/visibilityHelpers';
-import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
+import {
+  ProductPrice,
+  Product,
+  ClusterOption,
+  Contact,
+  Customer,
+  Enums,
+} from "propeller-sdk-v2";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { isContentHidden as _isContentHidden } from "../../composables/shared/utils/visibilityHelpers";
+import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
 export interface ProductPriceProps {
   /**
@@ -92,15 +114,17 @@ interface ProductPriceState {
 
 const props = defineProps<ProductPriceProps>();
 
-function isHidden(): ReturnType<ProductPriceState['isHidden']> {
+function isHidden(): ReturnType<ProductPriceState["isHidden"]> {
   return _isContentHidden(props.portalMode, props.user);
 }
 function formatPrice(
-  value: number | null | undefined
-): ReturnType<ProductPriceState['formatPrice']> {
-  return _formatPrice(value, { symbol: props.currency || '\u20AC' });
+  value: number | null | undefined,
+): ReturnType<ProductPriceState["formatPrice"]> {
+  return _formatPrice(value, { symbol: props.currency || "\u20AC" });
 }
-function getOptionsTotal(useNet: boolean): ReturnType<ProductPriceState['getOptionsTotal']> {
+function getOptionsTotal(
+  useNet: boolean,
+): ReturnType<ProductPriceState["getOptionsTotal"]> {
   const options = (props.options as ClusterOption[]) || [];
   const selected = (props.selectedOptionProducts as Product[]) || [];
   let total = 0;
@@ -109,17 +133,22 @@ function getOptionsTotal(useNet: boolean): ReturnType<ProductPriceState['getOpti
 
     // Find whether the user has selected a product in this option
     const selectedProduct = selected.find((p: Product) =>
-      (option.products || []).some((op: Product) => op.productId === p.productId)
+      (option.products || []).some(
+        (op: Product) => op.productId === p.productId,
+      ),
     );
     if (selectedProduct) {
-      total += useNet ? selectedProduct.price?.net || 0 : selectedProduct.price?.gross || 0;
+      total += useNet
+        ? selectedProduct.price?.net || 0
+        : selectedProduct.price?.gross || 0;
     } else if (option.isRequired === Enums.YesNo.Y && option.defaultProduct) {
       // option.defaultProduct may lack price data; look up the full
       // product record from option.products (which always has prices).
       const defaultId = (option.defaultProduct as Product).productId;
       const fullDefault =
-        (option.products || []).find((p: Product) => p.productId === defaultId) ||
-        option.defaultProduct;
+        (option.products || []).find(
+          (p: Product) => p.productId === defaultId,
+        ) || option.defaultProduct;
       total += useNet
         ? (fullDefault as Product).price?.net || 0
         : (fullDefault as Product).price?.gross || 0;
@@ -127,29 +156,40 @@ function getOptionsTotal(useNet: boolean): ReturnType<ProductPriceState['getOpti
   });
   return total;
 }
-function getLeadingPrice(): ReturnType<ProductPriceState['getLeadingPrice']> {
+function getLeadingPrice(): ReturnType<ProductPriceState["getLeadingPrice"]> {
   const price = props.price as ProductPrice;
-  if (!price) return '';
+  if (!price) return "";
   const useNet = !!props.includeTax;
   const base = useNet ? price.net : price.gross;
-  if (base === null || base === undefined) return '';
+  if (base === null || base === undefined) return "";
   return formatPrice(base + getOptionsTotal(useNet));
 }
-function getSecondaryPrice(): ReturnType<ProductPriceState['getSecondaryPrice']> {
+function getSecondaryPrice(): ReturnType<
+  ProductPriceState["getSecondaryPrice"]
+> {
   const price = props.price as ProductPrice;
-  if (!price) return '';
+  if (!price) return "";
   const useNet = !props.includeTax; // opposite of leading
   const base = useNet ? price.net : price.gross;
-  if (base === null || base === undefined) return '';
+  if (base === null || base === undefined) return "";
   return formatPrice(base + getOptionsTotal(useNet));
 }
-function getTaxLabel(): ReturnType<ProductPriceState['getTaxLabel']> {
-  return props.includeTax ? getLabel('inclTax', 'incl. VAT') : getLabel('exclTax', 'excl. VAT');
+function getTaxLabel(): ReturnType<ProductPriceState["getTaxLabel"]> {
+  return props.includeTax
+    ? getLabel("inclTax", "incl. VAT")
+    : getLabel("exclTax", "excl. VAT");
 }
-function getSecondaryTaxLabel(): ReturnType<ProductPriceState['getSecondaryTaxLabel']> {
-  return props.includeTax ? getLabel('exclTax', 'excl. VAT') : getLabel('inclTax', 'incl. VAT');
+function getSecondaryTaxLabel(): ReturnType<
+  ProductPriceState["getSecondaryTaxLabel"]
+> {
+  return props.includeTax
+    ? getLabel("exclTax", "excl. VAT")
+    : getLabel("inclTax", "incl. VAT");
 }
-function getLabel(key: string, fallback: string): ReturnType<ProductPriceState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<ProductPriceState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
 </script>

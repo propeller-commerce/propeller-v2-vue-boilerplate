@@ -1,27 +1,43 @@
 <template>
-  <div class="relative" @click.stop>
+  <div
+    class="propeller-account-menu relative"
+    data-account-menu
+    :data-variant="isSidebar ? 'sidebar' : 'dropdown'"
+    :data-authenticated="user ? 'true' : 'false'"
+    @click.stop
+  >
     <template v-if="isSidebar">
-      <div class="flex flex-col">
+      <div class="propeller-account-menu__sidebar flex flex-col">
         <template v-if="!!user">
-          <div class="px-4 py-3 border-b border-gray-200">
-            <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-              {{ getLabel('signedInAs', 'Signed in as') }}
+          <div
+            class="propeller-account-menu__user px-4 py-3 border-b border-border"
+          >
+            <p
+              class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1"
+            >
+              {{ getLabel("signedInAs", "Signed in as") }}
             </p>
-            <p class="font-medium text-gray-900 truncate">
+            <p
+              class="propeller-account-menu__user-name font-medium text-foreground truncate"
+            >
               {{ getUserName() }}
             </p>
           </div>
-          <nav class="py-2">
-            <ul class="space-y-0.5">
-              <template :key="link.href" v-for="(link, index) in getMenuLinks()">
-                <li>
+          <nav class="propeller-account-menu__nav py-2">
+            <ul class="propeller-account-menu__list space-y-0.5">
+              <template
+                :key="link.href"
+                v-for="(link, index) in getMenuLinks()"
+              >
+                <li class="propeller-account-menu__item">
                   <button
                     type="button"
                     @click="async (event) => handleMenuItemClick(link.href)"
-                    :class="`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    :data-active="isActiveLink(link.href) ? 'true' : 'false'"
+                    :class="`propeller-account-menu__link flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
                       isActiveLink(link.href)
                         ? 'bg-secondary/5 text-secondary border-l-2 border-secondary'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
                     }`"
                   >
                     {{ link.label }}
@@ -30,13 +46,15 @@
               </template>
             </ul>
           </nav>
-          <div class="px-4 py-3 border-t border-gray-200">
+          <div
+            class="propeller-account-menu__logout-wrapper px-4 py-3 border-t border-border"
+          >
             <button
               type="button"
-              class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
+              class="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-[var(--radius-control)] transition-colors"
               @click="async (event) => handleLogoutClick()"
             >
-              {{ getLabel('logoutLabel', 'Log Out') }}
+              {{ getLabel("logoutLabel", "Log Out") }}
             </button>
           </div>
         </template>
@@ -48,7 +66,8 @@
         type="button"
         @click="handleIconClick"
         :aria-label="getLabel('accountLabel', 'Account')"
-        :class="`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${
+        :data-open="menuOpen ? 'true' : 'false'"
+        :class="`propeller-account-menu__trigger inline-flex items-center gap-2 px-3 py-2 rounded-[var(--radius-control)] text-sm font-medium transition-colors text-white hover:bg-white/10${
           iconClassName ? ' ' + iconClassName : ''
         }`"
       >
@@ -56,7 +75,7 @@
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
-          class="w-5 h-5"
+          class="propeller-account-menu__icon w-5 h-5"
           :strokeWidth="1.5"
         >
           <path
@@ -67,40 +86,54 @@
         </svg>
         <template v-if="isMounted">
           <template v-if="user">
-            <span class="hidden md:block font-normal"> Hi, {{ getUserName() }}</span>
+            <span
+              class="propeller-account-menu__greeting hidden md:block font-normal"
+            >
+              Hi, {{ getUserName() }}</span
+            >
           </template>
 
           <template v-if="!user">
-            <span class="hidden md:block font-normal">{{
-              getLabel('accountLabel', 'Account')
-            }}</span>
+            <span
+              class="propeller-account-menu__greeting hidden md:block font-normal"
+              >{{ getLabel("accountLabel", "Account") }}</span
+            >
           </template>
         </template>
       </button>
 
       <template v-if="menuOpen">
         <div
-          :class="`absolute right-0 top-full mt-1 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-[9999]${
+          :class="`propeller-account-menu__popover absolute right-0 top-full mt-1 w-80 bg-card text-foreground rounded-[var(--radius-container)] shadow-lg border border-border py-4 px-5 z-[9999]${
             menuClassName ? ' ' + menuClassName : ''
           }`"
         >
           <template v-if="isMounted">
             <template v-if="!!user">
-              <div class="pb-3 mb-3 border-b border-gray-200">
-                <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-                  {{ getLabel('signedInAs', 'Signed in as') }}
+              <div
+                class="propeller-account-menu__user pb-3 mb-3 border-b border-border"
+              >
+                <p
+                  class="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1"
+                >
+                  {{ getLabel("signedInAs", "Signed in as") }}
                 </p>
-                <p class="font-medium text-gray-900 truncate">
+                <p
+                  class="propeller-account-menu__user-name font-medium text-foreground truncate"
+                >
                   {{ getUserName() }}
                 </p>
               </div>
-              <nav>
-                <ul class="space-y-0.5">
-                  <template :key="link.href" v-for="(link, index) in getMenuLinks()">
-                    <li>
+              <nav class="propeller-account-menu__nav">
+                <ul class="propeller-account-menu__list space-y-0.5">
+                  <template
+                    :key="link.href"
+                    v-for="(link, index) in getMenuLinks()"
+                  >
+                    <li class="propeller-account-menu__item">
                       <button
                         type="button"
-                        class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        class="propeller-account-menu__link flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-[var(--radius-control)] text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-colors"
                         @click="async (event) => handleMenuItemClick(link.href)"
                       >
                         {{ link.label }}
@@ -109,13 +142,15 @@
                   </template>
                 </ul>
               </nav>
-              <div class="mt-3 pt-3 border-t border-gray-200">
+              <div
+                class="propeller-account-menu__logout-wrapper mt-3 pt-3 border-t border-border"
+              >
                 <button
                   type="button"
-                  class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
+                  class="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-[var(--radius-control)] transition-colors"
                   @click="async (event) => handleLogoutClick()"
                 >
-                  {{ getLabel('logoutLabel', 'Log Out') }}
+                  {{ getLabel("logoutLabel", "Log Out") }}
                 </button>
               </div>
             </template>
@@ -124,9 +159,14 @@
               <template v-if="accountHeaderLoginForm !== false">
                 <LoginForm
                   :graphqlClient="graphqlClient"
-                  :title="loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')"
+                  :cart="cart"
+                  :title="
+                    loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')
+                  "
                   :subtitle="loginFormSubtitle ?? getLabel('loginSubtitle', '')"
-                  :buttonText="loginButtonText ?? getLabel('loginButton', 'Log In')"
+                  :buttonText="
+                    loginButtonText ?? getLabel('loginButton', 'Log In')
+                  "
                   :displayForgotPasswordLink="displayForgotPasswordLink"
                   :displayRegisterLink="displayRegisterLink"
                   :displayGuestCheckoutLink="displayGuestCheckoutLink"
@@ -136,7 +176,9 @@
                   :loginError="loginError"
                   :beforeLogin="beforeLogin"
                   :afterLogin="afterLogin"
-                  :onForgotPasswordClick="(event) => handleForgotPasswordClick()"
+                  :onForgotPasswordClick="
+                    (event) => handleForgotPasswordClick()
+                  "
                   :onRegisterClick="(event) => handleRegisterClick()"
                   :onGuestCheckoutClick="(event) => handleGuestCheckoutClick()"
                   :accountHeaderLoginForm="accountHeaderLoginForm"
@@ -144,16 +186,22 @@
               </template>
 
               <template v-if="accountHeaderLoginForm === false">
-                <div class="text-center py-4">
-                  <h4 class="text-lg font-semibold mb-2">
+                <div class="propeller-account-menu__login-cta text-center py-4">
+                  <h4
+                    class="propeller-account-menu__login-title text-lg font-semibold mb-2"
+                  >
                     {{ getMenuTitle() }}
                   </h4>
-                  <p class="text-sm text-gray-500 mb-4">
-                    {{ getLabel('loginSubtitle', 'Login to access your account') }}
+                  <p
+                    class="propeller-account-menu__login-subtitle text-sm text-muted-foreground mb-4"
+                  >
+                    {{
+                      getLabel("loginSubtitle", "Login to access your account")
+                    }}
                   </p>
                   <button
                     type="button"
-                    class="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
+                    class="propeller-account-menu__login-btn w-full inline-flex justify-center items-center px-4 py-2 rounded-[var(--radius-control)] bg-secondary text-primary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors"
                     @click="
                       async (event) => {
                         closeMenu();
@@ -161,7 +209,7 @@
                       }
                     "
                   >
-                    {{ getLabel('loginButton', 'Log In') }}
+                    {{ getLabel("loginButton", "Log In") }}
                   </button>
                 </div>
               </template>
@@ -174,11 +222,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
-import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
-import LoginForm from './LoginForm.vue';
-import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
+import { Cart, Contact, Customer, GraphQLClient } from "propeller-sdk-v2";
+import LoginForm from "./LoginForm.vue";
+import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface AccountMenuLink {
   /** Display label for the link */
@@ -281,8 +329,12 @@ export interface AccountIconAndMenuProps {
     user: Contact | Customer,
     accessToken?: string,
     refreshToken?: string,
-    expiresAt?: string
+    expiresAt?: string,
+    anonymousCart?: Cart | null,
   ) => void;
+
+  /** Anonymous cart snapshot — forwarded to the embedded `LoginForm` so its `afterLogin` receives it. */
+  cart?: Cart | null;
 
   // ── Existing callbacks ──────────────────────────────────────────────────
 
@@ -348,7 +400,7 @@ export interface AccountIconAndMenuProps {
    * - 'dropdown' (default): Header icon with popup menu
    * - 'sidebar': Always-visible vertical navigation for account layout
    */
-  variant?: 'dropdown' | 'sidebar';
+  variant?: "dropdown" | "sidebar";
 
   /**
    * Current route path, used in sidebar variant to highlight the active link.
@@ -376,18 +428,20 @@ interface AccountIconAndMenuState {
 const props = withDefaults(defineProps<AccountIconAndMenuProps>(), {
   showAccountMenuOnClick: true,
 });
-const isMounted = ref<AccountIconAndMenuState['isMounted']>(false);
-const menuOpen = ref<AccountIconAndMenuState['menuOpen']>(false);
-function _onDocumentClick() { menuOpen.value = false; }
-onMounted(() => document.addEventListener('click', _onDocumentClick));
-onUnmounted(() => document.removeEventListener('click', _onDocumentClick));
+const isMounted = ref<AccountIconAndMenuState["isMounted"]>(false);
+const menuOpen = ref<AccountIconAndMenuState["menuOpen"]>(false);
+function _onDocumentClick() {
+  menuOpen.value = false;
+}
+onMounted(() => document.addEventListener("click", _onDocumentClick));
+onUnmounted(() => document.removeEventListener("click", _onDocumentClick));
 
 onMounted(() => {
   isMounted.value = true;
 });
 
 const isSidebar = computed(() => {
-  return props.variant === 'sidebar';
+  return props.variant === "sidebar";
 });
 
 watch(
@@ -398,99 +452,115 @@ watch(
       menuOpen.value = false;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
-function getUserName(): ReturnType<AccountIconAndMenuState['getUserName']> {
+function getUserName(): ReturnType<AccountIconAndMenuState["getUserName"]> {
   const user = props.user as Contact | Customer;
-  if (!user) return '';
+  if (!user) return "";
   const parts = [user.firstName, user.lastName].filter(Boolean);
-  if (parts.length > 0) return parts.join(' ');
+  if (parts.length > 0) return parts.join(" ");
   if (user.firstName) return user.firstName;
   if (user.email) return user.email;
-  return 'User';
+  return "User";
 }
-function getLabel(key: string, fallback: string): ReturnType<AccountIconAndMenuState['getLabel']> {
+function getLabel(
+  key: string,
+  fallback: string,
+): ReturnType<AccountIconAndMenuState["getLabel"]> {
   return _getLabel(props.labels, key, fallback);
 }
-function getMenuTitle(): ReturnType<AccountIconAndMenuState['getMenuTitle']> {
+function getMenuTitle(): ReturnType<AccountIconAndMenuState["getMenuTitle"]> {
   return (
     props.accountMenuTitle ||
-    (props.labels as Record<string, string>)?.['accountMenuTitle'] ||
-    'My account'
+    (props.labels as Record<string, string>)?.["accountMenuTitle"] ||
+    "My account"
   );
 }
-function isActiveLink(href: string): ReturnType<AccountIconAndMenuState['isActiveLink']> {
+function isActiveLink(
+  href: string,
+): ReturnType<AccountIconAndMenuState["isActiveLink"]> {
   if (!props.currentPath) return false;
-  if (href.endsWith('/account')) return props.currentPath === href;
+  if (href.endsWith("/account")) return props.currentPath === href;
   return props.currentPath.startsWith(href);
 }
-function getMenuLinks(): ReturnType<AccountIconAndMenuState['getMenuLinks']> {
+function getMenuLinks(): ReturnType<AccountIconAndMenuState["getMenuLinks"]> {
   if (props.menuLinks && (props.menuLinks as AccountMenuLink[]).length > 0) {
     return props.menuLinks as AccountMenuLink[];
   }
   return [
     {
-      label: 'Dashboard',
-      href: '/account',
+      label: "Dashboard",
+      href: "/account",
     },
     {
-      label: 'Orders',
-      href: '/account/orders',
+      label: "Orders",
+      href: "/account/orders",
     },
     {
-      label: 'Addresses',
-      href: '/account/addresses',
+      label: "Addresses",
+      href: "/account/addresses",
     },
     {
-      label: 'Quotes',
-      href: '/account/quotes',
+      label: "Quotes",
+      href: "/account/quotes",
     },
     {
-      label: 'Invoices',
-      href: '/account/invoices',
+      label: "Invoices",
+      href: "/account/invoices",
     },
     {
-      label: 'Favorites',
-      href: '/account/favorites',
+      label: "Favorites",
+      href: "/account/favorites",
     },
   ] as AccountMenuLink[];
 }
-function handleIconClick(): ReturnType<AccountIconAndMenuState['handleIconClick']> {
-  console.log('[AccountMenu] click, menuOpen was:', menuOpen.value, 'showAccountMenuOnClick:', props.showAccountMenuOnClick);
+function handleIconClick(): ReturnType<
+  AccountIconAndMenuState["handleIconClick"]
+> {
+  console.log(
+    "[AccountMenu] click, menuOpen was:",
+    menuOpen.value,
+    "showAccountMenuOnClick:",
+    props.showAccountMenuOnClick,
+  );
   if (props.showAccountMenuOnClick !== false) {
     menuOpen.value = !menuOpen.value;
-    console.log('[AccountMenu] menuOpen is now:', menuOpen.value);
+    console.log("[AccountMenu] menuOpen is now:", menuOpen.value);
   } else {
     if (props.onAccountIconClick) props.onAccountIconClick();
   }
 }
 function handleMenuItemClick(
-  href: string
-): ReturnType<AccountIconAndMenuState['handleMenuItemClick']> {
+  href: string,
+): ReturnType<AccountIconAndMenuState["handleMenuItemClick"]> {
   menuOpen.value = false;
   if (props.onMenuItemClick) props.onMenuItemClick(href);
 }
-function handleLogoutClick(): ReturnType<AccountIconAndMenuState['handleLogoutClick']> {
+function handleLogoutClick(): ReturnType<
+  AccountIconAndMenuState["handleLogoutClick"]
+> {
   menuOpen.value = false;
   if (props.onLogoutClick) props.onLogoutClick();
 }
 function handleForgotPasswordClick(): ReturnType<
-  AccountIconAndMenuState['handleForgotPasswordClick']
+  AccountIconAndMenuState["handleForgotPasswordClick"]
 > {
   menuOpen.value = false;
   if (props.onForgotPasswordClick) props.onForgotPasswordClick();
 }
-function handleRegisterClick(): ReturnType<AccountIconAndMenuState['handleRegisterClick']> {
+function handleRegisterClick(): ReturnType<
+  AccountIconAndMenuState["handleRegisterClick"]
+> {
   menuOpen.value = false;
   if (props.onRegisterClick) props.onRegisterClick();
 }
 function handleGuestCheckoutClick(): ReturnType<
-  AccountIconAndMenuState['handleGuestCheckoutClick']
+  AccountIconAndMenuState["handleGuestCheckoutClick"]
 > {
   menuOpen.value = false;
   if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
 }
-function closeMenu(): ReturnType<AccountIconAndMenuState['closeMenu']> {
+function closeMenu(): ReturnType<AccountIconAndMenuState["closeMenu"]> {
   menuOpen.value = false;
 }
 </script>

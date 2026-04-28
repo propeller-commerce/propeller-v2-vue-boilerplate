@@ -1,88 +1,121 @@
 <template>
   <div
-    :class="`space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${
+    :class="`propeller-grid-filters space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${
       isPending ? 'opacity-50 pointer-events-none' : ''
     } ${className || ''}`"
+    :data-mobile="isMobile ? 'true' : 'false'"
+    :data-pending="isPending ? 'true' : 'false'"
   >
-    <template v-if="showPriceFilter() && (priceMin !== undefined || priceMax !== undefined)">
-      <div class="space-y-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Price Range</h3>
+    <template
+      v-if="
+        showPriceFilter() && (priceMin !== undefined || priceMax !== undefined)
+      "
+    >
+      <div class="propeller-grid-filters__price space-y-3">
+        <h3
+          class="propeller-grid-filters__price-title text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
+          Price Range
+        </h3>
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <span
-              class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
+              class="propeller-grid-filters__price-currency absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-foreground-subtle pointer-events-none"
               >€</span
             ><input
               type="number"
-              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
+              class="propeller-grid-filters__price-input w-full pl-6 pr-2 h-8 rounded-[var(--radius-control)] border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
               :value="currentMin"
               :min="getMinBound()"
               :max="getMaxBound()"
-              @change="async (e) => handleMinChange(parseFloat(e.target.value) || 0)"
+              @change="
+                async (e) => handleMinChange(parseFloat(e.target.value) || 0)
+              "
               @blur="async (event) => applyPrice()"
+              @keyup.enter="(e) => (e.target as HTMLInputElement).blur()"
             />
           </div>
-          <span class="text-gray-400 text-sm select-none">–</span>
+          <span
+            class="propeller-grid-filters__price-separator text-foreground-subtle text-sm select-none"
+            >–</span
+          >
           <div class="relative flex-1">
             <span
-              class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
+              class="propeller-grid-filters__price-currency absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-foreground-subtle pointer-events-none"
               >€</span
             ><input
               type="number"
-              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
+              class="propeller-grid-filters__price-input w-full pl-6 pr-2 h-8 rounded-[var(--radius-control)] border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
               :value="currentMax"
               :min="getMinBound()"
               :max="getMaxBound()"
-              @change="async (e) => handleMaxChange(parseFloat(e.target.value) || 0)"
+              @change="
+                async (e) => handleMaxChange(parseFloat(e.target.value) || 0)
+              "
               @blur="async (event) => applyPrice()"
+              @keyup.enter="(e) => (e.target as HTMLInputElement).blur()"
             />
           </div>
         </div>
-        <div class="relative h-4 pt-1">
+        <div class="propeller-grid-filters__price-slider relative h-4 pt-1">
           <input
             type="range"
-            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
+            class="propeller-grid-filters__price-slider-thumb absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMin"
-            @change="(e) => handleMinChange(parseFloat(e.target.value))"
+            @input="(e) => handleMinChange(parseFloat((e.target as HTMLInputElement).value))"
             @pointerup="applyPrice()"
             @touchend="applyPrice()"
+            @keyup.enter="applyPrice()"
           /><input
             type="range"
-            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
+            class="propeller-grid-filters__price-slider-thumb absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMax"
-            @change="(e) => handleMaxChange(parseFloat(e.target.value))"
+            @input="(e) => handleMaxChange(parseFloat((e.target as HTMLInputElement).value))"
             @pointerup="applyPrice()"
             @touchend="applyPrice()"
+            @keyup.enter="applyPrice()"
           />
-          <div class="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10"></div>
+          <div
+            class="propeller-grid-filters__price-slider-track absolute top-1.5 left-0 right-0 h-1.5 bg-surface-hover rounded z-10"
+          ></div>
         </div>
       </div>
-      <div class="h-px bg-gray-100"></div>
+      <div class="propeller-grid-filters__divider h-px bg-surface-hover"></div>
     </template>
 
     <template v-if="filters.length === 0">
-      <p class="text-sm text-gray-400 italic">No filters available</p>
+      <p
+        class="propeller-grid-filters__empty text-sm text-foreground-subtle italic"
+      >
+        No filters available
+      </p>
     </template>
 
-    <template :key="getFilterName(filter)" v-for="(filter, index) in getFilteredFilters()">
-      <div class="border-b border-gray-100 pb-3 last:border-b-0">
+    <template
+      :key="getFilterName(filter)"
+      v-for="(filter, index) in getFilteredFilters()"
+    >
+      <div
+        class="propeller-grid-filters__group border-b border-border-subtle pb-3 last:border-b-0"
+        :data-expanded="isExpanded(getFilterName(filter)) ? 'true' : 'false'"
+      >
         <button
           type="button"
-          class="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
+          class="propeller-grid-filters__group-toggle w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
           @click="async (event) => toggleAccordion(getFilterName(filter))"
         >
-          <span class="text-sm font-semibold text-gray-700 truncate">{{
-            getFilterTitle(filter)
-          }}</span
+          <span
+            class="propeller-grid-filters__group-title text-sm font-semibold text-muted-foreground truncate"
+            >{{ getFilterTitle(filter) }}</span
           ><svg
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            :class="`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200 ${
+            :class="`propeller-grid-filters__chevron h-4 w-4 flex-shrink-0 text-foreground-subtle transition-transform duration-200 ${
               isExpanded(getFilterName(filter)) ? 'rotate-180' : ''
             }`"
           >
@@ -95,18 +128,29 @@
           </svg>
         </button>
         <template v-if="isExpanded(getFilterName(filter))">
-          <div class="pt-2 space-y-1.5">
-            <template :key="option.value" v-for="(option, index) in getValidOptions(filter)">
-              <label class="flex items-center gap-2 cursor-pointer group"
+          <div class="propeller-grid-filters__options pt-2 space-y-1.5">
+            <template
+              :key="option.value"
+              v-for="(option, index) in getValidOptions(filter)"
+            >
+              <label
+                class="propeller-grid-filters__option flex items-center gap-2 cursor-pointer group"
                 ><input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
+                  class="propeller-grid-filters__checkbox h-4 w-4 rounded border-input text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
                   :checked="isSelected(getFilterName(filter), option.value)"
-                  @change="async (e) => handleCheckbox(filter, option.value, e.target.checked)"
+                  @change="
+                    async (e) =>
+                      handleCheckbox(filter, option.value, e.target.checked)
+                  "
                 /><span
-                  class="flex-1 text-sm text-gray-600 leading-none select-none group-hover:text-gray-900"
+                  class="propeller-grid-filters__option-label flex-1 text-sm text-muted-foreground leading-none select-none group-hover:text-foreground"
                   >{{ option.value
-                  }}<span class="ml-1 text-xs text-gray-400"> ({{ getCount(option) }}) </span></span
+                  }}<span
+                    class="propeller-grid-filters__option-count ml-1 text-xs text-foreground-subtle"
+                  >
+                    ({{ getCount(option) }})
+                  </span></span
                 ></label
               >
             </template>
@@ -118,9 +162,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
-import { Contact, Customer, AttributeFilter } from 'propeller-sdk-v2';
+import { Contact, Customer, AttributeFilter } from "propeller-sdk-v2";
 
 export interface GridFiltersProps {
   /**
@@ -209,7 +253,11 @@ interface GridFiltersState {
   isSelected: (filterName: string, value: string) => boolean;
   isExpanded: (filterName: string) => boolean;
   toggleAccordion: (filterName: string) => void;
-  handleCheckbox: (filter: AttributeFilter, value: string, checked: boolean) => void;
+  handleCheckbox: (
+    filter: AttributeFilter,
+    value: string,
+    checked: boolean,
+  ) => void;
   handleMinChange: (value: number) => void;
   handleMaxChange: (value: number) => void;
   applyPrice: () => void;
@@ -222,11 +270,11 @@ interface GridFiltersState {
 const props = withDefaults(defineProps<GridFiltersProps>(), {
   collapsed: true,
 });
-const selectedFilters = ref<GridFiltersState['selectedFilters']>({});
-const currentMin = ref<GridFiltersState['currentMin']>(0);
-const currentMax = ref<GridFiltersState['currentMax']>(9999);
-const expandedFilters = ref<GridFiltersState['expandedFilters']>({});
-const isPending = ref<GridFiltersState['isPending']>(false);
+const selectedFilters = ref<GridFiltersState["selectedFilters"]>({});
+const currentMin = ref<GridFiltersState["currentMin"]>(0);
+const currentMax = ref<GridFiltersState["currentMax"]>(9999);
+const expandedFilters = ref<GridFiltersState["expandedFilters"]>({});
+const isPending = ref<GridFiltersState["isPending"]>(false);
 
 watch(
   () => [props.filters],
@@ -237,13 +285,15 @@ watch(
       ...currentExp,
     };
     let changed = false;
-    ((props.filters as AttributeFilter[]) || []).forEach((f: AttributeFilter) => {
-      const n = f?.attributeDescription?.name;
-      if (n && nextExp[n] === undefined) {
-        nextExp[n] = open;
-        changed = true;
-      }
-    });
+    ((props.filters as AttributeFilter[]) || []).forEach(
+      (f: AttributeFilter) => {
+        const n = f?.attributeDescription?.name;
+        if (n && nextExp[n] === undefined) {
+          nextExp[n] = open;
+          changed = true;
+        }
+      },
+    );
     const sel = selectedFilters.value as Record<string, string[]>;
     Object.keys(nextExp).forEach((k: string) => {
       if (nextExp[k] && !(sel[k] || []).length) {
@@ -253,7 +303,7 @@ watch(
     });
     if (changed) expandedFilters.value = nextExp;
   },
-  { immediate: true }
+  { immediate: true },
 );
 watch(
   () => [props.priceMin, props.priceMax],
@@ -261,7 +311,7 @@ watch(
     currentMin.value = (props.priceMin as number) || 0;
     currentMax.value = (props.priceMax as number) || 9999;
   },
-  { immediate: true }
+  { immediate: true },
 );
 watch(
   () => [props.clearSignal],
@@ -272,7 +322,7 @@ watch(
     currentMax.value = (props.priceMax as number) || 9999;
     expandedFilters.value = {};
   },
-  { immediate: true }
+  { immediate: true },
 );
 watch(
   () => [props.activeTextFilters],
@@ -280,53 +330,67 @@ watch(
     if (!props.activeTextFilters) return;
     selectedFilters.value = props.activeTextFilters as Record<string, string[]>;
   },
-  { immediate: true }
+  { immediate: true },
 );
 watch(
   () => [props.activePriceMin, props.activePriceMax],
   () => {
-    if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
+    if (
+      props.activePriceMin === undefined &&
+      props.activePriceMax === undefined
+    ) {
       currentMin.value = (props.priceMin as number) || 0;
       currentMax.value = (props.priceMax as number) || 9999;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 watch(
   () => [props.isLoading],
   () => {
     if (!props.isLoading) isPending.value = false;
   },
-  { immediate: true }
+  { immediate: true },
 );
-function showPriceFilter(): ReturnType<GridFiltersState['showPriceFilter']> {
-  const mode = (props.portalMode as string) || 'open';
-  if (mode === 'open') return true;
+function showPriceFilter(): ReturnType<GridFiltersState["showPriceFilter"]> {
+  const mode = (props.portalMode as string) || "open";
+  if (mode === "open") return true;
   return !!props.user;
 }
-function getFilterName(filter: AttributeFilter): ReturnType<GridFiltersState['getFilterName']> {
-  return (filter as AttributeFilter)?.attributeDescription?.name || '';
+function getFilterName(
+  filter: AttributeFilter,
+): ReturnType<GridFiltersState["getFilterName"]> {
+  return (filter as AttributeFilter)?.attributeDescription?.name || "";
 }
-function getFilterTitle(filter: AttributeFilter): ReturnType<GridFiltersState['getFilterTitle']> {
+function getFilterTitle(
+  filter: AttributeFilter,
+): ReturnType<GridFiltersState["getFilterTitle"]> {
   return (
-    (filter as AttributeFilter)?.attributeDescription?.descriptions?.[0]?.value ||
+    (filter as AttributeFilter)?.attributeDescription?.descriptions?.[0]
+      ?.value ||
     (filter as AttributeFilter)?.attributeDescription?.name ||
-    ''
+    ""
   );
 }
-function getFilteredFilters(): ReturnType<GridFiltersState['getFilteredFilters']> {
+function getFilteredFilters(): ReturnType<
+  GridFiltersState["getFilteredFilters"]
+> {
   const list = (props.filters as AttributeFilter[]) || [];
   return list.filter((f: AttributeFilter) => {
     const opts = (f?.textFilters as any[]) || [];
-    return opts.some((o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0);
+    return opts.some(
+      (o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0,
+    );
   });
 }
-function getValidOptions(filter: AttributeFilter): ReturnType<GridFiltersState['getValidOptions']> {
+function getValidOptions(
+  filter: AttributeFilter,
+): ReturnType<GridFiltersState["getValidOptions"]> {
   return (((filter as AttributeFilter)?.textFilters as any[]) || []).filter(
-    (o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0
+    (o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0,
   );
 }
-function getSelectedCount(): ReturnType<GridFiltersState['getSelectedCount']> {
+function getSelectedCount(): ReturnType<GridFiltersState["getSelectedCount"]> {
   let n = 0;
   const sel = selectedFilters.value as Record<string, string[]>;
   Object.keys(sel).forEach((k: string) => {
@@ -334,19 +398,28 @@ function getSelectedCount(): ReturnType<GridFiltersState['getSelectedCount']> {
   });
   return n;
 }
-function hasActiveFilters(): ReturnType<GridFiltersState['hasActiveFilters']> {
+function hasActiveFilters(): ReturnType<GridFiltersState["hasActiveFilters"]> {
   const sel = selectedFilters.value as Record<string, string[]>;
   return Object.keys(sel).some((k: string) => (sel[k] || []).length > 0);
 }
-function isSelected(filterName: string, value: string): ReturnType<GridFiltersState['isSelected']> {
-  return ((selectedFilters.value as Record<string, string[]>)[filterName] || []).includes(value);
+function isSelected(
+  filterName: string,
+  value: string,
+): ReturnType<GridFiltersState["isSelected"]> {
+  return (
+    (selectedFilters.value as Record<string, string[]>)[filterName] || []
+  ).includes(value);
 }
-function isExpanded(filterName: string): ReturnType<GridFiltersState['isExpanded']> {
+function isExpanded(
+  filterName: string,
+): ReturnType<GridFiltersState["isExpanded"]> {
   const stored = (expandedFilters.value as Record<string, boolean>)[filterName];
   if (stored === undefined) return props.collapsed === false;
   return !!stored;
 }
-function toggleAccordion(filterName: string): ReturnType<GridFiltersState['toggleAccordion']> {
+function toggleAccordion(
+  filterName: string,
+): ReturnType<GridFiltersState["toggleAccordion"]> {
   const cur = !!(expandedFilters.value as Record<string, boolean>)[filterName];
   expandedFilters.value = {
     ...expandedFilters.value,
@@ -356,11 +429,13 @@ function toggleAccordion(filterName: string): ReturnType<GridFiltersState['toggl
 function handleCheckbox(
   filter: AttributeFilter,
   value: string,
-  checked: boolean
-): ReturnType<GridFiltersState['handleCheckbox']> {
-  const name = (filter as AttributeFilter)?.attributeDescription?.name || '';
+  checked: boolean,
+): ReturnType<GridFiltersState["handleCheckbox"]> {
+  const name = (filter as AttributeFilter)?.attributeDescription?.name || "";
   const cur = (selectedFilters.value as Record<string, string[]>)[name] || [];
-  const next = checked ? [...cur, value] : cur.filter((v: string) => v !== value);
+  const next = checked
+    ? [...cur, value]
+    : cur.filter((v: string) => v !== value);
   selectedFilters.value = {
     ...selectedFilters.value,
     [name]: next,
@@ -375,35 +450,40 @@ function handleCheckbox(
   props.onFilterChange(filter, value);
   if (props.getSelectedFilters) props.getSelectedFilters();
 }
-function handleMinChange(value: number): ReturnType<GridFiltersState['handleMinChange']> {
+function handleMinChange(
+  value: number,
+): ReturnType<GridFiltersState["handleMinChange"]> {
   const n = value > currentMax.value ? currentMax.value : value;
   currentMin.value = n;
 }
-function handleMaxChange(value: number): ReturnType<GridFiltersState['handleMaxChange']> {
+function handleMaxChange(
+  value: number,
+): ReturnType<GridFiltersState["handleMaxChange"]> {
   const n = value < currentMin.value ? currentMin.value : value;
   currentMax.value = n;
 }
-function applyPrice(): ReturnType<GridFiltersState['applyPrice']> {
+function applyPrice(): ReturnType<GridFiltersState["applyPrice"]> {
   isPending.value = true;
-  if (props.onPriceChange) props.onPriceChange(currentMin.value, currentMax.value);
+  if (props.onPriceChange)
+    props.onPriceChange(currentMin.value, currentMax.value);
   if (props.getSelectedFilters) props.getSelectedFilters();
 }
-function clearAll(): ReturnType<GridFiltersState['clearAll']> {
+function clearAll(): ReturnType<GridFiltersState["clearAll"]> {
   selectedFilters.value = {};
   currentMin.value = (props.priceMin as number) || 0;
   currentMax.value = (props.priceMax as number) || 9999;
   if (props.onClearFilters) props.onClearFilters();
   if (props.getSelectedFilters) props.getSelectedFilters();
 }
-function getCount(option: any): ReturnType<GridFiltersState['getCount']> {
+function getCount(option: any): ReturnType<GridFiltersState["getCount"]> {
   const c = option?.count || 0;
   const ca = option?.countActive || 0;
   return c === 0 && ca > 0 ? ca : c;
 }
-function getMinBound(): ReturnType<GridFiltersState['getMinBound']> {
+function getMinBound(): ReturnType<GridFiltersState["getMinBound"]> {
   return (props.priceMin as number) || 0;
 }
-function getMaxBound(): ReturnType<GridFiltersState['getMaxBound']> {
+function getMaxBound(): ReturnType<GridFiltersState["getMaxBound"]> {
   return (props.priceMax as number) || 9999;
 }
 </script>

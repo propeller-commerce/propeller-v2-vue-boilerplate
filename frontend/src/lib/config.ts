@@ -1,7 +1,14 @@
 import { Enums } from 'propeller-sdk-v2'
 import type { Category, Cluster, Product } from 'propeller-sdk-v2'
 
+// Offset 1 = "first image only" — used in product cards / grids where a single
+// thumbnail is enough.
 export const imageSearchFiltersGrid = { page: 1, offset: 1 }
+
+// Offset 20 = "all images for this product" — used on detail pages so the
+// gallery can render the full set. Keep in sync with nextDemo's data/defaults.ts
+// `imageSearchFilters` constant.
+export const imageSearchFilters = { page: 1, offset: 20 }
 
 export const imageVariantFiltersSmall = {
   transformations: [{ name: 'thumb', transformation: { format: Enums.Format.WEBP, height: 100, width: 100, fit: Enums.Fit.BOUNDS } }],
@@ -17,9 +24,21 @@ export const imageVariantFiltersLarge = {
 
 const URL_PATTERN = import.meta.env.VITE_URL_PATTERN || 'page/id/slug'
 
+/**
+ * Languages with localized URL prefixing. The DEFAULT_LANGUAGE entry stays
+ * unprefixed; every other entry gets a `/${lang.toLowerCase()}` prefix on
+ * navigation. Keep this list in sync with the router's `:lang(...)` regex.
+ */
+export const DEFAULT_LANGUAGE = (import.meta.env.VITE_DEFAULT_LANGUAGE || 'NL').toUpperCase()
+export const SUPPORTED_LANGUAGES = ['NL', 'EN'] as const
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
+
+/** Languages that get a URL prefix (everything except the default). */
+export const PREFIXED_LANGUAGES = SUPPORTED_LANGUAGES.filter((l) => l !== DEFAULT_LANGUAGE)
+
 function buildEntityUrl(page: string, id?: number | string, slug?: string, pattern?: string, language?: string): string {
   const p = pattern || URL_PATTERN
-  const prefix = language && language.toUpperCase() !== (import.meta.env.VITE_DEFAULT_LANGUAGE || 'NL').toUpperCase()
+  const prefix = language && language.toUpperCase() !== DEFAULT_LANGUAGE
     ? `/${language.toLowerCase()}` : ''
   const parts: string[] = []
   p.split('/').forEach(token => {
@@ -34,13 +53,47 @@ export const baseCategoryId = parseInt(import.meta.env.VITE_BASE_CATEGORY_ID || 
 export const menuDepth = parseInt(import.meta.env.VITE_MENU_DEPTH || '3', 10)
 export const channelId = parseInt(import.meta.env.VITE_CHANNEL_ID || '1', 10)
 
+/**
+ * Prepends `/<lang>` to a path when `language` is non-default. Idempotent —
+ * does nothing if the path already starts with the prefix, so it's safe to
+ * call multiple times during navigation.
+ */
 export function localizeHref(path: string, language?: string): string {
-  const defaultLang = (import.meta.env.VITE_DEFAULT_LANGUAGE || 'NL').toUpperCase()
-  if (!language || language.toUpperCase() === defaultLang) return path
-  return `/${language.toLowerCase()}${path}`
+  if (!language) return path
+  const lang = language.toUpperCase()
+  if (lang === DEFAULT_LANGUAGE) return path
+  const prefix = `/${lang.toLowerCase()}`
+  if (path === prefix || path.startsWith(prefix + '/')) return path
+  return path === '/' ? prefix : `${prefix}${path}`
+}
+
+/**
+ * Strips a known supported-language prefix from a pathname, returning the
+ * un-prefixed canonical path. Used by the language switcher to compute
+ * "the same page in another language" from any current URL.
+ */
+export function stripLanguagePrefix(pathname: string): string {
+  const match = pathname.match(/^\/([a-z]{2})(\/|$)/)
+  if (!match) return pathname
+  const seg = match[1].toUpperCase()
+  if (!PREFIXED_LANGUAGES.includes(seg as SupportedLanguage)) return pathname
+  const rest = pathname.slice(3) // remove '/xx'
+  return rest || '/'
+}
+
+/**
+ * Detects the language from a URL pathname.
+ * Returns the matched supported language, or DEFAULT_LANGUAGE when no prefix.
+ */
+export function detectLanguageFromPath(pathname: string): SupportedLanguage {
+  const match = pathname.match(/^\/([a-z]{2})(\/|$)/)
+  if (!match) return DEFAULT_LANGUAGE as SupportedLanguage
+  const seg = match[1].toUpperCase() as SupportedLanguage
+  return PREFIXED_LANGUAGES.includes(seg) ? seg : (DEFAULT_LANGUAGE as SupportedLanguage)
 }
 
 export const configuration = {
+  imageSearchFilters,
   imageSearchFiltersGrid,
   imageVariantFiltersSmall,
   imageVariantFiltersMedium,
