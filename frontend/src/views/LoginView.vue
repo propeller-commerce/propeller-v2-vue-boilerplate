@@ -80,7 +80,7 @@ async function handleLoginSuccess(
     if (!targetCart) {
       targetCart = await resolveCart()
     }
-    await mergeAnonymousCart({
+    const merged = await mergeAnonymousCart({
       graphqlClient,
       targetCartId: targetCart.cartId,
       anonymousCart,
@@ -88,6 +88,7 @@ async function handleLoginSuccess(
       imageSearchFilters: configuration.imageSearchFiltersGrid,
       imageVariantFilters: configuration.imageVariantFiltersSmall,
     })
+    if (merged) targetCart = merged
 
     if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
       try {
@@ -96,8 +97,6 @@ async function handleLoginSuccess(
         console.error('[auth] Failed to delete anonymous cart', e)
       }
     }
-
-    targetCart = await fetchActiveCart()
   }
 
   cartStore.setCart(targetCart ?? null)

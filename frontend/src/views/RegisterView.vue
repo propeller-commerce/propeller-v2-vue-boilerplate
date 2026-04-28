@@ -101,7 +101,7 @@ async function handleAfterRegistration(
     if (!targetCart) {
       targetCart = await resolveCart();
     }
-    await mergeAnonymousCart({
+    const merged = await mergeAnonymousCart({
       graphqlClient,
       targetCartId: targetCart.cartId,
       anonymousCart,
@@ -109,6 +109,7 @@ async function handleAfterRegistration(
       imageSearchFilters: configuration.imageSearchFiltersGrid,
       imageVariantFilters: configuration.imageVariantFiltersSmall,
     });
+    if (merged) targetCart = merged;
 
     if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
       try {
@@ -119,8 +120,6 @@ async function handleAfterRegistration(
         console.error("[auth] Failed to delete anonymous cart", e);
       }
     }
-
-    targetCart = await fetchActiveCart();
   }
 
   cartStore.setCart(targetCart ?? null);
