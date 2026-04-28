@@ -984,6 +984,7 @@ async function handleSubmit(e: Event | any) {
     country: billingCountry.value,
     deliveryStreet: deliveryStreet.value,
     deliveryNumber: deliveryNumber.value,
+    deliveryNumberExtension: deliveryNumberExtension.value,
     deliveryPostalCode: deliveryPostalCode.value,
     deliveryCity: deliveryCity.value,
     deliveryCountry: deliveryCountry.value,

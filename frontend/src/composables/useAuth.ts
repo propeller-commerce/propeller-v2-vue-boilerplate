@@ -66,6 +66,7 @@ export interface RegisterContactInput {
   country?: string;
   deliveryStreet?: string;
   deliveryNumber?: string;
+  deliveryNumberExtension?: string;
   deliveryPostalCode?: string;
   deliveryCity?: string;
   deliveryCountry?: string;
@@ -82,11 +83,13 @@ export interface RegisterCustomerInput {
   gender?: Enums.Gender;
   street?: string;
   number?: string;
+  numberExtension?: string;
   postalCode?: string;
   city?: string;
   country?: string;
   deliveryStreet?: string;
   deliveryNumber?: string;
+  deliveryNumberExtension?: string;
   deliveryPostalCode?: string;
   deliveryCity?: string;
   deliveryCountry?: string;
@@ -226,8 +229,10 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
       // doesn't throw on partial-data responses, so this try/catch is defensive
       // — if the SDK behavior changes, we still continue past the partial error
       // because the contact was created server-side regardless.
+      let registeredContactId: number | undefined;
       try {
-        await userService.registerContact(contactInput);
+        const registerResult = await userService.registerContact(contactInput);
+        registeredContactId = (registerResult?.contact as unknown as Contact | undefined)?.contactId;
       } catch {
         // Swallow: contact creation succeeded server-side; the only failing
         // sub-selection is the favoriteLists field, which is empty for new users.
@@ -237,6 +242,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         const invoiceAddress: CompanyAddressCreateInput = {
           firstName: input.firstName,
           lastName: input.lastName,
+          ...(input.gender && { gender: input.gender }),
           street: input.street,
           number: input.number,
           numberExtension: input.numberExtension,
@@ -265,8 +271,10 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
           const deliveryAddress: CompanyAddressCreateInput = {
             firstName: input.firstName,
             lastName: input.lastName,
+            ...(input.gender && { gender: input.gender }),
             street: input.deliveryStreet,
             number: input.deliveryNumber,
+            numberExtension: input.deliveryNumberExtension,
             postalCode: input.deliveryPostalCode ?? '',
             city: input.deliveryCity ?? '',
             country: input.deliveryCountry ?? 'NL',
@@ -275,6 +283,18 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
             companyId,
           };
           await addressService.createCompanyAddress(deliveryAddress);
+        }
+      }
+
+      if (registeredContactId) {
+        try {
+          await userService.triggerContactSendWelcomeEmailEvent({
+            contactId: registeredContactId,
+            language: preferredLanguage,
+            ...(configuration?.channelId && { channelId: configuration.channelId }),
+          });
+        } catch (e) {
+          console.error('Failed to send welcome email to contact', e);
         }
       }
 
@@ -330,8 +350,10 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         const invoiceAddress: CustomerAddressCreateInput = {
           firstName: input.firstName,
           lastName: input.lastName,
+          ...(input.gender && { gender: input.gender }),
           street: input.street,
           number: input.number,
+          numberExtension: input.numberExtension,
           postalCode: input.postalCode ?? '',
           city: input.city ?? '',
           country: input.country ?? 'NL',
@@ -356,8 +378,10 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
           const deliveryAddress: CustomerAddressCreateInput = {
             firstName: input.firstName,
             lastName: input.lastName,
+            ...(input.gender && { gender: input.gender }),
             street: input.deliveryStreet,
             number: input.deliveryNumber,
+            numberExtension: input.deliveryNumberExtension,
             postalCode: input.deliveryPostalCode ?? '',
             city: input.deliveryCity ?? '',
             country: input.deliveryCountry ?? 'NL',
@@ -366,6 +390,18 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
             customerId: customer.customerId,
           };
           await addressService.createCustomerAddress(deliveryAddress);
+        }
+      }
+
+      if (isCustomer(loginResult.user ?? null)) {
+        try {
+          await userService.triggerCustomerSendWelcomeEmailEvent({
+            customerId: (loginResult.user as Customer).customerId,
+            language: preferredLanguage,
+            ...(configuration?.channelId && { channelId: configuration.channelId }),
+          });
+        } catch (e) {
+          console.error('Failed to send welcome email to customer', e);
         }
       }
 
