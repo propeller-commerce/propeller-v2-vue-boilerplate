@@ -41,17 +41,42 @@
             :language="languageStore.language"
           />
 
-          <div v-if="showLanguageSwitcher && availableLanguages.length > 1" class="flex items-center gap-1.5 hover:text-white/80 transition-colors cursor-pointer">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" :stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-            </svg>
-            <select
-              :value="languageStore.language"
-              @change="(e) => switchLanguage((e.target as HTMLSelectElement).value)"
-              class="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
+          <div v-if="showLanguageSwitcher && availableLanguages.length > 1" ref="langMenuRef" class="relative">
+            <button
+              type="button"
+              :aria-haspopup="'listbox'"
+              :aria-expanded="showLangMenu"
+              aria-label="Select language"
+              class="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-control)] text-xs font-medium hover:bg-white/10 transition-colors"
+              @click="toggleLangMenu"
             >
-              <option v-for="lang in availableLanguages" :key="lang" :value="lang">{{ lang }}</option>
-            </select>
+              <Globe class="w-3.5 h-3.5" />
+              <span>{{ activeLanguage }}</span>
+              <ChevronDown :class="['w-3 h-3 transition-transform', showLangMenu ? 'rotate-180' : '']" />
+            </button>
+            <div
+              v-if="showLangMenu"
+              role="listbox"
+              class="absolute right-0 top-full mt-2 z-[60] min-w-[10rem] rounded-[var(--radius-container)] border border-border bg-card text-foreground shadow-lg overflow-hidden"
+            >
+              <button
+                v-for="lang in availableLanguages"
+                :key="lang"
+                type="button"
+                role="option"
+                :aria-selected="activeLanguage === lang.toUpperCase()"
+                :class="[
+                  'w-full flex items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-left transition-colors',
+                  activeLanguage === lang.toUpperCase()
+                    ? 'bg-primary/5 text-primary'
+                    : 'hover:bg-surface-hover',
+                ]"
+                @click="selectLanguage(lang)"
+              >
+                <span>{{ lang.toUpperCase() }}</span>
+                <Check v-if="activeLanguage === lang.toUpperCase()" class="w-4 h-4 text-primary" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -235,7 +260,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Menu as MenuIcon } from 'lucide-vue-next'
+import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-vue-next'
 import { CartService, Enums } from 'propeller-sdk-v2'
 import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
@@ -246,7 +271,7 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { useCart } from '@/composables/useCart'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import { configuration, localizeHref, stripLanguagePrefix } from '@/lib/config'
+import { configuration, localizeHref, stripLanguagePrefix, detectLanguageFromPath } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
 
@@ -277,6 +302,44 @@ const headerRef = ref<HTMLElement | null>(null)
 const mainMenuRef = ref<HTMLDivElement | null>(null)
 const showMainMenu = ref(false)
 const showMobileMenu = ref(false)
+const langMenuRef = ref<HTMLDivElement | null>(null)
+const showLangMenu = ref(false)
+
+// The selected language displayed by the switcher is derived from the URL
+// path (mirrors the React/Next behaviour where `language` is computed from
+// `window.location.pathname`). The store can lag behind during initial
+// navigation or hot-reload, but `route.path` is always the source of truth:
+// if you're on `/en/...` you're seeing English content, period.
+const activeLanguage = computed(() => detectLanguageFromPath(route.path))
+
+function toggleLangMenu() {
+  showLangMenu.value = !showLangMenu.value
+}
+
+function selectLanguage(lang: string) {
+  switchLanguage(lang)
+  showLangMenu.value = false
+}
+
+function handleLangClickOutside(event: MouseEvent) {
+  if (langMenuRef.value && !langMenuRef.value.contains(event.target as Node)) {
+    showLangMenu.value = false
+  }
+}
+
+function handleLangKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') showLangMenu.value = false
+}
+
+watch(showLangMenu, (open) => {
+  if (open) {
+    document.addEventListener('mousedown', handleLangClickOutside)
+    document.addEventListener('keydown', handleLangKeydown)
+  } else {
+    document.removeEventListener('mousedown', handleLangClickOutside)
+    document.removeEventListener('keydown', handleLangKeydown)
+  }
+})
 
 // CMS settings — replace with a global store when CMS integration is added
 const topBarEnabled = ref(true)
