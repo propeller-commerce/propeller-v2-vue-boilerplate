@@ -274,6 +274,8 @@ import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import { configuration, localizeHref, stripLanguagePrefix, detectLanguageFromPath } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
+import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart'
+import { initCart } from '@/composables/shared/utils/cartInit'
 
 import SearchBar from '@/components/propeller/SearchBar.vue'
 import PropellerMenu from '@/components/propeller/Menu.vue'
@@ -290,7 +292,12 @@ const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 
-const { fetchActiveCart, resolveCart } = useCart({
+// `fetchActiveCart` here is the composable-bound version still used by
+// handleCompanyChange (which fires AFTER login and relies on the reactive
+// authStore). The login/register flow uses the shared `fetchActiveCart`
+// util (imported above as `fetchActiveCartShared`) directly with the
+// freshly-authenticated user, sidestepping any reactive-source staleness.
+const { fetchActiveCart } = useCart({
   graphqlClient,
   user: computed(() => authStore.user as AnyUser),
   companyId: computed(() => companyStore.selectedCompany?.companyId ?? undefined),
@@ -436,13 +443,31 @@ async function handleAfterLogin(
     languageStore.setLanguage(userLang)
   }
 
-  let targetCart = await fetchActiveCart()
+  // Use the shared fetchActiveCart util with the freshly-logged-in user
+  // rather than the composable's reactive `fetchActiveCart` — the composable
+  // was created before login completed, so its internal `user.value` may
+  // still be stale when called here. This mirrors the React login page fix.
+  let targetCart = await fetchActiveCartShared({
+    graphqlClient,
+    user: cleanUser,
+    companyId: contactCompany?.companyId,
+    language: languageStore.language,
+    imageSearchFilters: configuration.imageSearchFiltersGrid,
+    imageVariantFilters: configuration.imageVariantFiltersSmall,
+  })
 
   if (anonymousCart?.items?.length) {
     if (!targetCart) {
-      targetCart = await resolveCart()
+      targetCart = await initCart({
+        graphqlClient,
+        user: cleanUser,
+        companyId: contactCompany?.companyId,
+        language: languageStore.language,
+        imageSearchFilters: configuration.imageSearchFiltersGrid,
+        imageVariantFilters: configuration.imageVariantFiltersSmall,
+      })
     }
-    await mergeAnonymousCart({
+    const merged = await mergeAnonymousCart({
       graphqlClient,
       targetCartId: targetCart.cartId,
       anonymousCart,
@@ -450,6 +475,7 @@ async function handleAfterLogin(
       imageSearchFilters: configuration.imageSearchFiltersGrid,
       imageVariantFilters: configuration.imageVariantFiltersSmall,
     })
+    if (merged) targetCart = merged
 
     if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
       try {
@@ -458,8 +484,6 @@ async function handleAfterLogin(
         console.error('[auth] Failed to delete anonymous cart', e)
       }
     }
-
-    targetCart = await fetchActiveCart()
   }
 
   cartStore.setCart(targetCart ?? null)

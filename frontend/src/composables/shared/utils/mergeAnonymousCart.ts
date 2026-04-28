@@ -46,6 +46,17 @@ export async function mergeAnonymousCart(
   for (const item of items as CartMainItem[]) {
     if (!item.productId || !item.quantity) continue;
 
+    // Resolve clusterId from either the top-level field or the nested cluster
+    // object — depending on how the item was originally added (PDP vs. cluster
+    // page) and how the cart was serialised, the field can live in either spot.
+    const itemAny = item as any;
+    const resolvedClusterId =
+      itemAny.clusterId ??
+      itemAny.cluster?.clusterId ??
+      itemAny._clusterId ??
+      itemAny._cluster?._clusterId ??
+      itemAny._cluster?.clusterId;
+
     const childItems = item.childItems
       ?.filter((c: any) => c.productId)
       .map((c: any) => ({
@@ -59,7 +70,8 @@ export async function mergeAnonymousCart(
         input: {
           productId: item.productId,
           quantity: item.quantity,
-          ...(item.clusterId !== undefined && { clusterId: item.clusterId }),
+          ...(resolvedClusterId !== undefined &&
+            resolvedClusterId !== null && { clusterId: resolvedClusterId }),
           ...(childItems && childItems.length > 0 && { childItems }),
           ...(item.notes && { notes: item.notes }),
         },

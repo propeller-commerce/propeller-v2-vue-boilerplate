@@ -50,9 +50,17 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: () => proxyRewritePath,
           configure: (proxy) => {
-            proxy.on('proxyReq', (proxyReq) => {
+            proxy.on('proxyReq', (proxyReq, req) => {
               proxyReq.setHeader('apikey', apiKey)
               proxyReq.setHeader('Content-Type', 'application/json')
+              // Forward the browser's Authorization header so authenticated
+              // SDK calls (e.g. cartAddItem after login) carry the user's
+              // session token. Without this, Propeller treats every request
+              // as anonymous and operations on user-owned carts return null.
+              const auth = req.headers['authorization']
+              if (auth) {
+                proxyReq.setHeader('Authorization', Array.isArray(auth) ? auth[0] : auth)
+              }
             })
           },
         },
@@ -61,9 +69,13 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace('/api/order-editor', ''),
           configure: (proxy) => {
-            proxy.on('proxyReq', (proxyReq) => {
+            proxy.on('proxyReq', (proxyReq, req) => {
               proxyReq.setHeader('apikey', orderEditorApiKey)
               proxyReq.setHeader('Content-Type', 'application/json')
+              const auth = req.headers['authorization']
+              if (auth) {
+                proxyReq.setHeader('Authorization', Array.isArray(auth) ? auth[0] : auth)
+              }
             })
           },
         },
