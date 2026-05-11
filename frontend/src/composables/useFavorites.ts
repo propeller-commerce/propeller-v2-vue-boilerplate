@@ -55,7 +55,11 @@ export interface UseFavoritesReturn {
   deleteList: () => Promise<void>;
   createList: (name: string, isDefault: boolean) => Promise<void>;
   addToList: (listId: string, productId?: number, clusterId?: number) => Promise<void>;
-  removeFromList: (listId: string, productId?: number, clusterId?: number) => Promise<void>;
+  removeFromList: (
+    listId: string,
+    productId?: number | number[],
+    clusterId?: number | number[],
+  ) => Promise<void>;
   isProductInList: (listId: string, productId: number) => ComputedRef<boolean>;
 }
 
@@ -198,12 +202,19 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
     }
   }
 
-  async function removeFromList(listId: string, productId?: number, clusterId?: number): Promise<void> {
+  async function removeFromList(
+    listId: string,
+    productId?: number | number[],
+    clusterId?: number | number[],
+  ): Promise<void> {
+    const productIds = productId === undefined ? [] : Array.isArray(productId) ? productId : [productId];
+    const clusterIds = clusterId === undefined ? [] : Array.isArray(clusterId) ? clusterId : [clusterId];
+    if (productIds.length === 0 && clusterIds.length === 0) return;
     try {
       const service = new FavoriteListService(graphqlClient);
       const updated = await service.removeFavoriteListItems(listId, {
-        ...(productId && { productIds: [productId] }),
-        ...(clusterId && { clusterIds: [clusterId] }),
+        ...(productIds.length && { productIds }),
+        ...(clusterIds.length && { clusterIds }),
       });
       lists.value = lists.value.map((l: FavoriteList) => String(l.id) === listId ? updated : l);
     } catch (e: unknown) {

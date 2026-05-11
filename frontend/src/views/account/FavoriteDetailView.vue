@@ -11,6 +11,7 @@
       :favoriteListId="String(route.params.id)"
       :onListLoaded="(list: any) => { listName = list?.name || '' }"
       :onItemDelete="handleItemDelete"
+      :onItemsDelete="handleItemsDelete"
       :configuration="configuration"
       :cartId="cartStore.cartId || undefined"
       :createCart="true"
@@ -60,6 +61,19 @@ async function handleItemDelete(itemId: string, itemType?: string) {
   } else {
     await removeFromList(listId, numericId, undefined)
   }
+  await authStore.refreshUser()
+}
+
+async function handleItemsDelete(items: { id: string; type: 'product' | 'cluster' }[]) {
+  if (items.length === 0) return
+  const listId = String(route.params.id)
+  const productIds = items.filter((i) => i.type === 'product').map((i) => Number(i.id))
+  const clusterIds = items.filter((i) => i.type === 'cluster').map((i) => Number(i.id))
+  await removeFromList(
+    listId,
+    productIds.length ? productIds : undefined,
+    clusterIds.length ? clusterIds : undefined,
+  )
   await authStore.refreshUser()
 }
 </script>

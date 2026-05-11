@@ -26,6 +26,21 @@
     <template v-if="!loading && isMounted">
       <template v-if="allItems.length > 0">
         <div class="propeller-favorite-list-details__list space-y-3">
+          <div class="propeller-favorite-list-details__select-all flex items-center gap-2 pb-2">
+            <input
+              id="favorite-list-select-all-top"
+              type="checkbox"
+              class="propeller-favorite-list-details__select-all-checkbox h-4 w-4 rounded border-border accent-secondary cursor-pointer"
+              :checked="isAllPageSelected()"
+              @change="togglePageSelectAll()"
+            />
+            <label
+              for="favorite-list-select-all-top"
+              class="propeller-favorite-list-details__select-all-label text-sm font-medium cursor-pointer select-none"
+            >
+              {{ getLabel("selectAll", "Select all") }}
+            </label>
+          </div>
           <template
             :key="
               'productId' in item
@@ -34,37 +49,49 @@
             "
             v-for="(item, idx) in getPagedItems()"
           >
-            <div>
-              <FavoriteListItem
-                :item="item"
-                :graphqlClient="graphqlClient"
-                :user="user"
-                :cartId="cartId"
-                :createCart="createCart"
-                :onCartCreated="onCartCreated"
-                :onAddToCart="onAddToCart"
-                :afterAddToCart="afterAddToCart"
-                :showModal="showModal"
-                :allowIncrDecr="allowIncrDecr"
-                :enableStockValidation="enableStockValidation"
-                :language="language"
-                :onProceedToCheckout="onProceedToCheckout"
-                :onRequestQuoteClick="onRequestQuoteClick"
-                :addToCartLabels="addToCartLabels"
-                :stockLabels="stockLabels"
-                :labels="itemLabels"
-                :configuration="configuration"
-                :titleLinkable="titleLinkable"
-                :showStockComponent="showStockComponent"
-                :showAvailability="showAvailability"
-                :showStock="showStock"
-                :showSku="showSku"
-                :allowAddToCart="allowAddToCart"
-                :showDelete="showDelete"
-                :onDelete="(itemId) => handleItemDelete(itemId)"
-                :onItemClick="onItemClick"
-                :includeTax="includeTax"
-              ></FavoriteListItem>
+            <div
+              class="propeller-favorite-list-details__row flex items-center gap-3"
+              :data-selected="isRowSelected(item) ? 'true' : 'false'"
+            >
+              <input
+                type="checkbox"
+                class="propeller-favorite-list-details__row-checkbox h-4 w-4 flex-shrink-0 rounded border-border accent-secondary cursor-pointer"
+                :checked="isRowSelected(item)"
+                @change="toggleRow(item)"
+                :aria-label="getLabel('selectItem', 'Select item')"
+              />
+              <div class="propeller-favorite-list-details__row-item flex-1 min-w-0">
+                <FavoriteListItem
+                  :item="item"
+                  :graphqlClient="graphqlClient"
+                  :user="user"
+                  :cartId="cartId"
+                  :createCart="createCart"
+                  :onCartCreated="onCartCreated"
+                  :onAddToCart="onAddToCart"
+                  :afterAddToCart="afterAddToCart"
+                  :showModal="showModal"
+                  :allowIncrDecr="allowIncrDecr"
+                  :enableStockValidation="enableStockValidation"
+                  :language="language"
+                  :onProceedToCheckout="onProceedToCheckout"
+                  :onRequestQuoteClick="onRequestQuoteClick"
+                  :addToCartLabels="addToCartLabels"
+                  :stockLabels="stockLabels"
+                  :labels="itemLabels"
+                  :configuration="configuration"
+                  :titleLinkable="titleLinkable"
+                  :showStockComponent="showStockComponent"
+                  :showAvailability="showAvailability"
+                  :showStock="showStock"
+                  :showSku="showSku"
+                  :allowAddToCart="allowAddToCart"
+                  :showDelete="showDelete"
+                  :onDelete="(itemId) => handleItemDelete(itemId)"
+                  :onItemClick="onItemClick"
+                  :includeTax="includeTax"
+                ></FavoriteListItem>
+              </div>
             </div>
           </template>
           <template v-if="showPagination !== false && getTotalPages() > 1">
@@ -78,6 +105,16 @@
           </template>
         </div>
       </template>
+
+      <div class="propeller-favorite-list-details__add-wrapper mt-6">
+        <button
+          type="button"
+          class="propeller-favorite-list-details__add-btn inline-flex items-center justify-center rounded-[var(--radius-control)] bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90"
+          @click="showAddModal = true"
+        >
+          {{ getLabel("addProductDirectly", "Add product directly to this wishlist") }}
+        </button>
+      </div>
 
       <template v-if="allItems.length === 0">
         <div
@@ -123,11 +160,217 @@
         </div>
       </template>
     </template>
+
+    <template v-if="selectedIds.size > 0">
+      <div class="propeller-favorite-list-details__floating-bar fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card shadow-lg">
+        <div class="propeller-favorite-list-details__floating-bar-inner flex items-center justify-between gap-4 px-6 py-4">
+          <div class="propeller-favorite-list-details__floating-bar-status flex items-center gap-2">
+            <input
+              id="favorite-list-select-all-floating"
+              type="checkbox"
+              class="h-4 w-4 rounded border-border accent-secondary cursor-pointer"
+              :checked="isAllPageSelected()"
+              @change="togglePageSelectAll()"
+            />
+            <label
+              for="favorite-list-select-all-floating"
+              class="text-sm font-medium cursor-pointer select-none"
+            >
+              {{ getLabel("selectAll", "Select all") }}
+            </label>
+            <span class="propeller-favorite-list-details__floating-bar-count text-sm text-foreground-subtle ml-3">
+              {{ selectedIds.size }} {{ getLabel("ofWord", "of") }} {{ allItems.length }} {{ getLabel("itemsSelected", "items selected") }}
+            </span>
+          </div>
+          <div class="propeller-favorite-list-details__floating-bar-actions flex items-center gap-3">
+            <button
+              type="button"
+              class="propeller-favorite-list-details__bulk-remove-btn inline-flex items-center justify-center rounded-[var(--radius-control)] border border-border bg-transparent px-4 py-2 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-50"
+              :disabled="bulkBusy"
+              @click="handleBulkRemove()"
+            >
+              {{ getLabel("removeFromList", "Remove from this list") }}
+            </button>
+            <button
+              type="button"
+              class="propeller-favorite-list-details__bulk-add-btn inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] bg-secondary px-6 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90 disabled:opacity-50"
+              :disabled="bulkBusy || getSelectedProducts().length === 0"
+              @click="handleBulkAddToCart()"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              {{ getLabel("addToCart", "Add to cart") }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template v-if="showAddModal">
+      <div
+        class="propeller-favorite-list-details__modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        @click="closeAddModal()"
+      >
+        <div
+          class="propeller-favorite-list-details__modal w-full max-w-xl rounded-[var(--radius-container)] bg-card shadow-xl"
+          @click.stop
+        >
+          <div class="propeller-favorite-list-details__modal-header border-b border-border px-6 py-4">
+            <h2 class="propeller-favorite-list-details__modal-title text-lg font-bold">
+              {{ getLabel("addProductModalTitle", "Add product to list") }}
+            </h2>
+          </div>
+          <div class="propeller-favorite-list-details__modal-body px-6 py-4 space-y-4">
+            <div class="propeller-favorite-list-details__search-input-wrapper relative">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                class="propeller-favorite-list-details__search-input w-full rounded-[var(--radius-control)] border border-border bg-card px-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary"
+                :placeholder="getLabel('searchPlaceholder', 'Search for products...')"
+                :value="searchTerm"
+                @input="onSearchInput($event)"
+                autofocus
+              />
+              <button
+                v-if="searchTerm"
+                type="button"
+                class="propeller-favorite-list-details__search-clear absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle hover:text-foreground"
+                @click="search('')"
+                aria-label="Clear search"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div class="propeller-favorite-list-details__search-results max-h-80 overflow-y-auto">
+              <template v-if="searchLoading">
+                <div class="propeller-favorite-list-details__search-loading py-6 text-center text-sm text-foreground-subtle">
+                  {{ getLabel("searching", "Searching...") }}
+                </div>
+              </template>
+              <template v-if="!searchLoading && searchTerm && searchResults.length === 0">
+                <div class="propeller-favorite-list-details__search-empty py-6 text-center text-sm text-foreground-subtle">
+                  {{ getLabel("noResults", "No results") }}
+                </div>
+              </template>
+              <template v-if="!searchLoading && searchResults.length > 0">
+                <ul class="propeller-favorite-list-details__search-list divide-y divide-border">
+                  <li
+                    v-for="item in searchResults"
+                    :key="getRowKey(item)"
+                    class="propeller-favorite-list-details__search-item flex items-center gap-3 py-3 cursor-pointer hover:bg-surface-hover transition-colors px-2 rounded-[var(--radius-control)]"
+                    :data-adding="addingItemKey === getRowKey(item) ? 'true' : 'false'"
+                    @click="handleAddItemFromSearch(item)"
+                  >
+                    <div class="propeller-favorite-list-details__search-item-media h-14 w-14 flex-shrink-0 rounded-[var(--radius-control)] bg-surface-hover overflow-hidden flex items-center justify-center">
+                      <img
+                        v-if="getSearchItemImage(item)"
+                        :src="getSearchItemImage(item)"
+                        :alt="getSearchItemName(item)"
+                        class="h-full w-full object-contain"
+                      />
+                      <svg
+                        v-else
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        class="text-foreground-subtle"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </div>
+                    <div class="propeller-favorite-list-details__search-item-body flex-1 min-w-0">
+                      <p class="propeller-favorite-list-details__search-item-name text-sm font-medium line-clamp-2">
+                        {{ getSearchItemName(item) }}
+                      </p>
+                      <p
+                        v-if="getSearchItemSku(item)"
+                        class="propeller-favorite-list-details__search-item-sku font-mono text-xs text-foreground-subtle mt-0.5"
+                      >
+                        SKU: {{ getSearchItemSku(item) }}
+                      </p>
+                      <p
+                        v-if="getSearchItemStockLabel(item)"
+                        class="propeller-favorite-list-details__search-item-stock text-xs text-foreground-subtle mt-0.5"
+                      >
+                        {{ getSearchItemStockLabel(item) }}
+                      </p>
+                    </div>
+                    <span
+                      v-if="addingItemKey === getRowKey(item)"
+                      class="propeller-favorite-list-details__search-item-spinner text-xs text-foreground-subtle"
+                    >
+                      {{ getLabel("adding", "Adding...") }}
+                    </span>
+                  </li>
+                </ul>
+              </template>
+            </div>
+          </div>
+          <div class="propeller-favorite-list-details__modal-footer border-t border-border px-6 py-4 flex justify-end">
+            <button
+              type="button"
+              class="propeller-favorite-list-details__modal-close inline-flex items-center justify-center rounded-[var(--radius-control)] border border-border px-6 py-2 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover"
+              @click="closeAddModal()"
+            >
+              {{ getLabel("close", "Close") }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch, toRef, computed } from "vue";
 
 import {
   Product,
@@ -145,6 +388,10 @@ import {
 import FavoriteListItem from "./FavoriteListItem.vue";
 import GridPagination from "./GridPagination.vue";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
+import { getProductImageUrl, getClusterImageUrl } from "../../composables/shared/utils/productHelpers";
+import { useFavorites } from "../../composables/useFavorites";
+import { useProductSearch } from "../../composables/useProductSearch";
+import { useCart } from "../../composables/useCart";
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */
@@ -156,8 +403,11 @@ export interface FavoriteListDetailsProps {
   /** The favorite list ID to display */
   favoriteListId: string;
 
-  /** Action method for deleting a favorite list item. If not provided, delete button is hidden */
+  /** Action method for deleting a single favorite list item. If not provided, delete button is hidden */
   onItemDelete?: (itemId: string, itemType?: string) => void;
+
+  /** Batched delete callback for the floating bar "Remove" action. When provided, it is called once with all selected items; otherwise the component falls back to calling `onItemDelete` per item */
+  onItemsDelete?: (items: { id: string; type: "product" | "cluster" }[]) => void;
 
   /** Called after the favorite list is fetched, with the full list object */
   onListLoaded?: (list: FavoriteList) => void;
@@ -295,6 +545,206 @@ const allItems = ref<FavoriteListDetailsState["allItems"]>([]);
 const currentPage = ref<FavoriteListDetailsState["currentPage"]>(1);
 const isMounted = ref<FavoriteListDetailsState["isMounted"]>(false);
 const prevListId = ref<FavoriteListDetailsState["prevListId"]>("");
+const selectedIds = ref<Set<string>>(new Set());
+const bulkBusy = ref(false);
+const showAddModal = ref(false);
+const addingItemKey = ref("");
+
+const userRef = toRef(props, "user") as any;
+const languageRef = computed(() => props.language || "NL");
+
+const { addToList } = useFavorites({
+  graphqlClient: props.graphqlClient,
+  user: userRef,
+  language: languageRef,
+});
+
+const { addItem } = useCart({
+  graphqlClient: props.graphqlClient,
+  user: userRef,
+  cartId: props.cartId,
+  language: languageRef,
+  configuration: (props.configuration || {}) as any,
+  onCartCreated: props.onCartCreated,
+});
+
+const { searchTerm, searchResults, searchLoading, search } = useProductSearch({
+  graphqlClient: props.graphqlClient,
+  language: languageRef,
+  user: userRef,
+  configuration: (props.configuration || {}) as any,
+});
+
+function getRowKey(item: Product | Cluster): string {
+  if ("productId" in item) return "p-" + String((item as Product).productId);
+  return "c-" + String((item as Cluster).clusterId);
+}
+
+function isRowSelected(item: Product | Cluster): boolean {
+  return selectedIds.value.has(getRowKey(item));
+}
+
+function toggleRow(item: Product | Cluster) {
+  const next = new Set(selectedIds.value);
+  const key = getRowKey(item);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  selectedIds.value = next;
+}
+
+function getPageRowKeys(): string[] {
+  return getPagedItems().map((i) => getRowKey(i));
+}
+
+function isAllPageSelected(): boolean {
+  const keys = getPageRowKeys();
+  if (keys.length === 0) return false;
+  return keys.every((k) => selectedIds.value.has(k));
+}
+
+function togglePageSelectAll() {
+  const next = new Set(selectedIds.value);
+  const keys = getPageRowKeys();
+  const allSelected = keys.every((k) => next.has(k));
+  if (allSelected) keys.forEach((k) => next.delete(k));
+  else keys.forEach((k) => next.add(k));
+  selectedIds.value = next;
+}
+
+function clearSelection() {
+  selectedIds.value = new Set();
+}
+
+function getSelectedItems(): (Product | Cluster)[] {
+  return allItems.value.filter((i) => selectedIds.value.has(getRowKey(i)));
+}
+
+function getSelectedProducts(): Product[] {
+  return getSelectedItems().filter((i) => "productId" in i) as Product[];
+}
+
+async function handleBulkRemove() {
+  if (bulkBusy.value) return;
+  const items = getSelectedItems();
+  if (items.length === 0) return;
+  bulkBusy.value = true;
+  try {
+    const entries: { id: string; type: "product" | "cluster" }[] = items.map((it) => ({
+      id:
+        "productId" in it
+          ? String((it as Product).productId)
+          : String((it as Cluster).clusterId),
+      type: "productId" in it ? "product" : "cluster",
+    }));
+    const remaining = allItems.value.filter(
+      (p) => !selectedIds.value.has(getRowKey(p))
+    );
+    allItems.value = remaining;
+    clearSelection();
+    const newTotalPages = Math.max(
+      1,
+      Math.ceil(remaining.length / getItemsPerPage())
+    );
+    if (currentPage.value > newTotalPages) {
+      currentPage.value = newTotalPages;
+    }
+    if (props.onItemsDelete) {
+      props.onItemsDelete(entries);
+    } else if (props.onItemDelete) {
+      entries.forEach((entry) =>
+        props.onItemDelete!(entry.id, entry.type)
+      );
+    }
+  } finally {
+    bulkBusy.value = false;
+  }
+}
+
+async function handleBulkAddToCart() {
+  if (bulkBusy.value) return;
+  const products = getSelectedProducts();
+  if (products.length === 0) return;
+  bulkBusy.value = true;
+  try {
+    for (const product of products) {
+      await addItem({
+        product,
+        quantity:
+          product.minimumQuantity && product.minimumQuantity > 0
+            ? product.minimumQuantity
+            : 1,
+        cartId: props.cartId,
+        createCart: props.createCart !== false,
+        enableStockValidation: props.enableStockValidation,
+        afterAddToCart: (resultCart, addedItem) => {
+          props.afterAddToCart?.(resultCart, addedItem || undefined);
+        },
+      });
+    }
+    clearSelection();
+  } finally {
+    bulkBusy.value = false;
+  }
+}
+
+async function handleAddItemFromSearch(item: Product | Cluster) {
+  const key = getRowKey(item);
+  if (addingItemKey.value) return;
+  addingItemKey.value = key;
+  try {
+    const productId =
+      "productId" in item ? (item as Product).productId : undefined;
+    const clusterId =
+      "clusterId" in item ? (item as Cluster).clusterId : undefined;
+    await addToList(props.favoriteListId, productId, clusterId);
+    await fetchList();
+  } finally {
+    addingItemKey.value = "";
+  }
+}
+
+function getSearchItemName(item: Product | Cluster): string {
+  if ("productId" in item)
+    return (item as Product).names?.[0]?.value || "Product";
+  const cluster = item as Cluster;
+  return (
+    cluster.names?.[0]?.value ||
+    cluster.defaultProduct?.names?.[0]?.value ||
+    "Cluster"
+  );
+}
+
+function getSearchItemSku(item: Product | Cluster): string {
+  if ("productId" in item) return (item as Product).sku || "";
+  const cluster = item as Cluster;
+  return cluster.sku || cluster.defaultProduct?.sku || "";
+}
+
+function getSearchItemImage(item: Product | Cluster): string {
+  if ("productId" in item) return getProductImageUrl(item as Product);
+  return getClusterImageUrl(item as Cluster);
+}
+
+function getSearchItemStockLabel(item: Product | Cluster): string {
+  const qty =
+    "productId" in item
+      ? (item as Product).inventory?.totalQuantity
+      : (item as Cluster).defaultProduct?.inventory?.totalQuantity;
+  if (qty === undefined || qty === null) return "";
+  if (qty <= 0) return getLabel("outOfStock", "Out of stock");
+  if (qty <= 5) return getLabel("lowStock", "Low stock");
+  return getLabel("inStock", "In stock");
+}
+
+function closeAddModal() {
+  showAddModal.value = false;
+  search("");
+}
+
+function onSearchInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  search(target.value);
+}
 
 onMounted(() => {
   isMounted.value = true;
