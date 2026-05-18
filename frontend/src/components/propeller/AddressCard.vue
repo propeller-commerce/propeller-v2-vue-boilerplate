@@ -159,7 +159,7 @@
                     async (e) => {
                       editGender = (
                         e.target as HTMLInputElement | HTMLSelectElement
-                      ).value as Enums.Gender;
+                      ).value as Gender;
                     }
                   "
                 >
@@ -399,12 +399,12 @@
                   type="checkbox"
                   id="icp-inline"
                   class="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                  :checked="editIcp === Enums.YesNo.Y"
+                  :checked="editIcp === YesNo.Y"
                   @change="
                     async (e) => {
                       editIcp = (e.target as HTMLInputElement).checked
-                        ? Enums.YesNo.Y
-                        : Enums.YesNo.N;
+                        ? YesNo.Y
+                        : YesNo.N;
                     }
                   "
                 /><label for="icp-inline" class="text-sm font-medium">{{
@@ -485,7 +485,7 @@
                       async (e) => {
                         editGender = (
                           e.target as HTMLInputElement | HTMLSelectElement
-                        ).value as Enums.Gender;
+                        ).value as Gender;
                       }
                     "
                   >
@@ -725,12 +725,12 @@
                     type="checkbox"
                     id="icp-modal"
                     class="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                    :checked="editIcp === Enums.YesNo.Y"
+                    :checked="editIcp === YesNo.Y"
                     @change="
                       async (e) => {
                         editIcp = (e.target as HTMLInputElement).checked
-                          ? Enums.YesNo.Y
-                          : Enums.YesNo.N;
+                          ? YesNo.Y
+                          : YesNo.N;
                       }
                     "
                   /><label for="icp-modal" class="text-sm font-medium">{{
@@ -812,14 +812,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 
-import {
-  GraphQLClient,
-  Address,
-  CartAddress,
-  WarehouseAddress,
-  OrderAddress,
-  Enums,
-} from "propeller-sdk-v2";
+import { Address, CartAddress, Gender, GraphQLClient, OrderAddress, WarehouseAddress, YesNo } from "propeller-sdk-v2";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { getCountryName as _getCountryName } from "../../composables/shared/utils/countries";
 
@@ -928,7 +921,7 @@ interface AddressCardState {
   showDeleteConfirm: boolean;
   localAddress: any;
   editCompany: string;
-  editGender: Enums.Gender;
+  editGender: Gender;
   editFirstName: string;
   editMiddleName: string;
   editLastName: string;
@@ -941,7 +934,7 @@ interface AddressCardState {
   editEmail: string;
   editPhone: string;
   editNotes: string;
-  editIcp: Enums.YesNo;
+  editIcp: YesNo;
   saving: boolean;
   getLabel: (key: string, fallback: string) => string;
   getCountryName: (code: string) => string;
@@ -980,7 +973,7 @@ const showDeleteConfirm = ref<AddressCardState["showDeleteConfirm"]>(false);
 const saving = ref<AddressCardState["saving"]>(false);
 const localAddress = ref<AddressCardState["localAddress"]>(null);
 const editCompany = ref<AddressCardState["editCompany"]>("");
-const editGender = ref<AddressCardState["editGender"]>(Enums.Gender.U);
+const editGender = ref<AddressCardState["editGender"]>(Gender.U);
 const editFirstName = ref<AddressCardState["editFirstName"]>("");
 const editMiddleName = ref<AddressCardState["editMiddleName"]>("");
 const editLastName = ref<AddressCardState["editLastName"]>("");
@@ -993,7 +986,7 @@ const editCountry = ref<AddressCardState["editCountry"]>("");
 const editEmail = ref<AddressCardState["editEmail"]>("");
 const editPhone = ref<AddressCardState["editPhone"]>("");
 const editNotes = ref<AddressCardState["editNotes"]>("");
-const editIcp = ref<AddressCardState["editIcp"]>(Enums.YesNo.N);
+const editIcp = ref<AddressCardState["editIcp"]>(YesNo.N);
 
 onMounted(() => {
   if (props.isNew || (props.inline && !props.address)) {
@@ -1049,7 +1042,7 @@ function openEditModal(): ReturnType<AddressCardState["openEditModal"]> {
   editEmail.value = a?.email || "";
   editPhone.value = a?.phone || "";
   editNotes.value = a?.notes || "";
-  editIcp.value = a?.icp || Enums.YesNo.N;
+  editIcp.value = a?.icp || YesNo.N;
   showEditModal.value = true;
 }
 async function handleSaveEdit(
@@ -1079,7 +1072,7 @@ async function handleSaveEdit(
     email: editEmail.value,
     phone: editPhone.value,
     notes: editNotes.value,
-    icp: editIcp.value as Enums.YesNo,
+    icp: editIcp.value as YesNo,
   } as unknown as Address;
   localAddress.value = editedAddress;
   try {

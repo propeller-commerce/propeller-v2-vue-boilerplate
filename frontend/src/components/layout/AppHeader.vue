@@ -261,7 +261,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-vue-next'
-import { CartService, Enums } from 'propeller-sdk-v2'
+import { CartService, PurchaseRole } from 'propeller-sdk-v2';
 import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
@@ -392,7 +392,7 @@ const isAuthManagerForCurrentCompany = computed(() => {
     const pacCompanyId =
       pac.company?.companyId ?? pac.company?._companyId ??
       pac._company?.companyId ?? pac._company?._companyId
-    return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
+    return role === PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
   })
 })
 

@@ -121,7 +121,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { Contact, Customer, Address, Company, Enums } from 'propeller-sdk-v2';
+import { Address, AddressType, Company, Contact, Customer } from 'propeller-sdk-v2';
 import AddressCard from './AddressCard.vue';
 import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 
@@ -137,7 +137,7 @@ export interface AddressSelectorProps {
 
   /**
    * Filter addresses to this type.
-   * Defaults to Enums.AddressType.delivery.
+   * Defaults to AddressType.delivery.
    */
   addressType?: string;
 
@@ -195,7 +195,7 @@ function getActiveCompany(): ReturnType<AddressSelectorState['getActiveCompany']
 function getAddresses(): ReturnType<AddressSelectorState['getAddresses']> {
   const user = props.user as Contact | Customer | null;
   if (!user) return [];
-  const type = (props.addressType as string) || Enums.AddressType.delivery;
+  const type = (props.addressType as string) || AddressType.delivery;
   let all: Address[] = [];
   if ('contactId' in user) {
     const company = getActiveCompany();

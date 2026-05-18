@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { Order, Enums } from 'propeller-sdk-v2';
+import { Order, OrderDiscountType } from 'propeller-sdk-v2';
 import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
 
@@ -161,17 +161,17 @@ const hasDiscount = computed(() => {
   const total = (props.order as any)?.total;
   return (
     total?.discountType &&
-    total.discountType !== Enums.OrderDiscountType.N &&
+    total.discountType !== OrderDiscountType.N &&
     total.discountValue > 0
   );
 });
 const discountDisplay = computed(() => {
   const total = (props.order as any)?.total;
   if (!total) return '';
-  if (total.discountType === Enums.OrderDiscountType.A) {
+  if (total.discountType === OrderDiscountType.A) {
     return '-' + formatItemPrice(total.discountValue);
   }
-  if (total.discountType === Enums.OrderDiscountType.P) {
+  if (total.discountType === OrderDiscountType.P) {
     return '- ' + total.discountValue + '%';
   }
   return '-' + formatItemPrice(total.discountValue);

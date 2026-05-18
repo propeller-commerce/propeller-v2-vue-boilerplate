@@ -130,7 +130,7 @@
                   class="propeller-product-bundles__condition text-xs text-muted-foreground mb-3"
                 >
                   <template
-                    v-if="bundle.condition === Enums.BundleCondition.ALL"
+                    v-if="bundle.condition === BundleCondition.ALL"
                   >
                     {{ getLabel("condition_ALL", "Discount on all items") }}
                   </template>
@@ -475,16 +475,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 
-import {
-  GraphQLClient,
-  Contact,
-  Customer,
-  Cart,
-  Enums,
-  Bundle,
-  BundleItem,
-  Product,
-} from "propeller-sdk-v2";
+import { Bundle, BundleCondition, BundleItem, Cart, Contact, Customer, GraphQLClient, Product } from "propeller-sdk-v2";
 import { useProductBundles } from "../../composables/useProductBundles";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { getProductImageUrl as _getProductImageUrl } from "../../composables/shared/utils/productHelpers";

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { Enums, UserService, type Contact, type Customer } from 'propeller-sdk-v2'
+import { type Contact, type Customer, PurchaseRole, UserService } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api'
 
 type User = Contact | Customer
@@ -144,7 +144,7 @@ export const useAuthStore = defineStore('auth', () => {
       const pacCompanyId =
         pac.company?.companyId ?? pac.company?._companyId ??
         pac._company?.companyId ?? pac._company?._companyId
-      return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
+      return role === PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
     })
   }
 

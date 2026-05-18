@@ -195,13 +195,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import {
-  Cart,
-  CartMainItem,
-  CartBaseItem,
-  BundleItem,
-  Enums,
-} from "propeller-sdk-v2";
+import { BundleItem, Cart, CartBaseItem, CartMainItem, YesNo } from "propeller-sdk-v2";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 
@@ -390,7 +384,7 @@ function getBundleLeaderName(
 ): ReturnType<ItemsOverviewState["getBundleLeaderName"]> {
   const items = item.bundle?.items;
   if (!items) return "";
-  const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+  const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
   if (!leader) return "";
   return leader.product.names?.[0]?.value || "Product";
 }
@@ -399,7 +393,7 @@ function getBundleLeaderPrice(
 ): ReturnType<ItemsOverviewState["getBundleLeaderPrice"]> {
   const items = item.bundle?.items;
   if (!items) return "";
-  const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+  const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
   if (!leader) return "";
   const price = leader.price?.net;
   if (price === undefined || price === null) return "";
@@ -410,7 +404,7 @@ function getBundleNonLeaders(
 ): ReturnType<ItemsOverviewState["getBundleNonLeaders"]> {
   const items = item.bundle?.items;
   if (!items) return [];
-  return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+  return items.filter((bi: BundleItem) => bi.isLeader !== YesNo.Y);
 }
 function getBundleItemName(
   bundleItem: any,

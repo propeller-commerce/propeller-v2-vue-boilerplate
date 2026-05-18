@@ -9,7 +9,7 @@
  * Mirrors `propeller-next/composables/shared/utils/fetchActiveCart.ts`.
  */
 
-import { CartService, Enums } from 'propeller-sdk-v2';
+import { CartService, CartStatus } from 'propeller-sdk-v2';
 import type {
   Cart,
   CartSearchInput,
@@ -36,7 +36,7 @@ export async function fetchActiveCart(
   try {
     const searchInput: CartSearchInput = {
       offset: 100,
-      statuses: [Enums.CartStatus.OPEN],
+      statuses: [CartStatus.OPEN],
     };
     if ('contactId' in cfg.user && cfg.user.contactId) {
       searchInput.contactIds = [cfg.user.contactId];

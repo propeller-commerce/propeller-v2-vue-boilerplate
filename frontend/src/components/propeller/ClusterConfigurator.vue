@@ -213,13 +213,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
-import {
-  Product,
-  AttributeResult,
-  ClusterConfig,
-  ClusterConfigSetting,
-  Enums,
-} from "propeller-sdk-v2";
+import { AttributeResult, AttributeType, ClusterConfig, ClusterConfigSetting, Product } from "propeller-sdk-v2";
 
 /**
  * A computed object containing a cluster config setting enriched with
@@ -448,15 +442,15 @@ function extractAttributeValues(
     extractedValues.push((attr.value as any).booleanValue ? "Yes" : "No");
   }
   // ── Current SDK format (type-based) ──────────────────────────────
-  else if (attr.value?.type === Enums.AttributeType.COLOR) {
+  else if (attr.value?.type === AttributeType.COLOR) {
     extractedValues.push(attr.value?.value);
-  } else if (attr.value?.type === Enums.AttributeType.TEXT) {
+  } else if (attr.value?.type === AttributeType.TEXT) {
     extractedValues = attr.value?.value?.textValues?.[0]?.values || [];
-  } else if (attr.value?.type === Enums.AttributeType.DECIMAL) {
+  } else if (attr.value?.type === AttributeType.DECIMAL) {
     extractedValues.push(attr.value?.value?.toString());
-  } else if (attr.value?.type === Enums.AttributeType.INT) {
+  } else if (attr.value?.type === AttributeType.INT) {
     extractedValues.push(attr.value?.value?.toString());
-  } else if (attr.value?.type === Enums.AttributeType.ENUM) {
+  } else if (attr.value?.type === AttributeType.ENUM) {
     extractedValues.push(attr.value?.value);
   }
   // ── Fallback ─────────────────────────────────────────────────────

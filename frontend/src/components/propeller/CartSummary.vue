@@ -91,7 +91,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import { Cart, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
+import { Cart, Contact, Customer, GraphQLClient, PurchaseRole } from 'propeller-sdk-v2';
 import { useCart } from '../../composables/useCart';
 import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 import { formatPrice as _formatPrice } from '../../composables/shared/utils/formatting';
@@ -286,7 +286,7 @@ const showRequestAuthorizationButton = computed(() => {
       ?? pac.company?._companyId
       ?? pac._company?.companyId
       ?? pac._company?._companyId;
-    return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    return role === PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
   });
   if (!purchaserPac) return false;
   const limit = (purchaserPac as any).authorizationLimit ?? (purchaserPac as any)._authorizationLimit ?? 0;

@@ -5,11 +5,7 @@
  */
 
 import { ref, computed, type Ref, type ComputedRef } from 'vue';
-import {
-  CartService,
-  CrossupsellService,
-  Enums,
-} from 'propeller-sdk-v2';
+import { CartService, CartStatus, CrossupsellService, CrossupsellType, PurchaseRole } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Cart,
@@ -118,7 +114,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
         ?? pac.company?._companyId
         ?? pac._company?.companyId
         ?? pac._company?._companyId;
-      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === companyIdRef.value;
+      return role === PurchaseRole.PURCHASER && pacCompanyId === companyIdRef.value;
     });
     if (!purchaserPac) return true;
     const limit = (purchaserPac as any).authorizationLimit ?? (purchaserPac as any)._authorizationLimit ?? 0;
@@ -284,7 +280,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
       const language = languageRef.value || configuration.language || 'NL';
       const searchInput: CartSearchInput = {
         offset: 100,
-        statuses: [Enums.CartStatus.OPEN],
+        statuses: [CartStatus.OPEN],
       };
       if (isContact(u)) {
         searchInput.contactIds = [(u as Contact).contactId];
@@ -323,7 +319,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
       const u = user.value;
       const variables: CrossupsellsQueryVariables = {
         input: {
-          types: (types ?? [Enums.CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],
+          types: (types ?? [CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],
           page: 1,
           offset: 50,
           ...(productId && !clusterId && { productIdsFrom: [productId] }),

@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 import { ProductPrice, Contact, Customer } from "propeller-sdk-v2";
-import type { IDiscount } from "propeller-sdk-v2/dist/type/IDiscount";
+import type { IDiscount } from "propeller-sdk-v2";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
 

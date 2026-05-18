@@ -183,16 +183,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
-import {
-  GraphQLClient,
-  Product,
-  Cluster,
-  Contact,
-  Customer,
-  Cart,
-  CartMainItem,
-  Enums,
-} from "propeller-sdk-v2";
+import { Cart, CartMainItem, Cluster, Contact, CrossupsellType, Customer, GraphQLClient, Product } from "propeller-sdk-v2";
 import ProductCard from "./ProductCard.vue";
 import ClusterCard from "./ClusterCard.vue";
 import { useProductSlider } from "../../composables/useProductSlider";
@@ -218,7 +209,7 @@ export interface ProductSliderProps {
    * productId/clusterId instead of fetching products by IDs.
    * Values: 'ACCESSORIES' | 'ALTERNATIVES' | 'RELATED' | 'OPTIONS' | 'PARTS'
    */
-  crossUpsellTypes?: Enums.CrossupsellType[];
+  crossUpsellTypes?: CrossupsellType[];
 
   /** Source product ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
   productId?: number;

@@ -98,11 +98,11 @@
                         <option value="">
                           {{ getLabel("selectRole", "— Select role —") }}
                         </option>
-                        <option :value="Enums.PurchaseRole.PURCHASER">
+                        <option :value="PurchaseRole.PURCHASER">
                           {{ getLabel("rolePurchaser", "Purchaser") }}
                         </option>
                         <option
-                          :value="Enums.PurchaseRole.AUTHORIZATION_MANAGER"
+                          :value="PurchaseRole.AUTHORIZATION_MANAGER"
                         >
                           {{ getLabel("roleManager", "Authorization Manager") }}
                         </option>
@@ -112,7 +112,7 @@
                       <template
                         v-if="
                           getRowRole(contact.contactId) ===
-                          Enums.PurchaseRole.PURCHASER
+                          PurchaseRole.PURCHASER
                         "
                       >
                         <input
@@ -286,13 +286,13 @@
                 <option value="">
                   {{ getLabel("selectGender", "— Select —") }}
                 </option>
-                <option :value="Enums.Gender.M">
+                <option :value="Gender.M">
                   {{ getLabel("genderM", "Male") }}
                 </option>
-                <option :value="Enums.Gender.F">
+                <option :value="Gender.F">
                   {{ getLabel("genderF", "Female") }}
                 </option>
-                <option :value="Enums.Gender.U">
+                <option :value="Gender.U">
                   {{ getLabel("genderU", "Unspecified") }}
                 </option>
               </select>
@@ -425,15 +425,7 @@
 import { computed } from "vue";
 import { usePurchaseAuthorizationConfigurator } from "../../composables/usePurchaseAuthorization";
 
-import {
-  Contact,
-  Customer,
-  GraphQLClient,
-  PurchaseAuthorizationConfig,
-  RegisterContactInput,
-  Enums,
-  PurchaseAuthorizationConfigCreateInput,
-} from "propeller-sdk-v2";
+import { Contact, Customer, Gender, GraphQLClient, PurchaseAuthorizationConfig, PurchaseAuthorizationConfigCreateInput, PurchaseRole, RegisterContactInput } from "propeller-sdk-v2";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 
 export interface PurchaseAuthorizationConfiguratorProps {

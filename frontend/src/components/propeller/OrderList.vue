@@ -245,7 +245,7 @@
                     <template
                       :key="sortField"
                       v-for="(sortField, index) in Object.values(
-                        Enums.OrderSortField,
+                        OrderSortField,
                       )"
                     >
                       <option :value="sortField">{{ sortField }}</option>
@@ -269,7 +269,7 @@
                     <option value="">Order</option>
                     <template
                       :key="order"
-                      v-for="(order, index) in Object.values(Enums.SortOrder)"
+                      v-for="(order, index) in Object.values(SortOrder)"
                     >
                       <option :value="order">{{ order }}</option>
                     </template>
@@ -294,7 +294,7 @@
                     <option value="">Type</option>
                     <template
                       :key="type"
-                      v-for="(type, index) in Object.values(Enums.OrderType)"
+                      v-for="(type, index) in Object.values(OrderType)"
                     >
                       <option :value="type">{{ type }}</option>
                     </template>
@@ -520,13 +520,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import {
-  Order,
-  Contact,
-  Customer,
-  GraphQLClient,
-  Enums,
-} from "propeller-sdk-v2";
+import { Contact, Customer, GraphQLClient, Order, OrderSortField, OrderType, SortOrder } from "propeller-sdk-v2";
 
 import { useOrders } from "../../composables/useOrders";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";

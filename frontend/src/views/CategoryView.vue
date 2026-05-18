@@ -151,18 +151,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  Enums,
-  type Category,
-  type AttributeFilter,
-  type ProductsResponse,
-  type ProductTextFilterInput,
-  Contact,
-  Customer,
-  Cart,
-  Product,
-  Cluster,
-} from "propeller-sdk-v2";
+import { type AttributeFilter, AttributeType, Cart, type Category, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
@@ -232,10 +221,10 @@ const clearSignal = ref(0);
 const currentPage = ref(readNumberQuery(route.query.page) ?? 1);
 const offset = ref(readNumberQuery(route.query.offset) ?? 12);
 const sortField = ref<string>(
-  (route.query.sortField as string) || Enums.ProductSortField.CATEGORY_ORDER,
+  (route.query.sortField as string) || ProductSortField.CATEGORY_ORDER,
 );
 const sortOrder = ref<string>(
-  (route.query.sortOrder as string) || Enums.SortOrder.DESC,
+  (route.query.sortOrder as string) || SortOrder.DESC,
 );
 const viewMode = ref<"grid" | "list">("list");
 
@@ -251,8 +240,8 @@ function syncStateToUrl() {
   if (minPrice.value !== undefined) query.minPrice = String(minPrice.value);
   if (maxPrice.value !== undefined) query.maxPrice = String(maxPrice.value);
   if (offset.value !== 12) query.offset = String(offset.value);
-  if (sortField.value !== Enums.ProductSortField.CATEGORY_ORDER) query.sortField = sortField.value;
-  if (sortOrder.value !== Enums.SortOrder.DESC) query.sortOrder = sortOrder.value;
+  if (sortField.value !== ProductSortField.CATEGORY_ORDER) query.sortField = sortField.value;
+  if (sortOrder.value !== SortOrder.DESC) query.sortOrder = sortOrder.value;
   const currentJson = JSON.stringify(route.query);
   const nextJson = JSON.stringify(query);
   if (currentJson === nextJson) return;
@@ -275,8 +264,8 @@ watch(
     maxPrice.value = readNumberQuery(q.maxPrice);
     currentPage.value = readNumberQuery(q.page) ?? 1;
     offset.value = readNumberQuery(q.offset) ?? 12;
-    sortField.value = (q.sortField as string) || Enums.ProductSortField.CATEGORY_ORDER;
-    sortOrder.value = (q.sortOrder as string) || Enums.SortOrder.DESC;
+    sortField.value = (q.sortField as string) || ProductSortField.CATEGORY_ORDER;
+    sortOrder.value = (q.sortOrder as string) || SortOrder.DESC;
   },
 );
 
@@ -288,7 +277,7 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
       name,
       values,
       exclude: false,
-      type: Enums.AttributeType.TEXT,
+      type: AttributeType.TEXT,
     })),
 );
 

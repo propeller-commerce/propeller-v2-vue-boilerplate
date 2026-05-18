@@ -12,7 +12,7 @@
  */
 
 import { ref, type Ref } from 'vue';
-import { CartService, OrderService, Enums } from 'propeller-sdk-v2';
+import { CartAddressType, CartService, OrderService, PaymentStatuses } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Cart,
@@ -78,7 +78,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
 
   function buildAddressInput(type: 'INVOICE' | 'DELIVERY', addr: any): CartUpdateAddressInput {
     return {
-      type: type === 'INVOICE' ? Enums.CartAddressType.INVOICE : Enums.CartAddressType.DELIVERY,
+      type: type === 'INVOICE' ? CartAddressType.INVOICE : CartAddressType.DELIVERY,
       firstName: addr.firstName || '',
       lastName: addr.lastName || '',
       street: addr.street || '',
@@ -194,7 +194,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
       await orderService.setOrderStatus({
         orderId,
         status: orderStatus,
-        payStatus: Enums.PaymentStatuses.OPEN,
+        payStatus: PaymentStatuses.OPEN,
         sendOrderConfirmationEmail: !opts.isQuoteMode,
         addPDFAttachment: !opts.isQuoteMode,
         triggerOrderSendConfirmEvent: !opts.isQuoteMode,

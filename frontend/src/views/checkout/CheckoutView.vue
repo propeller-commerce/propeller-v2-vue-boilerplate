@@ -202,7 +202,7 @@
                     v-if="authStore.isAuthenticated"
                     :user="authStore.user as Contact | Customer | null"
                     :companyId="companyStore.companyId ?? undefined"
-                    :addressType="Enums.AddressType.delivery"
+                    :addressType="AddressType.delivery"
                     :onAddressSelected="
                       (addr) => handleAddressSubmit(addr, 'DELIVERY', true)
                     "
@@ -460,8 +460,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Enums } from "propeller-sdk-v2";
 import type { Cart, Contact, Customer, CartAddress } from "propeller-sdk-v2";
+import { AddressType } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { usePriceStore } from "@/stores/price";

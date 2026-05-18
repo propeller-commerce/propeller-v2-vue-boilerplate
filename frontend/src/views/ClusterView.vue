@@ -1,3 +1,4 @@
+import { CrossupsellType } from "propeller-sdk-v2";
 <template>
   <div class="py-12 bg-background">
     <div class="container-width">
@@ -185,7 +186,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Enums } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
@@ -223,11 +223,11 @@ const selectedOptionProducts = ref<Record<number, any>>({});
 const showClusterErrors = ref(false);
 
 const crossUpsellSliders = [
-  Enums.CrossupsellType.ACCESSORIES,
-  Enums.CrossupsellType.ALTERNATIVES,
-  Enums.CrossupsellType.RELATED,
-  Enums.CrossupsellType.OPTIONS,
-  Enums.CrossupsellType.PARTS,
+  CrossupsellType.ACCESSORIES,
+  CrossupsellType.ALTERNATIVES,
+  CrossupsellType.RELATED,
+  CrossupsellType.OPTIONS,
+  CrossupsellType.PARTS,
 ];
 
 const displayProduct = computed(

@@ -27,7 +27,7 @@
             :configuration="configuration"
             :companyId="companyStore.companyId || undefined"
             :showCrossupsells="true"
-            :crossupsellTypes="[Enums.CrossupsellType.ACCESSORIES]"
+            :crossupsellTypes="[CrossupsellType.ACCESSORIES]"
             :crossupsellLimit="2"
             :afterCartUpdate="(cart: any) => cartStore.setCart(cart)"
           />
@@ -79,7 +79,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { Cart, Contact, Customer, Enums } from "propeller-sdk-v2";
+import { Cart, Contact, CrossupsellType, Customer } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";

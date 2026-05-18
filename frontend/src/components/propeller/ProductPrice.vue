@@ -40,14 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ProductPrice,
-  Product,
-  ClusterOption,
-  Contact,
-  Customer,
-  Enums,
-} from "propeller-sdk-v2";
+import { ClusterOption, Contact, Customer, Product, ProductPrice, YesNo } from "propeller-sdk-v2";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { isContentHidden as _isContentHidden } from "../../composables/shared/utils/visibilityHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
@@ -129,7 +122,7 @@ function getOptionsTotal(
   const selected = (props.selectedOptionProducts as Product[]) || [];
   let total = 0;
   options.forEach((option: ClusterOption) => {
-    if (option.hidden === Enums.YesNo.Y) return;
+    if (option.hidden === YesNo.Y) return;
 
     // Find whether the user has selected a product in this option
     const selectedProduct = selected.find((p: Product) =>
@@ -141,7 +134,7 @@ function getOptionsTotal(
       total += useNet
         ? selectedProduct.price?.net || 0
         : selectedProduct.price?.gross || 0;
-    } else if (option.isRequired === Enums.YesNo.Y && option.defaultProduct) {
+    } else if (option.isRequired === YesNo.Y && option.defaultProduct) {
       // option.defaultProduct may lack price data; look up the full
       // product record from option.products (which always has prices).
       const defaultId = (option.defaultProduct as Product).productId;

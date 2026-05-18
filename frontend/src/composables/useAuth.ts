@@ -13,13 +13,7 @@
  */
 
 import { ref, type Ref } from 'vue';
-import {
-  LoginService,
-  UserService,
-  CompanyService,
-  AddressService,
-  Enums,
-} from 'propeller-sdk-v2';
+import { AddressService, AddressType, CompanyService, Gender, LoginService, UserService, YesNo } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Contact,
@@ -54,7 +48,7 @@ export interface RegisterContactInput {
   middleName?: string;
   lastName: string;
   phone?: string;
-  gender?: Enums.Gender;
+  gender?: Gender;
   companyName?: string;
   vatNumber?: string;
   cocNumber?: string;
@@ -80,7 +74,7 @@ export interface RegisterCustomerInput {
   middleName?: string;
   lastName: string;
   phone?: string;
-  gender?: Enums.Gender;
+  gender?: Gender;
   street?: string;
   number?: string;
   numberExtension?: string;
@@ -249,8 +243,8 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
           postalCode: input.postalCode ?? '',
           city: input.city ?? '',
           country: input.country ?? 'NL',
-          type: Enums.AddressType.invoice,
-          isDefault: Enums.YesNo.Y,
+          type: AddressType.invoice,
+          isDefault: YesNo.Y,
           companyId,
         };
         await addressService.createCompanyAddress(invoiceAddress);
@@ -264,7 +258,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         if (input.sameDeliveryAsBilling) {
           const deliveryAddress: CompanyAddressCreateInput = {
             ...invoiceAddress,
-            type: Enums.AddressType.delivery,
+            type: AddressType.delivery,
           };
           await addressService.createCompanyAddress(deliveryAddress);
         } else if (input.deliveryStreet) {
@@ -278,8 +272,8 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
             postalCode: input.deliveryPostalCode ?? '',
             city: input.deliveryCity ?? '',
             country: input.deliveryCountry ?? 'NL',
-            type: Enums.AddressType.delivery,
-            isDefault: Enums.YesNo.Y,
+            type: AddressType.delivery,
+            isDefault: YesNo.Y,
             companyId,
           };
           await addressService.createCompanyAddress(deliveryAddress);
@@ -357,8 +351,8 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
           postalCode: input.postalCode ?? '',
           city: input.city ?? '',
           country: input.country ?? 'NL',
-          type: Enums.AddressType.invoice,
-          isDefault: Enums.YesNo.Y,
+          type: AddressType.invoice,
+          isDefault: YesNo.Y,
           customerId: customer.customerId,
         };
         await addressService.createCustomerAddress(invoiceAddress);
@@ -371,7 +365,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         if (input.sameDeliveryAsBilling) {
           const deliveryAddress: CustomerAddressCreateInput = {
             ...invoiceAddress,
-            type: Enums.AddressType.delivery,
+            type: AddressType.delivery,
           };
           await addressService.createCustomerAddress(deliveryAddress);
         } else if (input.deliveryStreet) {
@@ -385,8 +379,8 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
             postalCode: input.deliveryPostalCode ?? '',
             city: input.deliveryCity ?? '',
             country: input.deliveryCountry ?? 'NL',
-            type: Enums.AddressType.delivery,
-            isDefault: Enums.YesNo.Y,
+            type: AddressType.delivery,
+            isDefault: YesNo.Y,
             customerId: customer.customerId,
           };
           await addressService.createCustomerAddress(deliveryAddress);

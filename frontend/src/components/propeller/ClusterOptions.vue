@@ -121,7 +121,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import { Product, ClusterOption, Enums } from "propeller-sdk-v2";
+import { ClusterOption, Product, YesNo } from "propeller-sdk-v2";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { getProductImageUrl as _getProductImageUrl } from "../../composables/shared/utils/productHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
@@ -261,7 +261,7 @@ function getOptionsForRender(): ReturnType<
   const options = (props.options as ClusterOption[]) || [];
   const sel = selectedProductIds.value as Record<string, string>;
   return options
-    .filter((option: ClusterOption) => option.hidden !== Enums.YesNo.Y)
+    .filter((option: ClusterOption) => option.hidden !== YesNo.Y)
     .map((option: ClusterOption) => {
       const idStr = option.id.toString();
       const selectedProductId = sel[idStr] || "";
@@ -283,7 +283,7 @@ function getOptionsForRender(): ReturnType<
           previewPrice = formatPrice(selectedProduct.price?.gross || 0);
         }
       }
-      const isRequired = option.isRequired === Enums.YesNo.Y;
+      const isRequired = option.isRequired === YesNo.Y;
       return {
         id: option.id,
         idStr,

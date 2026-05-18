@@ -67,10 +67,10 @@
                   name="gender"
                   value="M"
                   class="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
-                  :checked="gender === Enums.Gender.M"
+                  :checked="gender === Gender.M"
                   @change="
                     async (event) => {
-                      gender = Enums.Gender.M;
+                      gender = Gender.M;
                     }
                   "
                   :disabled="loading"
@@ -82,10 +82,10 @@
                   name="gender"
                   value="F"
                   class="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
-                  :checked="gender === Enums.Gender.F"
+                  :checked="gender === Gender.F"
                   @change="
                     async (event) => {
-                      gender = Enums.Gender.F;
+                      gender = Gender.F;
                     }
                   "
                   :disabled="loading"
@@ -97,10 +97,10 @@
                   name="gender"
                   value="U"
                   class="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
-                  :checked="gender === Enums.Gender.U"
+                  :checked="gender === Gender.U"
                   @change="
                     async (event) => {
-                      gender = Enums.Gender.U;
+                      gender = Gender.U;
                     }
                   "
                   :disabled="loading"
@@ -681,8 +681,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Enums } from 'propeller-sdk-v2';
 import type { Cart, Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
+import { Gender } from 'propeller-sdk-v2';
 import { useAuth } from '../../composables/useAuth';
 import type { RegisterContactInput, RegisterCustomerInput } from '../../composables/useAuth';
 
@@ -795,7 +795,7 @@ const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const phone = ref('');
-const gender = ref<Enums.Gender>(Enums.Gender.U);
+const gender = ref<Gender>(Gender.U);
 const companyName = ref('');
 const vatNumber = ref('');
 const cocNumber = ref('');

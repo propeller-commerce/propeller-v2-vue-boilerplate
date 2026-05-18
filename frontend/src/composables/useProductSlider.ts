@@ -13,11 +13,7 @@
  */
 
 import { ref, type Ref } from 'vue';
-import {
-  CrossupsellService,
-  ProductService,
-  Enums,
-} from 'propeller-sdk-v2';
+import { CrossupsellService, CrossupsellType, ProductService, ProductStatus } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Product,
@@ -39,7 +35,7 @@ import type {
 export interface FetchCrossupsellsInput {
   productId?: number;
   clusterId?: number;
-  types?: Enums.CrossupsellType[];
+  types?: CrossupsellType[];
 }
 
 export interface UseProductSliderOptions {
@@ -154,10 +150,10 @@ export function useProductSlider(options: UseProductSliderOptions): UseProductSl
         page: 1,
         offset: 50,
         statuses: [
-          Enums.ProductStatus.A,
-          Enums.ProductStatus.P,
-          Enums.ProductStatus.T,
-          Enums.ProductStatus.S,
+          ProductStatus.A,
+          ProductStatus.P,
+          ProductStatus.T,
+          ProductStatus.S,
         ],
       };
 

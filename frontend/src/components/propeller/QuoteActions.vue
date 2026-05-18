@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import { Order, GraphQLClient, Enums } from 'propeller-sdk-v2';
+import { Order, GraphQLClient } from 'propeller-sdk-v2';
 import { useOrders } from '../../composables/useOrders';
 import { getLabel as _getLabel } from '../../composables/shared/utils/labelHelpers';
 

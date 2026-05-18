@@ -418,16 +418,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 
-import {
-  Cart,
-  CartMainItem,
-  CartBaseItem,
-  BundleItem,
-  Contact,
-  Customer,
-  Enums,
-  GraphQLClient,
-} from "propeller-sdk-v2";
+import { BundleItem, Cart, CartBaseItem, CartMainItem, Contact, Customer, GraphQLClient, ProductClass, PurchaseRole, YesNo } from "propeller-sdk-v2";
 import { useCart } from "../../composables/useCart";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import { formatPrice as _formatPrice } from "../../composables/shared/utils/formatting";
@@ -634,10 +625,10 @@ function getItemProductUrl(
 ): ReturnType<CartIconAndSidebarState["getItemProductUrl"]> {
   const product = item.product;
   if (!product) return "#";
-  if (product.class === Enums.ProductClass.PRODUCT) {
+  if (product.class === ProductClass.PRODUCT) {
     const slug = product.slugs?.[0]?.value || "";
     return _localizeHref(`/product/${product.productId}/${slug}`, props.language);
-  } else if (product.class === Enums.ProductClass.CLUSTER) {
+  } else if (product.class === ProductClass.CLUSTER) {
     const slug = product.slugs?.[0]?.value || "";
     return _localizeHref(`/cluster/${product.clusterId || product.productId}/${slug}`, props.language);
   }
@@ -716,7 +707,7 @@ function getBundleLeaderName(
 ): ReturnType<CartIconAndSidebarState["getBundleLeaderName"]> {
   const items = item.bundle?.items;
   if (!items) return "";
-  const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+  const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
   if (!leader) return "";
   return leader.product.names?.[0]?.value || "Product";
 }
@@ -725,7 +716,7 @@ function getBundleLeaderPrice(
 ): ReturnType<CartIconAndSidebarState["getBundleLeaderPrice"]> {
   const items = item.bundle?.items;
   if (!items) return "";
-  const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+  const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
   if (!leader) return "";
   const price = leader.price?.net;
   if (price === undefined || price === null) return "";
@@ -736,7 +727,7 @@ function getBundleNonLeaders(
 ): ReturnType<CartIconAndSidebarState["getBundleNonLeaders"]> {
   const items = item.bundle?.items;
   if (!items) return [];
-  return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+  return items.filter((bi: BundleItem) => bi.isLeader !== YesNo.Y);
 }
 function getBundleItemName(
   bundleItem: BundleItem,
@@ -767,7 +758,7 @@ function showCheckoutButton(): ReturnType<
       pac._company?.companyId ??
       pac._company?._companyId;
     return (
-      role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId
+      role === PurchaseRole.PURCHASER && pacCompanyId === props.companyId
     );
   });
   if (!purchaserPAC) return true;
@@ -792,7 +783,7 @@ function showRequestAuthorizationButton(): ReturnType<
       pac._company?.companyId ??
       pac._company?._companyId;
     return (
-      role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId
+      role === PurchaseRole.PURCHASER && pacCompanyId === props.companyId
     );
   });
   if (!purchaserPAC) return false;

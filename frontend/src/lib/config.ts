@@ -1,5 +1,5 @@
-import { Enums } from 'propeller-sdk-v2'
 import type { Category, Cluster, Product } from 'propeller-sdk-v2'
+import { Fit, Format } from 'propeller-sdk-v2';
 
 // Offset 1 = "first image only" — used in product cards / grids where a single
 // thumbnail is enough.
@@ -11,15 +11,15 @@ export const imageSearchFiltersGrid = { page: 1, offset: 1 }
 export const imageSearchFilters = { page: 1, offset: 20 }
 
 export const imageVariantFiltersSmall = {
-  transformations: [{ name: 'thumb', transformation: { format: Enums.Format.WEBP, height: 100, width: 100, fit: Enums.Fit.BOUNDS } }],
+  transformations: [{ name: 'thumb', transformation: { format: Format.WEBP, height: 100, width: 100, fit: Fit.BOUNDS } }],
 }
 
 export const imageVariantFiltersMedium = {
-  transformations: [{ name: 'grid', transformation: { format: Enums.Format.WEBP, height: 300, width: 300, fit: Enums.Fit.BOUNDS } }],
+  transformations: [{ name: 'grid', transformation: { format: Format.WEBP, height: 300, width: 300, fit: Fit.BOUNDS } }],
 }
 
 export const imageVariantFiltersLarge = {
-  transformations: [{ name: 'large', transformation: { format: Enums.Format.WEBP, height: 800, width: 800, fit: Enums.Fit.BOUNDS } }],
+  transformations: [{ name: 'large', transformation: { format: Format.WEBP, height: 800, width: 800, fit: Fit.BOUNDS } }],
 }
 
 const URL_PATTERN = import.meta.env.VITE_URL_PATTERN || 'page/id/slug'

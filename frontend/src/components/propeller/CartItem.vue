@@ -388,24 +388,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from "vue";
-import {
-  GraphQLClient,
-  CartMainItem,
-  CartBaseItem,
-  BundleItem,
-  Cart,
-  ProductInventory,
-  type CrossupsellSearchInput,
-  Crossupsell,
-  Product,
-  Cluster,
-  Enums,
-  type CrossupsellsQueryVariables,
-  Contact,
-  Customer,
-  type MediaImageProductSearchInput,
-  type TransformationsInput,
-} from "propeller-sdk-v2";
+import { BundleItem, Cart, CartBaseItem, CartMainItem, Cluster, Contact, Crossupsell, type CrossupsellSearchInput, type CrossupsellsQueryVariables, CrossupsellType, Customer, GraphQLClient, type MediaImageProductSearchInput, Product, ProductInventory, type TransformationsInput, YesNo } from "propeller-sdk-v2";
 import { useCart } from "../../composables/useCart";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import {
@@ -630,7 +613,7 @@ function getBundleLeaderName(): ReturnType<
 > {
   const items = props.cartItem.bundle?.items;
   if (!items) return "";
-  const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+  const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
   if (!leader) return "";
   return leader.product.names?.[0]?.value || "Product";
 }
@@ -639,7 +622,7 @@ function getBundleLeaderPrice(): ReturnType<
 > {
   const items = props.cartItem.bundle?.items;
   if (!items) return "";
-  const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+  const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
   if (!leader) return "";
   const price = leader.price?.net;
   if (price === undefined || price === null) return "";
@@ -650,7 +633,7 @@ function getBundleNonLeaders(): ReturnType<
 > {
   const items = props.cartItem.bundle?.items;
   if (!items) return [];
-  return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+  return items.filter((bi: BundleItem) => bi.isLeader !== YesNo.Y);
 }
 function getBundleItemName(
   bundleItem: BundleItem,
@@ -717,7 +700,7 @@ async function fetchCrossupsells(): ReturnType<
     const items = await getCrossupsells({
       productId,
       clusterId,
-      types: props.crossupsellTypes || [Enums.CrossupsellType.ACCESSORIES],
+      types: props.crossupsellTypes || [CrossupsellType.ACCESSORIES],
       taxZone: props.taxZone || "NL",
       imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
     });

@@ -7,18 +7,13 @@
  *
  * Responsibilities:
  * - fetchCompany: CompanyService.getCompany() with correctly-typed CompanyVariables
- * - fetchPendingCarts: CartService.getCarts() with Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION
+ * - fetchPendingCarts: CartService.getCarts() with CartStatus.PENDING_PURCHASE_AUTHORIZATION
  * - createPac / updatePac / deletePac: PurchaseAuthorizationConfigService with proper input types
  * - acceptCartRequest: CartService.acceptPurchaseAuthorizationRequest()
  */
 
 import { ref, type Ref } from 'vue';
-import {
-  CompanyService,
-  CartService,
-  PurchaseAuthorizationConfigService,
-  Enums,
-} from 'propeller-sdk-v2';
+import { CartService, CartStatus, CompanyService, PurchaseAuthorizationConfigService } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Company,
@@ -104,7 +99,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
       const service = new CartService(graphqlClient);
       const result = await service.getCarts({
         companyIds: [companyId],
-        statuses: [Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION],
+        statuses: [CartStatus.PENDING_PURCHASE_AUTHORIZATION],
         offset: 50,
       });
       pendingCarts.value = result.items ?? [];

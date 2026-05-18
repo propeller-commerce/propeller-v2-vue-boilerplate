@@ -344,21 +344,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
 
-import {
-  CartChildItemInput,
-  GraphQLClient,
-  Product,
-  Cart,
-  Contact,
-  Customer,
-  TransformationsInput,
-  MediaImageProductSearchInput,
-  Enums,
-  CartMainItem,
-  CartBaseItem,
-  Cluster,
-  PurchaseAuthorizationConfig,
-} from "propeller-sdk-v2";
+import { CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, TransformationsInput, MediaImageProductSearchInput, CartMainItem, CartBaseItem, Cluster, PurchaseAuthorizationConfig } from "propeller-sdk-v2";
 import { useCart } from "../../composables/useCart";
 import { getLabel as _getLabel } from "../../composables/shared/utils/labelHelpers";
 import {

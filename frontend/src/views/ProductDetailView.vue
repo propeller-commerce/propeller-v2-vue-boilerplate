@@ -142,7 +142,7 @@
           :language="languageStore.language"
           :includeTax="priceStore.includeTax"
           :configuration="configuration"
-          :crossUpsellTypes="[Enums.CrossupsellType.ACCESSORIES]"
+          :crossUpsellTypes="[CrossupsellType.ACCESSORIES]"
           :productId="product.productId"
           :showAvailability="false"
           :showStock="true"
@@ -175,7 +175,7 @@
           :language="languageStore.language"
           :includeTax="priceStore.includeTax"
           :configuration="configuration"
-          :crossUpsellTypes="[Enums.CrossupsellType.RELATED]"
+          :crossUpsellTypes="[CrossupsellType.RELATED]"
           :productId="product.productId"
           :showAvailability="false"
           :showStock="true"
@@ -207,13 +207,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  Cart,
-  Cluster,
-  Enums,
-  Inventory,
-  ProductInventory,
-} from "propeller-sdk-v2";
+import { Cart, Cluster, CrossupsellType, Inventory, ProductInventory } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
