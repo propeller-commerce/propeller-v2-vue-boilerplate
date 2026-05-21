@@ -239,10 +239,9 @@ import { useAuthStore } from "@/stores/auth";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { useOrders } from "@/composables/useOrders";
+import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "@/composables/shared/utils/userIdentity";
-import OrderSummary from "@/components/propeller/OrderSummary.vue";
-import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
+import { OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const route = useRoute();

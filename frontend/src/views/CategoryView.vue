@@ -160,13 +160,7 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 
-import Breadcrumbs from "@/components/propeller/Breadcrumbs.vue";
-import GridFilters from "@/components/propeller/GridFilters.vue";
-import GridTitle from "@/components/propeller/GridTitle.vue";
-import GridToolbar from "@/components/propeller/GridToolbar.vue";
-import GridPagination from "@/components/propeller/GridPagination.vue";
-import ProductGrid from "@/components/propeller/ProductGrid.vue";
-import CategoryDescription from "@/components/propeller/CategoryDescription.vue";
+import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from 'propeller-v2-vue-ui';
 
 const route = useRoute();
 const router = useRouter();

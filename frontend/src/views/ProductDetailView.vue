@@ -230,18 +230,7 @@ import {
   type Product,
 } from "propeller-sdk-v2";
 
-import Breadcrumbs from "@/components/propeller/Breadcrumbs.vue";
-import ProductGallery from "@/components/propeller/ProductGallery.vue";
-import ProductInfo from "@/components/propeller/ProductInfo.vue";
-import ProductPrice from "@/components/propeller/ProductPrice.vue";
-import ProductShortDescription from "@/components/propeller/ProductShortDescription.vue";
-import ProductBulkPrices from "@/components/propeller/ProductBulkPrices.vue";
-import ProductTabs from "@/components/propeller/ProductTabs.vue";
-import ProductBundles from "@/components/propeller/ProductBundles.vue";
-import ProductSlider from "@/components/propeller/ProductSlider.vue";
-import AddToCart from "@/components/propeller/AddToCart.vue";
-import AddToFavorite from "@/components/propeller/AddToFavorite.vue";
-import ItemStock from "@/components/propeller/ItemStock.vue";
+import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
 
 const route = useRoute();
 const router = useRouter();

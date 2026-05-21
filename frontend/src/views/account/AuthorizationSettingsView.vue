@@ -51,7 +51,7 @@ import { Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
-import PurchaseAuthorizationConfigurator from '@/components/propeller/PurchaseAuthorizationConfigurator.vue'
+import { PurchaseAuthorizationConfigurator } from 'propeller-v2-vue-ui';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()

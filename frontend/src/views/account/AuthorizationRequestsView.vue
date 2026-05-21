@@ -53,7 +53,7 @@ import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import PurchaseAuthorizationRequests from '@/components/propeller/PurchaseAuthorizationRequests.vue'
+import { PurchaseAuthorizationRequests } from 'propeller-v2-vue-ui';
 
 const router = useRouter()
 const authStore = useAuthStore()

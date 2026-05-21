@@ -116,10 +116,10 @@ import type { Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
-import { useAddress } from '@/composables/useAddress'
-import type { AddressInput } from '@/composables/useAddress'
+import { useAddress } from 'propeller-v2-vue-ui'
+import type { AddressInput } from 'propeller-v2-vue-ui'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import AddressCard from '@/components/propeller/AddressCard.vue'
+import { AddressCard } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const authStore = useAuthStore()

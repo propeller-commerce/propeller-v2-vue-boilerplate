@@ -194,19 +194,7 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 
-import Breadcrumbs from "@/components/propeller/Breadcrumbs.vue";
-import ProductGallery from "@/components/propeller/ProductGallery.vue";
-import ClusterInfo from "@/components/propeller/ClusterInfo.vue";
-import ClusterOptions from "@/components/propeller/ClusterOptions.vue";
-import ClusterConfigurator from "@/components/propeller/ClusterConfigurator.vue";
-import ProductPrice from "@/components/propeller/ProductPrice.vue";
-import ProductBulkPrices from "@/components/propeller/ProductBulkPrices.vue";
-import ProductShortDescription from "@/components/propeller/ProductShortDescription.vue";
-import ItemStock from "@/components/propeller/ItemStock.vue";
-import ProductTabs from "@/components/propeller/ProductTabs.vue";
-import ProductSlider from "@/components/propeller/ProductSlider.vue";
-import AddToCart from "@/components/propeller/AddToCart.vue";
-import AddToFavorite from "@/components/propeller/AddToFavorite.vue";
+import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
 
 const route = useRoute();
 const router = useRouter();

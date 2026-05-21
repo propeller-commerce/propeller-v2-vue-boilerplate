@@ -154,11 +154,7 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 
-import GridFilters from '@/components/propeller/GridFilters.vue'
-import GridTitle from '@/components/propeller/GridTitle.vue'
-import GridToolbar from '@/components/propeller/GridToolbar.vue'
-import GridPagination from '@/components/propeller/GridPagination.vue'
-import ProductGrid from '@/components/propeller/ProductGrid.vue'
+import { GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from 'propeller-v2-vue-ui';
 
 const route = useRoute()
 const router = useRouter()

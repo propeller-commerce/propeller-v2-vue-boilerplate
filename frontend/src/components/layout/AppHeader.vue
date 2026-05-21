@@ -269,7 +269,7 @@ import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
-import { useCart } from '@/composables/useCart'
+import { useCart } from 'propeller-v2-vue-ui'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
 import { configuration, localizeHref, stripLanguagePrefix, detectLanguageFromPath } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
@@ -277,12 +277,7 @@ import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCar
 import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart'
 import { initCart } from '@/composables/shared/utils/cartInit'
 
-import SearchBar from '@/components/propeller/SearchBar.vue'
-import PropellerMenu from '@/components/propeller/Menu.vue'
-import PriceToggle from '@/components/propeller/PriceToggle.vue'
-import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar.vue'
-import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu.vue'
-import CompanySwitcher from '@/components/propeller/CompanySwitcher.vue'
+import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from 'propeller-v2-vue-ui';
 
 const router = useRouter()
 const route = useRoute()

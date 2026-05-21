@@ -469,17 +469,10 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { useCheckout } from "@/composables/useCheckout";
+import { useCheckout } from "propeller-v2-vue-ui";
 import type { AnyUser } from "@/composables/shared/utils/userIdentity";
 
-import CartPaymethods from "@/components/propeller/CartPaymethods.vue";
-import CartCarriers from "@/components/propeller/CartCarriers.vue";
-import DeliveryDate from "@/components/propeller/DeliveryDate.vue";
-import CartSummary from "@/components/propeller/CartSummary.vue";
-import CartOverview from "@/components/propeller/CartOverview.vue";
-import ItemsOverview from "@/components/propeller/ItemsOverview.vue";
-import AddressCard from "@/components/propeller/AddressCard.vue";
-import AddressSelector from "@/components/propeller/AddressSelector.vue";
+import { AddressCard, AddressSelector, CartCarriers, CartOverview, CartPaymethods, CartSummary, DeliveryDate, ItemsOverview } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const router = useRouter();

@@ -27,9 +27,9 @@ import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
-import { useCart } from '@/composables/useCart'
+import { useCart } from 'propeller-v2-vue-ui'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import LoginForm from '@/components/propeller/LoginForm.vue'
+import { LoginForm } from 'propeller-v2-vue-ui';
 
 const router = useRouter()
 const route = useRoute()

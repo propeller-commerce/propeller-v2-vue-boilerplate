@@ -71,7 +71,7 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient, productService } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import ProductSlider from "@/components/propeller/ProductSlider.vue";
+import { ProductSlider } from 'propeller-v2-vue-ui';
 import type {
   Cart,
   Cluster,

@@ -35,9 +35,9 @@ import { useCartStore } from '@/stores/cart'
 import { usePriceStore } from '@/stores/price'
 import { graphqlClient } from '@/lib/api'
 import { configuration } from '@/lib/config'
-import { useFavorites } from '@/composables/useFavorites'
+import { useFavorites } from 'propeller-v2-vue-ui'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import FavoriteListDetails from '@/components/propeller/FavoriteListDetails.vue'
+import { FavoriteListDetails } from 'propeller-v2-vue-ui';
 import type { Contact, Customer } from 'propeller-sdk-v2'
 
 const route = useRoute()

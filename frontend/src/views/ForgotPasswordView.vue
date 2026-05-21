@@ -14,7 +14,7 @@
 import { useRouter } from 'vue-router'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
-import ForgotPassword from '@/components/propeller/ForgotPassword.vue'
+import { ForgotPassword } from 'propeller-v2-vue-ui';
 import { localizeHref } from '@/lib/config'
 
 const router = useRouter()

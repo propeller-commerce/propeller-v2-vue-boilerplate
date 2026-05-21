@@ -34,7 +34,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { localizeHref } from "@/lib/config";
-import AccountIconAndMenu from "@/components/propeller/AccountIconAndMenu.vue";
+import { AccountIconAndMenu } from 'propeller-v2-vue-ui';
 
 const authStore = useAuthStore();
 const companyStore = useCompanyStore();

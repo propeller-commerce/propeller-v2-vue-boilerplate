@@ -246,12 +246,9 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import type { Order } from "propeller-sdk-v2";
-import { useOrders } from "@/composables/useOrders";
+import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "@/composables/shared/utils/userIdentity";
-import OrderSummary from "@/components/propeller/OrderSummary.vue";
-import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
-import QuoteActions from "@/components/propeller/QuoteActions.vue";
-import OrderTotals from "@/components/propeller/OrderTotals.vue";
+import { OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils

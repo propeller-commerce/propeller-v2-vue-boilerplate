@@ -22,7 +22,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { localizeHref } from '@/lib/config'
-import FavoriteLists from '@/components/propeller/FavoriteLists.vue'
+import { FavoriteLists } from 'propeller-v2-vue-ui';
 
 const router = useRouter()
 const authStore = useAuthStore()

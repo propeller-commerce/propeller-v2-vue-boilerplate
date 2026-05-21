@@ -87,9 +87,7 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import CartItem from "@/components/propeller/CartItem.vue";
-import CartSummary from "@/components/propeller/CartSummary.vue";
-import ActionCode from "@/components/propeller/ActionCode.vue";
+import { ActionCode, CartItem, CartSummary } from 'propeller-v2-vue-ui';
 
 const router = useRouter();
 const authStore = useAuthStore();
