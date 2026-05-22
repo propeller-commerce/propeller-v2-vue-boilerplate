@@ -24,7 +24,7 @@
     "marked": "^18.0.0",
     "pinia": "^3.0.4",
     "propeller-sdk-v2": "github:propeller-commerce/propeller-sdk-v2#master",
-    "propeller-v2-vue-ui": "file:../../propeller-ui/propeller-v2-vue-ui",
+    "propeller-v2-vue-ui": "github:propeller-commerce/propeller-v2-vue-ui#master",
     "qs": "^6.15.0",
     "swiper": "^12.1.3",
     "tailwind-merge": "^3.5.0",
