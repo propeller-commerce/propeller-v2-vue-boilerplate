@@ -85,13 +85,31 @@ const upstreamUrl = new URL(UPSTREAM)
 
 const GQL_CACHE_TTL_MS = 24 * 60 * 60 * 1000  // 24 h
 const GQL_CACHE_MAX_ENTRIES = 1000
-const gqlCache = new Map() // key → { status, contentType, body: Buffer, expiresAt }
+
+/**
+ * Primary cache: SHA-256(request body) → entry. Entry shape:
+ *   { status, contentType, body: Buffer, expiresAt, tags: Set<string> }
+ *
+ * `tags` is populated from the `x-propeller-cache-tags` request header that
+ * `lib/server.ts` attaches on anonymous catalog reads. Empty for callers
+ * that don't send the header — those entries are still cached (TTL only)
+ * but can't be busted surgically.
+ */
+const gqlCache = new Map()
+
+/**
+ * Secondary index: tag → Set<key>. Keeps the inverse mapping so
+ * `gqlCacheInvalidateTag('product:42')` is O(entries-for-that-tag), not
+ * O(every-cache-entry). Maintained in lock-step with the primary cache:
+ * `gqlCacheSet` adds, `gqlCacheDeleteKey` removes.
+ */
+const gqlTagToKeys = new Map()
 
 function gqlCacheGet(key) {
   const hit = gqlCache.get(key)
   if (!hit) return undefined
   if (hit.expiresAt < Date.now()) {
-    gqlCache.delete(key)
+    gqlCacheDeleteKey(key)
     return undefined
   }
   // LRU touch: re-insert to move to the most-recently-used end.
@@ -100,42 +118,104 @@ function gqlCacheGet(key) {
   return hit
 }
 
+/**
+ * Remove a single key from both the primary cache and the tag index.
+ * Centralised so eviction paths (TTL miss, LRU overflow, tag bust) all
+ * keep the two structures in sync — leaking dangling tag entries is the
+ * easy way to grow `gqlTagToKeys` without bound.
+ */
+function gqlCacheDeleteKey(key) {
+  const entry = gqlCache.get(key)
+  if (!entry) return
+  gqlCache.delete(key)
+  if (entry.tags) {
+    for (const tag of entry.tags) {
+      const keys = gqlTagToKeys.get(tag)
+      if (!keys) continue
+      keys.delete(key)
+      if (keys.size === 0) gqlTagToKeys.delete(tag)
+    }
+  }
+}
+
 function gqlCacheSet(key, entry) {
-  gqlCache.set(key, { ...entry, expiresAt: Date.now() + GQL_CACHE_TTL_MS })
+  // Replace any previous entry for the same key — keeps the tag index
+  // consistent if the same operation is re-cached with a different tag set.
+  if (gqlCache.has(key)) gqlCacheDeleteKey(key)
+
+  const tags = entry.tags instanceof Set ? entry.tags : new Set(entry.tags || [])
+  gqlCache.set(key, { ...entry, tags, expiresAt: Date.now() + GQL_CACHE_TTL_MS })
+
+  for (const tag of tags) {
+    let keys = gqlTagToKeys.get(tag)
+    if (!keys) {
+      keys = new Set()
+      gqlTagToKeys.set(tag, keys)
+    }
+    keys.add(key)
+  }
+
   if (gqlCache.size > GQL_CACHE_MAX_ENTRIES) {
     const oldest = gqlCache.keys().next().value
-    if (oldest !== undefined) gqlCache.delete(oldest)
+    if (oldest !== undefined) gqlCacheDeleteKey(oldest)
   }
 }
 
 /**
- * Peek the first non-whitespace, non-comment keyword in a GraphQL document to
- * decide whether it's a query, mutation, or subscription. An anonymous query
- * shorthand (`{ ... }`) is treated as a query. Anything we can't parse is
- * treated as `mutation` so we err on the side of *not* caching.
+ * Surgical invalidation entry point — called by `/api/revalidate` once it
+ * has validated the shared-secret header. Returns the number of cache
+ * entries removed (zero is a valid result: the tag may simply not have any
+ * live entries pinned to it).
+ */
+function gqlCacheInvalidateTag(tag) {
+  const keys = gqlTagToKeys.get(tag)
+  if (!keys || keys.size === 0) return 0
+  // Snapshot first — `gqlCacheDeleteKey` mutates the set we're iterating.
+  const victims = [...keys]
+  for (const key of victims) gqlCacheDeleteKey(key)
+  return victims.length
+}
+
+/**
+ * Nuclear option — drop every entry from both the primary cache and the
+ * tag index. Used by `POST /api/revalidate` with `{"tag":"*"}` when a tag
+ * scoped to a single entity isn't enough (e.g. after a bulk catalog import,
+ * or for tagless legacy entries that pre-date the tag scheme).
+ */
+function gqlCacheClearAll() {
+  const count = gqlCache.size
+  gqlCache.clear()
+  gqlTagToKeys.clear()
+  return count
+}
+
+/**
+ * Parse the `x-propeller-cache-tags` request header into a Set of tag
+ * strings. Format: comma-separated, whitespace-trimmed, empty values
+ * dropped. Anything malformed produces an empty Set — the request is
+ * cacheable, just not tag-bustable.
+ */
+function parseCacheTagsHeader(headerValue) {
+  if (!headerValue || typeof headerValue !== 'string') return new Set()
+  const out = new Set()
+  for (const part of headerValue.split(',')) {
+    const trimmed = part.trim()
+    if (trimmed) out.add(trimmed)
+  }
+  return out
+}
+
+/**
+ * Determine the operation type of a GraphQL document. The SDK's generated
+ * documents lead with `fragment` definitions and put the actual operation
+ * at the end, so we scan for the first top-level `query` / `mutation` /
+ * `subscription` keyword anywhere in the document. Anything we can't match
+ * is treated as `mutation` so we err on the side of *not* caching.
  */
 function gqlOperationType(query) {
   if (typeof query !== 'string') return 'mutation'
-  // Strip leading whitespace + line comments.
-  let i = 0
-  while (i < query.length) {
-    const ch = query[i]
-    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
-      i++
-      continue
-    }
-    if (ch === '#') {
-      while (i < query.length && query[i] !== '\n') i++
-      continue
-    }
-    break
-  }
-  if (query[i] === '{') return 'query' // shorthand
-  const head = query.slice(i, i + 12).toLowerCase()
-  if (head.startsWith('query')) return 'query'
-  if (head.startsWith('mutation')) return 'mutation'
-  if (head.startsWith('subscription')) return 'subscription'
-  return 'mutation'
+  const match = query.match(/\b(query|mutation|subscription)\b/)
+  return match ? match[1] : 'mutation'
 }
 
 /** SHA-256 hex digest of the request body — stable cache key per operation+variables. */
@@ -157,6 +237,16 @@ function graphqlCachedHandler() {
       const rawBody = Buffer.concat(chunks)
       const auth = req.headers['authorization']
       const authHeader = Array.isArray(auth) ? auth[0] : auth
+
+      // Pull surgical-invalidation tags off the request. The SDK doesn't
+      // know about these — `lib/server.ts` attaches them via the static
+      // `headers` slot on the GraphQLClient config when `cacheable` infra
+      // is in use. The header is server-internal: the upstream API doesn't
+      // see it (we don't forward it) and the browser shouldn't send it.
+      const tagsHeader = req.headers['x-propeller-cache-tags']
+      const cacheTags = parseCacheTagsHeader(
+        Array.isArray(tagsHeader) ? tagsHeader[0] : tagsHeader,
+      )
 
       // Try to parse the body so we can read the GraphQL op type. If parsing
       // fails for any reason, fall through to the bypass path — better to
@@ -206,7 +296,12 @@ function graphqlCachedHandler() {
             hasErrors = Array.isArray(parsedResp?.errors) && parsedResp.errors.length > 0
           } catch {}
           if (!hasErrors) {
-            gqlCacheSet(key, { status: upstreamResp.status, contentType, body: respBuf })
+            gqlCacheSet(key, {
+              status: upstreamResp.status,
+              contentType,
+              body: respBuf,
+              tags: cacheTags,
+            })
           }
         }
 
@@ -231,6 +326,72 @@ function graphqlCachedHandler() {
 
 async function createServer() {
   const app = express()
+
+  // ── /api/revalidate — surgical cache invalidation ─────────────────────────
+  //
+  // POST with `X-Revalidate-Secret: $REVALIDATE_SECRET` and JSON body
+  // `{ "tag": "product:42" }`. Walks the tag→keys index in the in-memory
+  // GraphQL cache and removes every entry that was inserted with that tag.
+  //
+  // Tag values must come from `lib/server.ts`'s `tagFor()` helper. The
+  // catalog fetch helpers attach them via the `X-Propeller-Cache-Tags`
+  // request header on every anonymous read — see the comment in
+  // `graphqlCachedHandler` above for where they're parsed back out.
+  //
+  // Fails closed if `REVALIDATE_SECRET` isn't set — never expose this
+  // endpoint without the secret. A public revalidation hook is a trivial
+  // DoS amplifier (every call forces the next render to re-fetch).
+  app.post('/api/revalidate', express.json({ limit: '8kb' }), async (req, res) => {
+    const expected = process.env.REVALIDATE_SECRET
+    if (!expected) {
+      res.status(503).json({ error: 'revalidation endpoint not configured' })
+      return
+    }
+    const provided = req.headers['x-revalidate-secret']
+    const providedStr = Array.isArray(provided) ? provided[0] : provided
+    if (!providedStr || providedStr !== expected) {
+      res.status(401).json({ error: 'unauthorized' })
+      return
+    }
+    const tag = req.body && typeof req.body.tag === 'string' ? req.body.tag : null
+    if (!tag) {
+      res.status(400).json({ error: 'missing tag' })
+      return
+    }
+    // Bust BOTH cache layers in lock-step:
+    //   - server.js's raw-response LRU (HTTP-level, indexed by tag).
+    //   - lib/server.ts's parsed-object SSR cache (object-level, indexed
+    //     by tag via the `invalidateCache` export re-exposed by
+    //     entry-server). A revalidation that hits only one layer is a
+    //     consistency bug — the second layer would serve stale data on
+    //     the next render.
+    //
+    // The wildcard `*` is a nuclear wipe — drops every entry from both
+    // layers regardless of tag. Same shared-secret gate, no extra surface.
+    const isWildcard = tag === '*'
+    let ssrInvalidated = 0
+    try {
+      const mod = isProd
+        ? await import('./dist/server/entry-server.js')
+        : await vite.ssrLoadModule('/src/entry-server.ts')
+      if (isWildcard && typeof mod.clearCache === 'function') {
+        ssrInvalidated = mod.clearCache()
+      } else if (typeof mod.invalidateCache === 'function') {
+        ssrInvalidated = mod.invalidateCache(tag)
+      }
+    } catch (err) {
+      console.error('[revalidate] SSR cache invalidation failed:', err)
+      // Don't abort — the HTTP-level bust below is still useful.
+    }
+    const proxyInvalidated = isWildcard
+      ? gqlCacheClearAll()
+      : gqlCacheInvalidateTag(tag)
+    res.json({
+      ok: true,
+      tag,
+      invalidated: { proxy: proxyInvalidated, ssr: ssrInvalidated },
+    })
+  })
 
   // ── /api/graphql proxy with anonymous-query response cache ────────────────
   //

@@ -187,11 +187,17 @@
             <div
               :class="['absolute left-0 top-full z-50', showMainMenu ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none h-0 overflow-hidden']"
             >
+              <!-- Pre-fetched tree from `entry-server.ts`'s menu prefetch
+                   (lives in `useMenuStore`). When present, `<PropellerMenu>`
+                   skips its internal `useMenu` fetch — anonymous menu HTML
+                   is in the initial response, no loading flash, no client
+                   roundtrip on hydration. -->
               <PropellerMenu
                 :graphqlClient="graphqlClient"
                 :categoryId="configuration.baseCategoryId"
                 :depth="configuration.menuDepth"
                 :language="languageStore.language"
+                :tree="menuTreeProp"
                 :onMenuItemClick="handleCategoryClick"
                 :configuration="configuration"
                 menuStyle="dropdown-vertical"
@@ -229,13 +235,15 @@
         />
       </div>
 
-      <!-- Mobile categories -->
+      <!-- Mobile categories — same pre-fetched tree as the desktop instance.
+           Both `<PropellerMenu>` mounts share one fetch via `useMenuStore`. -->
       <PropellerMenu
         v-if="showCategoriesMenu"
         :graphqlClient="graphqlClient"
         :categoryId="configuration.baseCategoryId"
         :depth="configuration.menuDepth"
         :language="languageStore.language"
+        :tree="menuTreeProp"
         :onMenuItemClick="handleCategoryClick"
         :configuration="configuration"
         menuStyle="dropdown-vertical"
@@ -268,6 +276,7 @@ import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
+import { useMenuStore } from '@/stores/menu'
 import { graphqlClient } from '@/lib/api'
 import { useCart } from 'propeller-v2-vue-ui'
 import type { AnyUser } from '@/composables/shared/utils/userIdentity'
@@ -286,6 +295,15 @@ const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
+// Server-seeded category tree (set in `entry-server.ts`'s always-on
+// prefetch). Passed to both `<PropellerMenu>` instances as `:tree` so the
+// package component skips its internal `useMenu` fetch — anonymous menu
+// HTML lands in the initial response and there is no client-side
+// roundtrip on hydration. `null` on a stale-state seed → the package's
+// `tree` prop is omitted (passing `null` would short-circuit it to an
+// empty render), and the legacy client-side fetch kicks in as fallback.
+const menuStore = useMenuStore()
+const menuTreeProp = computed(() => menuStore.tree ?? undefined)
 
 // `fetchActiveCart` here is the composable-bound version still used by
 // handleCompanyChange (which fires AFTER login and relies on the reactive

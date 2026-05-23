@@ -23,6 +23,19 @@ import {
   prefetchSearch,
   prefetchCluster,
 } from './router/ssrPrefetch'
+import { fetchMenu, getAnonymousInfra } from './lib/server'
+import { useMenuStore } from './stores/menu'
+import { baseCategoryId as configBaseCategoryId } from './lib/config'
+
+/**
+ * Re-exported so `server.js`'s `/api/revalidate` route can bust the
+ * parsed-object SSR cache alongside its own raw-response LRU. Both layers
+ * need to be in sync — a single revalidation request hits both via this
+ * one entry point. Returns the number of entries evicted from the SSR
+ * cache (the raw-response cache's count is reported separately by
+ * `server.js`).
+ */
+export { invalidateCache, clearCache } from './lib/server'
 
 /**
  * Maps a route's `meta.ssrKey` to its server prefetch loader. Keeping this
@@ -85,6 +98,21 @@ export async function render(
 
   const status = resolved.matched.length === 0 ? 404 : 200
 
+  // Always-on layout-level prefetches: the menu (rendered in `AppHeader`
+  // on every page). Runs in parallel with the route-specific loaders below
+  // — the menu fetch is anonymous and independent of the matched route, so
+  // overlapping its latency with the page data is a free win. Failure is
+  // swallowed: the package's `<Menu>` falls back to its client-side
+  // `useMenu` fetch when no tree is supplied, so the page still renders.
+  const menuPrefetch = (async () => {
+    try {
+      const tree = await fetchMenu(getAnonymousInfra(), configBaseCategoryId)
+      useMenuStore().setTree(tree)
+    } catch (err) {
+      console.error('[ssr] menu prefetch failed:', err)
+    }
+  })()
+
   // Run route-level SSR data loaders. A route opts in with `meta.ssrKey`,
   // which selects a loader from `SSR_LOADERS`; the loader seeds a Pinia store
   // so the fetched data serializes into `__INITIAL_STATE__` for the client.
@@ -101,6 +129,10 @@ export async function render(
       }
     }
   }
+
+  // Make sure the menu finished before we serialise Pinia state. It started
+  // in parallel above, so this `await` typically resolves immediately.
+  await menuPrefetch
 
   const html = await renderToString(app)
   const payload = await renderSSRHead(head)
