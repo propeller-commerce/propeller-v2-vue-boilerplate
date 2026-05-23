@@ -45,7 +45,7 @@ import {
   SortOrder,
   ProductSearchableField,
 } from 'propeller-sdk-v2'
-import { createServices, toPlain, type Services } from 'propeller-v2-vue-ui/shared'
+import { createServices, toPlain, type Services, type MenuCategory } from 'propeller-v2-vue-ui/shared'
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,
@@ -118,6 +118,53 @@ function env(...names: string[]): string {
   return ''
 }
 
+// ── Cache control: tags + header convention ─────────────────────────────────
+//
+// The Node SSR proxy in `server.js` runs a SHA-256-keyed LRU over anonymous
+// `/api/graphql` POSTs. Tag-based invalidation works by attaching tags via a
+// request header at SDK call time; the proxy parses the header, indexes the
+// cache entry by tag, and `POST /api/revalidate` busts entries by tag. This
+// module is the source of truth for the tag *naming* — never inline tag
+// strings elsewhere, always call `tagFor()`.
+//
+// The header name is server-internal: never forwarded to the upstream API
+// (the proxy strips it implicitly by only forwarding `apikey`, `Content-Type`,
+// `Authorization`).
+
+/**
+ * HTTP header the SDK uses to ship per-call cache tags to the local SSR
+ * proxy (`server.js`'s `/api/graphql` handler). Comma-separated string of
+ * tag values. Server-only convention — never sent to the upstream API.
+ */
+export const CACHE_TAGS_HEADER = 'X-Propeller-Cache-Tags'
+
+/**
+ * Umbrella tag for every anonymous catalog read. A single
+ * `revalidateTag(TAG_CATALOG)` busts the whole catalog at once. Use
+ * surgically (nightly refresh, schema migrations); per-entity tags below
+ * are the right tool for routine invalidation.
+ */
+export const TAG_CATALOG = 'catalog'
+
+type CacheableEntity = 'product' | 'category' | 'cluster' | 'menu' | 'search'
+
+/**
+ * Build a Next.js-style cache tag for a cacheable entity. Single source of
+ * truth for tag shape — `/api/revalidate` only accepts tags this helper
+ * produces. Mirrors `propeller-next/lib/server.ts` `tagFor()`.
+ */
+export function tagFor(entity: CacheableEntity, id?: number | string): string {
+  return id === undefined ? entity : `${entity}:${id}`
+}
+
+/**
+ * Serialise a tag set into the header value `server.js`'s
+ * `parseCacheTagsHeader` expects: comma-joined, whitespace-trimmed.
+ */
+function tagsHeaderValue(tags: readonly string[]): string {
+  return tags.join(',')
+}
+
 // ── Client factory ───────────────────────────────────────────────────────────
 
 export interface CreateServerClientOptions {
@@ -125,6 +172,19 @@ export interface CreateServerClientOptions {
   getAccessToken?: () => string | undefined
   endpoint?: string
   apiKey?: string
+  /**
+   * When set, every GraphQL POST issued by this client carries the
+   * `X-Propeller-Cache-Tags` header so the SSR proxy in `server.js` can
+   * index the cache entry under each tag and surgically invalidate later.
+   *
+   * Only set for anonymous infra — authenticated calls don't go through
+   * the cache at all (the proxy's `cacheable` gate checks `Authorization`).
+   * A static client-level tag set means every operation issued from this
+   * infra carries the same umbrella + entity-class tags; per-entity-id
+   * tags (e.g. `product:42`) are attached at the fetch-helper level via
+   * `withCacheTags()` below.
+   */
+  cacheTags?: readonly string[]
 }
 
 /**
@@ -151,8 +211,47 @@ export function createServerClient(
     securityMode: 'direct',
     timeout: 30000,
     getAccessToken: opts.getAccessToken,
+    // When the host provided baseline cache tags (anonymous infra), attach
+    // them to every request via a static header. Per-entity tags (e.g.
+    // `product:42`) are layered on by the fetch helpers via `withCacheTags`.
+    ...(opts.cacheTags?.length && {
+      headers: { [CACHE_TAGS_HEADER]: tagsHeaderValue(opts.cacheTags) },
+    }),
   }
   return new GraphQLClient(config)
+}
+
+/**
+ * Build a one-shot child client that carries an additional per-call tag set.
+ *
+ * The SDK exposes `headers` on the client config, but only at construction
+ * time — there's no per-operation header override. To attach per-entity tags
+ * (e.g. `product:42`) on top of the infra's baseline tags, we mint a new
+ * client whose `headers` merges the two. Cheap (the client is a thin wrapper
+ * around `fetch`) and keeps the SSR side from having to invent its own
+ * GraphQL transport.
+ *
+ * Returns the original `infra.client` when the infra isn't cacheable —
+ * authenticated renders bypass the proxy cache entirely and don't need the
+ * header overhead.
+ */
+function withCacheTags(infra: ServerInfra, extraTags: readonly string[]): GraphQLClient {
+  if (!infra.cacheable || extraTags.length === 0) return infra.client
+  const merged = [...(infra.cacheTags ?? []), ...extraTags]
+  return createServerClient({
+    getAccessToken: () => undefined, // cacheable === anonymous, by definition
+    cacheTags: merged,
+  })
+}
+
+/**
+ * Convenience wrapper: returns a `Services` bag bound to a client that
+ * carries the merged tag set. The fetch helpers below call this once and
+ * issue all their service calls through the result.
+ */
+function withCacheTagsServices(infra: ServerInfra, extraTags: readonly string[]): Services {
+  if (!infra.cacheable || extraTags.length === 0) return infra.services
+  return createServices(withCacheTags(infra, extraTags))
 }
 
 // ── Per-request infra (mirrors the PropellerProvider value object) ───────────
@@ -166,6 +265,19 @@ export interface ServerInfra {
   currency: string
   /** Tax-inclusive pricing — the server defaults to net prices. */
   includeTax: boolean
+  /**
+   * Whether GraphQL POSTs issued through this infra should attach cache
+   * tags. True for `getAnonymousInfra()`, false for `getServerInfra()`
+   * (authenticated). The fetch helpers branch on this flag to decide
+   * whether to mint a tagged client via `withCacheTags`.
+   */
+  cacheable: boolean
+  /**
+   * Baseline tags every operation issued from this infra carries. Per-entity
+   * tags (e.g. `product:42`) are added on top inside the fetch helpers.
+   * `undefined` when `cacheable` is false.
+   */
+  cacheTags?: readonly string[]
 }
 
 /**
@@ -192,20 +304,43 @@ export async function getServerInfra(
     }
   }
 
-  return { client, services, user, language, currency: '€', includeTax: false }
+  return {
+    client,
+    services,
+    user,
+    language,
+    currency: '€',
+    includeTax: false,
+    cacheable: false, // authenticated render — bypasses the SSR proxy cache
+  }
 }
 
 /**
  * Resolve the per-request infra for an **anonymous** render. Never reads the
  * auth cookie, never calls `getViewer` — `user` is always `null`. The route
- * stays cacheable because it never depends on a per-user cookie.
+ * stays cacheable because it never depends on a per-user cookie. Every
+ * GraphQL POST carries the `[TAG_CATALOG]` baseline tag header so the
+ * server-side proxy LRU can later be busted by tag.
  */
 export function getAnonymousInfra(
   language: string = DEFAULT_LANGUAGE,
 ): ServerInfra {
-  const client = createServerClient({ getAccessToken: () => undefined })
+  const cacheTags = [TAG_CATALOG] as const
+  const client = createServerClient({
+    getAccessToken: () => undefined,
+    cacheTags,
+  })
   const services = createServices(client)
-  return { client, services, user: null, language, currency: '€', includeTax: false }
+  return {
+    client,
+    services,
+    user: null,
+    language,
+    currency: '€',
+    includeTax: false,
+    cacheable: true,
+    cacheTags,
+  }
 }
 
 /**
@@ -308,6 +443,8 @@ function resolveUserId(user: Contact | Customer | null): number | undefined {
 interface CacheEntry<T> {
   value: T
   expiresAt: number
+  /** Tag set the entry was inserted with. Used by `invalidateCache(tag)`. */
+  tags: Set<string>
 }
 
 const SSR_CACHE_TTL_MS = 24 * 60 * 60 * 1000  // 24 h — anonymous SSR data is essentially static
@@ -316,12 +453,32 @@ const SSR_CACHE_MAX_ENTRIES = 500             // ~500 unique catalog URLs is gen
 
 const ssrCache = new Map<string, CacheEntry<unknown>>()
 
+/**
+ * Secondary index: tag → Set<key>. Mirror of `server.js`'s `gqlTagToKeys`,
+ * scoped to this parsed-object SSR cache. Maintained in lock-step with
+ * `ssrCache` so `invalidateCache(tag)` is O(entries-for-tag), not O(all).
+ */
+const ssrTagToKeys = new Map<string, Set<string>>()
+
+/** Remove a single key from both `ssrCache` and `ssrTagToKeys`. */
+function cacheDeleteKey(key: string): void {
+  const entry = ssrCache.get(key)
+  if (!entry) return
+  ssrCache.delete(key)
+  for (const tag of entry.tags) {
+    const keys = ssrTagToKeys.get(tag)
+    if (!keys) continue
+    keys.delete(key)
+    if (keys.size === 0) ssrTagToKeys.delete(tag)
+  }
+}
+
 /** Read a cache entry, honouring TTL. Touches LRU order on a hit. */
 function cacheGet<T>(key: string): T | undefined {
   const hit = ssrCache.get(key)
   if (!hit) return undefined
   if (hit.expiresAt < Date.now()) {
-    ssrCache.delete(key)
+    cacheDeleteKey(key)
     return undefined
   }
   // Re-insert to move the entry to the end (most-recently-used).
@@ -331,12 +488,23 @@ function cacheGet<T>(key: string): T | undefined {
 }
 
 /** Write a cache entry with the appropriate TTL, evicting the LRU head if full. */
-function cacheSet<T>(key: string, value: T): void {
+function cacheSet<T>(key: string, value: T, tags: readonly string[] = []): void {
+  // Replace any prior entry first so the tag index stays consistent.
+  if (ssrCache.has(key)) cacheDeleteKey(key)
   const ttl = value === null ? SSR_CACHE_NEG_TTL_MS : SSR_CACHE_TTL_MS
-  ssrCache.set(key, { value, expiresAt: Date.now() + ttl })
+  const tagSet = new Set(tags)
+  ssrCache.set(key, { value, expiresAt: Date.now() + ttl, tags: tagSet })
+  for (const tag of tagSet) {
+    let keys = ssrTagToKeys.get(tag)
+    if (!keys) {
+      keys = new Set<string>()
+      ssrTagToKeys.set(tag, keys)
+    }
+    keys.add(key)
+  }
   if (ssrCache.size > SSR_CACHE_MAX_ENTRIES) {
     const oldest = ssrCache.keys().next().value
-    if (oldest !== undefined) ssrCache.delete(oldest)
+    if (oldest !== undefined) cacheDeleteKey(oldest)
   }
 }
 
@@ -344,18 +512,51 @@ function cacheSet<T>(key: string, value: T): void {
  * Memoise an anonymous fetch by `key`. When `infra.user` is set the cache is
  * bypassed entirely — authenticated renders are dynamic, never cached. Errors
  * are not cached; only successful resolutions (including `null` "not found").
+ *
+ * `tags` is merged with the infra baseline tags and recorded on the entry so
+ * `invalidateCache(tag)` can bust matching entries surgically. Defaults to
+ * the infra baseline alone if no per-call tags are provided.
  */
 async function withAnonymousCache<T>(
   infra: ServerInfra,
   key: string,
+  tags: readonly string[],
   load: () => Promise<T>,
 ): Promise<T> {
   if (infra.user) return load()
   const cached = cacheGet<T>(key)
   if (cached !== undefined) return cached
   const fresh = await load()
-  cacheSet(key, fresh)
+  const allTags = [...(infra.cacheTags ?? []), ...tags]
+  cacheSet(key, fresh, allTags)
   return fresh
+}
+
+/**
+ * Invalidate every SSR-cache entry tagged with `tag`. Exported so the Node
+ * server (`server.js`'s `/api/revalidate` route) can bust the parsed-object
+ * cache alongside its own raw-response LRU. Returns the number of evicted
+ * entries (zero is a valid outcome).
+ */
+export function invalidateCache(tag: string): number {
+  const keys = ssrTagToKeys.get(tag)
+  if (!keys || keys.size === 0) return 0
+  const victims = [...keys]
+  for (const key of victims) cacheDeleteKey(key)
+  return victims.length
+}
+
+/**
+ * Nuclear wipe — drop every entry from the SSR cache and its tag index.
+ * Paired with the proxy LRU's `gqlCacheClearAll` by the `/api/revalidate`
+ * route when called with `{"tag":"*"}`. Returns the number of evicted
+ * entries.
+ */
+export function clearCache(): number {
+  const count = ssrCache.size
+  ssrCache.clear()
+  ssrTagToKeys.clear()
+  return count
 }
 
 // ── Thin fetch helpers ───────────────────────────────────────────────────────
@@ -371,9 +572,14 @@ export async function fetchProduct(
 ): Promise<Product | null> {
   const lang = language ?? infra.language
   const cacheKey = `product:${productId}:${lang}`
-  return withAnonymousCache<Product | null>(infra, cacheKey, async () => {
+  // Per-entity tag attached on top of the infra baseline (`catalog`). The
+  // proxy LRU indexes the response under both `product` (class bust) and
+  // `product:${id}` (surgical bust).
+  const tags = [tagFor('product'), tagFor('product', productId)]
+  const services = withCacheTagsServices(infra, tags)
+  return withAnonymousCache<Product | null>(infra, cacheKey, tags, async () => {
     try {
-      const result = await infra.services.product.getProduct({
+      const result = await services.product.getProduct({
         productId,
         language: lang,
         imageSearchFilters,
@@ -420,9 +626,11 @@ export async function fetchCategory(
   }
 
   const cacheKey = `category:${categoryId}:${lang}:${sortField}:${sortOrder}:${page}:${offset}:${stableListingKey(opts)}`
-  return withAnonymousCache<Category | null>(infra, cacheKey, async () => {
+  const tags = [tagFor('category'), tagFor('category', categoryId)]
+  const services = withCacheTagsServices(infra, tags)
+  return withAnonymousCache<Category | null>(infra, cacheKey, tags, async () => {
     try {
-      const result = await infra.services.category.getCategory({
+      const result = await services.category.getCategory({
         categoryId,
         language: lang,
         categoryProductSearchInput,
@@ -473,9 +681,14 @@ export async function fetchSearch(
   }
 
   const cacheKey = `search:${baseCategoryId}:${lang}:${term}:${sortField}:${sortOrder}:${page}:${offset}:${stableListingKey(opts)}`
-  return withAnonymousCache<ProductsResponse | null>(infra, cacheKey, async () => {
+  // Search isn't tagged per-term — long-tail terms would explode the tag
+  // namespace. Cardinality is controlled by the TTL; class-level
+  // `tagFor('search')` busts all search-result entries at once.
+  const tags = [tagFor('search')]
+  const services = withCacheTagsServices(infra, tags)
+  return withAnonymousCache<ProductsResponse | null>(infra, cacheKey, tags, async () => {
     try {
-      const result = await infra.services.category.getCategory({
+      const result = await services.category.getCategory({
         categoryId: baseCategoryId,
         language: lang,
         categoryProductSearchInput,
@@ -507,14 +720,16 @@ export async function fetchCluster(
 ): Promise<Cluster | null> {
   const lang = language ?? infra.language
   const cacheKey = `cluster:${clusterId}:${lang}`
-  return withAnonymousCache<Cluster | null>(infra, cacheKey, async () => {
+  const tags = [tagFor('cluster'), tagFor('cluster', clusterId)]
+  const services = withCacheTagsServices(infra, tags)
+  return withAnonymousCache<Cluster | null>(infra, cacheKey, tags, async () => {
     try {
-      const clusterConfig = await infra.services.cluster.getClusterConfig(clusterId)
+      const clusterConfig = await services.cluster.getClusterConfig(clusterId)
       const attributeNames: string[] = (clusterConfig?.config?.settings ?? []).map(
         (setting: ClusterConfigSetting) => setting.name,
       )
 
-      const result = await infra.services.cluster.getCluster({
+      const result = await services.cluster.getCluster({
         clusterId,
         language: lang,
         imageSearchFilters: imageSearchFiltersGrid,
@@ -531,6 +746,112 @@ export async function fetchCluster(
         return null
       }
       throw e
+    }
+  })
+}
+
+// ── Menu (category tree) ────────────────────────────────────────────────────
+
+/**
+ * Default depth of the menu tree. Matches `useMenu`'s default (3) so the
+ * server-fetched tree and the legacy client-fetched tree have the same shape.
+ */
+const MENU_DEPTH_DEFAULT = 3
+
+/**
+ * Raw shape returned by the recursive `categories { ... }` GraphQL query —
+ * mirrors the package's `useMenu` `MenuCategoryRaw`. Mapped down to the
+ * serialisable `MenuCategory` shape `<Menu :tree="...">` consumes before
+ * returning, so the Pinia → `__INITIAL_STATE__` → hydration round-trip
+ * carries plain data (no nested LocalizedString arrays).
+ */
+interface RawMenuCategory {
+  categoryId: number
+  hidden?: boolean | string
+  name?: Array<{ value: string; language: string }>
+  slug?: Array<{ value: string; language?: string }>
+  categories?: RawMenuCategory[]
+}
+
+function isMenuCategoryHidden(raw: RawMenuCategory): boolean {
+  return raw.hidden === true || raw.hidden === 'Y'
+}
+
+function buildMenuCategoriesFragment(depth: number): string {
+  if (depth === 0) return ''
+  return `
+    categories {
+      categoryId
+      hidden
+      name(language: $language) { value language }
+      slug(language: $language) { value }
+      ${buildMenuCategoriesFragment(depth - 1)}
+    }
+  `
+}
+
+function mapRawMenuCategory(raw: RawMenuCategory, language: string): MenuCategory {
+  const nameEntry = raw.name?.find((n) => n.language === language) ?? raw.name?.[0]
+  const slugEntry = raw.slug?.[0]
+  return {
+    categoryId: raw.categoryId,
+    name: nameEntry?.value ?? '',
+    slug: slugEntry?.value ?? '',
+    children: (raw.categories ?? [])
+      .filter((child) => !isMenuCategoryHidden(child))
+      .map((child) => mapRawMenuCategory(child, language)),
+  }
+}
+
+/**
+ * Server-side menu fetch — returns the `MenuCategory[]` tree
+ * `<Menu :tree="...">` consumes. Calls the same recursive GraphQL query
+ * the client `useMenu` composable uses, but via `client.execute` so cache
+ * tags can be attached and the response lands in `server.js`'s
+ * `/api/graphql` proxy LRU under the `menu` tag.
+ *
+ * Returns an empty array on failure rather than throwing — the menu is
+ * non-critical chrome and a transient backend error shouldn't break the
+ * whole render. `<Menu>` shows its empty state in that case (and the
+ * client falls back to `useMenu` on next interaction).
+ */
+export async function fetchMenu(
+  infra: ServerInfra,
+  rootCategoryId: number,
+  language?: string,
+  depth: number = MENU_DEPTH_DEFAULT,
+): Promise<MenuCategory[]> {
+  const lang = language ?? infra.language
+  const cacheKey = `menu:${rootCategoryId}:${lang}:${depth}`
+  const tags = [tagFor('menu')]
+  return withAnonymousCache<MenuCategory[]>(infra, cacheKey, tags, async () => {
+    const client = withCacheTags(infra, tags)
+    // Cache-key keying note: variable order locked (categoryId, language).
+    // See the note on `fetchProduct`.
+    const query = `
+      query Menu($categoryId: Float, $language: String) {
+        category(categoryId: $categoryId) {
+          categoryId
+          hidden
+          name(language: $language) { value language }
+          slug(language: $language) { value }
+          ${buildMenuCategoriesFragment(depth)}
+        }
+      }
+    `
+    try {
+      const result = await client.execute<{ category: RawMenuCategory | null }>({
+        query,
+        variables: { categoryId: rootCategoryId, language: lang },
+        operationName: 'Menu',
+      })
+      const root = result.data?.category ?? null
+      if (!root) return []
+      return (root.categories ?? [])
+        .filter((cat) => !isMenuCategoryHidden(cat))
+        .map((cat) => mapRawMenuCategory(cat, lang))
+    } catch {
+      return []
     }
   })
 }

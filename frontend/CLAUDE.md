@@ -58,6 +58,25 @@ const langRef    = computed(() => props.language || 'NL');
 
 All env vars use `VITE_` prefix (not `NEXT_PUBLIC_`). Use `import.meta.env.VITE_*`. Never use `process.env.*` in Vue components — replace with `props.configuration?.language || 'NL'` or the appropriate store value.
 
+Server-only env vars (read by `server.js` / `lib/server.ts`, never in the browser bundle):
+
+- `SSR_GRAPHQL_ENDPOINT` / `SSR_GRAPHQL_PROXY_TARGET` — upstream API.
+- `SSR_API_KEY`, `SSR_ORDER_EDITOR_API_KEY` — server-only credentials.
+- `REVALIDATE_SECRET` — shared secret gating `POST /api/revalidate`. If unset the route fails closed (503).
+
+## Caching (anonymous SSR)
+
+Anonymous catalog GraphQL fetches go through Next.js-style per-entity tags. Logged-in users bypass via the cookie-driven dynamic gate. Mutations stay uncached.
+
+- **Source of truth for tags:** `tagFor(entity, id?)` in `src/lib/server.ts`. Never inline `'product:42'` literals — always call `tagFor('product', 42)`.
+- **Two cache layers, kept in sync by `/api/revalidate`:**
+  - Parsed-object SSR cache in `src/lib/server.ts` (key: `entity:id:lang:…`, indexed by tag).
+  - Raw-response LRU in `server.js`'s `/api/graphql` proxy (key: SHA-256 of POST body, indexed by tag via the `X-Propeller-Cache-Tags` header the SDK sends).
+- **Cache-key keying** for the proxy LRU depends on **stable request-body byte order**. Don't reorder fields in the `build…Input` blocks of `lib/server.ts` casually.
+- **Bust by tag** from `POST /api/revalidate` (header `X-Revalidate-Secret`, body `{"tag":"product:42"}`). The route invalidates BOTH layers; never bust one without the other. Pass `{"tag":"*"}` for a nuclear wipe of every cached entry.
+- **Menu is pre-fetched server-side** in `entry-server.ts`'s always-on prefetch, seeded into `useMenuStore`, and passed to `<PropellerMenu :tree="...">` by `AppHeader.vue`. The package `<Menu>` skips its `useMenu` fetch when `tree` is supplied.
+- **Op-type parser gotcha (`server.js`).** SDK-generated documents lead with `fragment` blocks and put `query`/`mutation` at the end. `gqlOperationType()` must scan the whole document, not just the head — otherwise every anonymous catalog read silently returns `X-Cache: BYPASS`. See memory note `project-gql-operation-type-fragment-leading`.
+
 ## Skills available
 
 - `/senior-architect` — architecture review and planning
