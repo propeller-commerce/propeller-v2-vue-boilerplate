@@ -6,6 +6,11 @@
         :language="languageStore.language"
       />
 
+      <!-- Hybrid SSR island. Mirrors propeller-next's SearchIsland posture:
+           the SSR-seeded first page is handed to <ProductGrid> via the
+           controlled `products` prop so the initial HTML contains real
+           cards. First user interaction drops the seam and the grid resumes
+           its own fetching. -->
       <div class="flex flex-col lg:flex-row gap-8 mt-4">
         <!-- Filters Sidebar — hidden when search returned no results so the
              user isn't presented with a price-range slider that has nothing
@@ -89,6 +94,7 @@
                cycle and reports itemsFound back to the parent. -->
           <ProductGrid
             v-show="!hasNoResults"
+            :products="controlledProducts"
             :graphqlClient="graphqlClient"
             :term="effectiveTerm"
             :categoryId="effectiveCategoryId"
@@ -143,14 +149,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import { type AttributeFilter, AttributeType, Cart, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from 'propeller-sdk-v2';
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
+import { useSsrCatalogStore } from '@/stores/ssrCatalog'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 
@@ -178,13 +186,39 @@ const effectiveCategoryId = computed(() =>
   isAllProducts.value ? configuration.baseCategoryId : undefined,
 )
 
-// Populated via ProductGrid callbacks
-const productsResponse = ref<ProductsResponse | null>(null)
-const gridFilters = ref<AttributeFilter[]>([])
+// SSR seed: the route's prefetch loader ran the search server-side and stashed
+// the first-page ProductsResponse. Seeding here means the grid paints real
+// cards on first client render with no fetch round-trip.
+const ssrCatalog = useSsrCatalogStore()
+// peekSeed (not takeSeed): SSR + hydration must agree, or Vue warns of a
+// mismatch. consumeSeed in onMounted below clears the entry so a later
+// client-side re-navigation fetches fresh.
+const seed = ssrCatalog.peekSeed(route.fullPath)
+const seededResponse =
+  seed?.kind === 'search' ? (seed.data as ProductsResponse) : null
+
+// Populated via ProductGrid callbacks (seeded from SSR for first paint)
+const productsResponse = ref<ProductsResponse | null>(seededResponse)
+const gridFilters = ref<AttributeFilter[]>(
+  (seededResponse?.filters as AttributeFilter[] | undefined) ?? [],
+)
 const priceBoundsMin = ref<number | undefined>()
 const priceBoundsMax = ref<number | undefined>()
-const itemsFound = ref(0)
+const itemsFound = ref(seededResponse?.itemsFound ?? 0)
 const filtersLoading = ref(false)
+
+// Controlled-products seam (see CategoryView for the full explanation): while
+// `usingServerData` is true the SSR-seeded items array is handed to the grid
+// and its internal fetch is a no-op. The first interaction (or a term change)
+// flips it and the grid resumes its own fetching.
+const usingServerData = ref(!!seededResponse)
+const seededItems = (seededResponse?.items ?? []) as (Product | Cluster)[]
+const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
+  usingServerData.value ? seededItems : undefined,
+)
+function markUserInteracted(): void {
+  if (usingServerData.value) usingServerData.value = false
+}
 
 const RESERVED_QUERY_KEYS = ['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder']
 
@@ -224,6 +258,8 @@ const viewMode = ref<'grid' | 'list'>('list')
 
 let suppressQuerySync = false
 function syncStateToUrl() {
+  // First user-driven change → drop the SSR seed so the grid re-fetches.
+  markUserInteracted()
   const query: Record<string, string> = {}
   if (currentPage.value > 1) query.page = String(currentPage.value)
   for (const [key, values] of Object.entries(filters.value)) {
@@ -278,6 +314,17 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
       type: AttributeType.TEXT,
     }))
 )
+
+// SEO <head> — server-rendered. Search result pages are noindex by convention
+// (thin, query-driven content) but still carry a descriptive title.
+useHead({
+  title: computed(() =>
+    searchTerm.value
+      ? `Search: "${searchTerm.value}"`
+      : 'Search Products',
+  ),
+  meta: [{ name: 'robots', content: 'noindex, follow' }],
+})
 
 // ── ProductGrid callbacks ─────────────────────────────────────────────────────
 
@@ -371,6 +418,12 @@ function handleGridPaginationPageChange(page: number) {
   syncStateToUrl()
 }
 
+// Post-hydration: discard the seed so a later same-route navigation fetches
+// fresh. Runs only on the client (onMounted is a no-op during SSR).
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath)
+})
+
 // Reset filter/page state when search term changes
 watch(searchTerm, (newTerm, oldTerm) => {
   if (newTerm === oldTerm) return
@@ -382,5 +435,7 @@ watch(searchTerm, (newTerm, oldTerm) => {
   maxPrice.value = readNumberQuery(route.query.maxPrice)
   currentPage.value = readNumberQuery(route.query.page) ?? 1
   clearSignal.value++
+  // Seeded items are for the previous term — drop the seam.
+  markUserInteracted()
 })
 </script>

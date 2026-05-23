@@ -1,4 +1,3 @@
-import { CrossupsellType } from "propeller-sdk-v2";
 <template>
   <div class="py-12 bg-background">
     <div class="container-width">
@@ -184,15 +183,21 @@ import { CrossupsellType } from "propeller-sdk-v2";
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useHead } from "@unhead/vue";
+import { CrossupsellType } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
+import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { getLanguageString } from "@/composables/shared/utils/languageResolver";
+import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl } from "@/lib/seo";
+import { stripHtml } from "propeller-v2-vue-ui/shared";
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
 
@@ -205,8 +210,21 @@ const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
 
 const clusterId = computed(() => parseInt(route.params.clusterId as string));
-const cluster = ref<any>(null);
-const selectedProduct = ref<any>(null);
+
+// SSR seed: the route's prefetch loader fetched the cluster server-side.
+// Seeding `cluster` + `selectedProduct` (from its default product) means the
+// breadcrumbs / gallery / price shell and the <head> tags server-render real
+// content. `ClusterInfo` still runs on the client and re-confirms via
+// `onClusterLoaded`.
+const ssrCatalog = useSsrCatalogStore();
+// peekSeed (not takeSeed): SSR + hydration must agree, or Vue warns of a
+// mismatch. consumeSeed in onMounted below clears the entry so a later
+// client-side re-navigation fetches fresh.
+const seed = ssrCatalog.peekSeed(route.fullPath);
+const seededCluster = seed?.kind === "cluster" ? (seed.data as any) : null;
+
+const cluster = ref<any>(seededCluster);
+const selectedProduct = ref<any>(seededCluster?.defaultProduct ?? null);
 const selectedOptionProducts = ref<Record<number, any>>({});
 const showClusterErrors = ref(false);
 
@@ -228,6 +246,59 @@ const displayImages = computed(
       ?.map((img: any) => img.imageVariants?.[0]?.url)
       .filter((url: any): url is string => !!url) ?? [],
 );
+
+// SEO <head> — server-rendered from the seeded cluster. Mirrors React's
+// cluster `generateMetadata`: curated metadata wins, falling back to the
+// cluster's own names, then to the default product's name. Title + description
+// are shared into og:title / og:description so the meta tags can't drift.
+const seoTitle = computed(() => {
+  const fromMetadata = resolveSeoTitle(
+    (cluster.value as any)?.metadataTitles,
+    (cluster.value as any)?.names,
+    languageStore.language,
+  );
+  if (fromMetadata) return fromMetadata;
+  const productNames = displayProduct.value?.names;
+  return productNames
+    ? getLanguageString(productNames, languageStore.language, "") || "Product"
+    : "Product";
+});
+const seoDescription = computed(() => {
+  const resolved = resolveSeoDescription(
+    (cluster.value as any)?.metadataDescriptions,
+    [
+      (cluster.value as any)?.shortDescriptions,
+      (cluster.value as any)?.descriptions,
+    ],
+    languageStore.language,
+  );
+  return resolved ? stripHtml(resolved) : "";
+});
+const seoCanonical = computed(() =>
+  resolveCanonicalUrl(
+    (cluster.value as any)?.metadataCanonicalUrls,
+    languageStore.language,
+  ),
+);
+// First gallery image, used for og:image + twitter:image when present.
+const seoImage = computed(() => displayImages.value[0] ?? "");
+useHead({
+  title: seoTitle,
+  meta: [
+    { name: "description", content: seoDescription },
+    { property: "og:title", content: seoTitle },
+    { property: "og:description", content: seoDescription },
+    { property: "og:type", content: "product" },
+    { property: "og:image", content: seoImage },
+    { name: "twitter:card", content: computed(() => seoImage.value ? "summary_large_image" : "summary") },
+    { name: "twitter:title", content: seoTitle },
+    { name: "twitter:description", content: seoDescription },
+    { name: "twitter:image", content: seoImage },
+  ],
+  link: computed(() =>
+    seoCanonical.value ? [{ rel: "canonical", href: seoCanonical.value }] : [],
+  ),
+});
 
 function handleClusterLoaded(loadedCluster: any) {
   cluster.value = loadedCluster;
@@ -269,6 +340,12 @@ function validateClusterOptions(): boolean {
   }
   return true;
 }
+
+// Post-hydration: discard the seed so a later same-route navigation fetches
+// fresh. Runs only on the client (onMounted is a no-op during SSR).
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath);
+});
 
 watch(
   () => route.params.clusterId,
