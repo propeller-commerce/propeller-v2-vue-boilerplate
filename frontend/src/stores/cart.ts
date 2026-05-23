@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Cart } from 'propeller-sdk-v2'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
+import { isBrowser, safeStorage } from '@/lib/ssr'
 
 function normalizeCart(c: Cart): Cart {
   return stripLeadingUnderscores(JSON.parse(JSON.stringify(c))) as Cart
@@ -9,7 +10,7 @@ function normalizeCart(c: Cart): Cart {
 
 function loadCartFromStorage(): Cart | null {
   try {
-    const stored = localStorage.getItem('cart')
+    const stored = safeStorage.getItem('cart')
     if (!stored) return null
     return stripLeadingUnderscores(JSON.parse(stored)) as Cart
   } catch {
@@ -36,8 +37,8 @@ export const useCartStore = defineStore('cart', () => {
   function setCart(c: Cart | null) {
     const normalized = c ? normalizeCart(c) : null
     cart.value = normalized
-    if (normalized) localStorage.setItem('cart', JSON.stringify(normalized))
-    else localStorage.removeItem('cart')
+    if (normalized) safeStorage.setItem('cart', JSON.stringify(normalized))
+    else safeStorage.removeItem('cart')
   }
 
   function saveCart(c: Cart) {
@@ -46,15 +47,17 @@ export const useCartStore = defineStore('cart', () => {
 
   function clearCart() {
     cart.value = null
-    localStorage.removeItem('cart')
+    safeStorage.removeItem('cart')
   }
 
   function openCart() { isOpen.value = true }
   function closeCart() { isOpen.value = false }
   function toggleCart() { isOpen.value = !isOpen.value }
 
-  // Clear cart on logout
-  window.addEventListener('userLoggedOut', () => clearCart())
+  // Clear cart on logout — browser-only (no cross-tab events under SSR).
+  if (isBrowser) {
+    window.addEventListener('userLoggedOut', () => clearCart())
+  }
 
   return {
     cart, cartId, isOpen, itemCount, totalPrice,

@@ -2,12 +2,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Company } from 'propeller-sdk-v2'
 import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
+import { isBrowser, safeStorage } from '@/lib/ssr'
 
 const STORAGE_KEY = 'selected_company'
 
 function loadCompanyFromStorage(): Company | null {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = safeStorage.getItem(STORAGE_KEY)
     return stored ? (stripLeadingUnderscores(JSON.parse(stored)) as Company) : null
   } catch {
     return null
@@ -21,23 +22,25 @@ export const useCompanyStore = defineStore('company', () => {
 
   function setSelectedCompany(company: Company) {
     selectedCompany.value = company
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(company))
-    window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }))
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(company))
+    if (isBrowser) {
+      window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }))
+    }
   }
 
   function clearSelectedCompany() {
     selectedCompany.value = null
-    localStorage.removeItem(STORAGE_KEY)
+    safeStorage.removeItem(STORAGE_KEY)
   }
 
-  // Cross-tab sync
-  window.addEventListener('companySwitched', (e) => {
-    const company = (e as CustomEvent<Company>).detail
-    selectedCompany.value = company
-  })
-
-  // Clear on logout
-  window.addEventListener('userLoggedOut', () => clearSelectedCompany())
+  // Cross-tab sync + logout reset — browser-only.
+  if (isBrowser) {
+    window.addEventListener('companySwitched', (e) => {
+      const company = (e as CustomEvent<Company>).detail
+      selectedCompany.value = company
+    })
+    window.addEventListener('userLoggedOut', () => clearSelectedCompany())
+  }
 
   return { selectedCompany, companyId, setSelectedCompany, clearSelectedCompany }
 })
