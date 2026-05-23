@@ -60,37 +60,42 @@ async function discoverCategoryUrlFromMenu(page: Page): Promise<string> {
 }
 
 /**
- * Discover a product URL. If categoryUrl is empty, uses search page directly.
+ * Discover a product URL by navigating to a search page, clicking the first
+ * product card, and reading the resulting URL.
+ *
+ * `ProductCard` no longer wraps the card in an `<a href>` — it uses
+ * programmatic navigation via an `onProductClick` callback (see propeller-vue
+ * memory: card moved from router-link to click-driven routing). So we cannot
+ * read the URL from an attribute; we have to drive the click and observe.
  */
 export async function discoverProductUrl(page: Page, categoryUrl: string): Promise<string> {
-  // If a category URL is provided, try it first
-  if (categoryUrl) {
-    await page.goto(categoryUrl);
-    await page.waitForLoadState('domcontentloaded');
-
-    const anyProductLink = page.locator('main a[href*="/product/"], main a[href*="/cluster/"]').first();
-    const hasProducts = await anyProductLink.waitFor({ state: 'visible', timeout: 12_000 }).then(() => true).catch(() => false);
-
-    if (hasProducts) {
-      const productLinks = page.locator('main a[href*="/product/"]');
-      const productCount = await productLinks.count();
-      if (productCount > 0) {
-        const href = await productLinks.first().getAttribute('href');
-        if (href) return href;
-      }
-      const href = await anyProductLink.getAttribute('href');
-      if (href) return href;
-    }
+  const tryClickCard = async (): Promise<string | null> => {
+    // The card root + the clickable name area inside it.
+    const card = page.locator('main .propeller-product-card').first()
+    const visible = await card.waitFor({ state: 'visible', timeout: 25_000 }).then(() => true).catch(() => false)
+    if (!visible) return null
+    // The product name span carries the click handler. Falling back to the
+    // card itself works because the click bubbles to the same handler.
+    const clickable = card.locator('[class*="cursor-pointer"]').first()
+    const target = (await clickable.count()) > 0 ? clickable : card
+    await target.click()
+    await page.waitForURL(/\/(product|cluster)\//, { timeout: 15_000 }).catch(() => undefined)
+    const url = page.url()
+    return /\/(product|cluster)\//.test(url) ? new URL(url).pathname + (new URL(url).search || '') : null
   }
 
-  // Use search page to find a product URL (most reliable)
-  await page.goto('/search/kabel');
-  await page.waitForLoadState('domcontentloaded');
-  const searchProductLink = page.locator('main a[href*="/product/"]').first();
-  await searchProductLink.waitFor({ state: 'visible', timeout: 25_000 });
-  const href = await searchProductLink.getAttribute('href');
-  if (!href) throw new Error('Could not find a product link on search page');
-  return href;
+  if (categoryUrl) {
+    await page.goto(categoryUrl)
+    await page.waitForLoadState('domcontentloaded')
+    const href = await tryClickCard()
+    if (href) return href
+  }
+
+  await page.goto('/search/kabel')
+  await page.waitForLoadState('domcontentloaded')
+  const href = await tryClickCard()
+  if (!href) throw new Error('Could not navigate to a product page from search results')
+  return href
 }
 
 /**
