@@ -207,14 +207,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useHead } from "@unhead/vue";
 import { Cart, Cluster, CrossupsellType, Inventory, ProductInventory } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
-import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient, productService } from "@/lib/api";
 import {
   configuration,
@@ -223,8 +221,6 @@ import {
   localizeHref,
 } from "@/lib/config";
 import { getLanguageString } from "@/composables/shared/utils/languageResolver";
-import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl } from "@/lib/seo";
-import { stripHtml } from "propeller-v2-vue-ui/shared";
 import {
   ProductPrice as SDKProductPrice,
   type Category,
@@ -244,20 +240,8 @@ const companyStore = useCompanyStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
 
-// SSR seed: the route's prefetch loader fetched the product server-side and
-// stashed it. Seeding `product` here means the whole detail block — gallery,
-// info, price, breadcrumbs — and the <head> tags server-render real content.
-const ssrCatalog = useSsrCatalogStore();
-// peekSeed (not takeSeed): SSR + hydration must agree, or Vue warns of a
-// mismatch. consumeSeed in onMounted below clears the entry so a later
-// client-side re-navigation fetches fresh.
-const seed = ssrCatalog.peekSeed(route.fullPath);
-const seededProduct = seed?.kind === "product" ? (seed.data as Product) : null;
-
-const product = ref<Product | null>(seededProduct);
-// When seeded there is no spinner — render the product immediately. Without a
-// seed (client-side nav) `onMounted` fetches and the spinner shows meanwhile.
-const loading = ref(!seededProduct);
+const product = ref<Product | null>(null);
+const loading = ref(true);
 const error = ref<string | null>(null);
 
 const images = computed(
@@ -272,61 +256,6 @@ const productName = computed(() =>
     ? getLanguageString(product.value.names, languageStore.language, "")
     : "",
 );
-
-// SEO <head> — server-rendered from the seeded product. Mirrors the React
-// PDP's `generateMetadata`: curated metadata fields win, with sensible
-// fallbacks to product name / shortDescriptions / descriptions. Computed
-// once and shared into og:title / og:description so meta tags can't drift
-// from the visible <title>.
-const seoTitle = computed(
-  () =>
-    resolveSeoTitle(
-      (product.value as any)?.metadataTitles,
-      product.value?.names,
-      languageStore.language,
-    ) || productName.value || "Product",
-);
-const seoDescription = computed(() => {
-  const resolved = resolveSeoDescription(
-    (product.value as any)?.metadataDescriptions,
-    [
-      (product.value as any)?.shortDescriptions,
-      (product.value as any)?.descriptions,
-    ],
-    languageStore.language,
-  );
-  // `descriptions` / `shortDescriptions` may contain HTML — strip it so the
-  // meta description is plain text.
-  return resolved ? stripHtml(resolved) : "";
-});
-const seoCanonical = computed(() =>
-  resolveCanonicalUrl(
-    (product.value as any)?.metadataCanonicalUrls,
-    languageStore.language,
-  ),
-);
-// First gallery image, used for og:image + twitter:image. Cheap because the
-// `images` computed is already evaluated for the gallery; we just take [0].
-const seoImage = computed(() => images.value[0] ?? "");
-useHead({
-  title: seoTitle,
-  meta: [
-    { name: "description", content: seoDescription },
-    { property: "og:title", content: seoTitle },
-    { property: "og:description", content: seoDescription },
-    { property: "og:type", content: "product" },
-    { property: "og:image", content: seoImage },
-    // Twitter card: when there's no image, `summary` is the right type;
-    // when there is, `summary_large_image` shows the image preview.
-    { name: "twitter:card", content: computed(() => seoImage.value ? "summary_large_image" : "summary") },
-    { name: "twitter:title", content: seoTitle },
-    { name: "twitter:description", content: seoDescription },
-    { name: "twitter:image", content: seoImage },
-  ],
-  link: computed(() =>
-    seoCanonical.value ? [{ rel: "canonical", href: seoCanonical.value }] : [],
-  ),
-});
 
 async function loadProduct() {
   loading.value = true;
@@ -351,19 +280,6 @@ async function loadProduct() {
   }
 }
 
-// Skip the initial client fetch when the SSR seed already populated `product`
-// — re-fetching identical data on mount would be wasteful. A later route
-// param change (client-side nav to another product) still triggers a fetch.
-// Also discard the seed post-hydration so a later same-route navigation
-// fetches fresh (the seed would be stale by then).
-onMounted(() => {
-  if (!seededProduct) loadProduct();
-  ssrCatalog.consumeSeed(route.fullPath);
-});
-watch(
-  () => route.params.productId,
-  (id, prev) => {
-    if (id !== prev) loadProduct();
-  },
-);
+onMounted(loadProduct);
+watch(() => route.params.productId, loadProduct);
 </script>

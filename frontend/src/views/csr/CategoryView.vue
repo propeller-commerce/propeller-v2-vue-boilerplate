@@ -21,13 +21,6 @@
         :language="languageStore.language"
       />
 
-      <!-- Hybrid SSR island. The grid is now server-rendered too — when a
-           seed is available we hand the items array to <ProductGrid> via the
-           controlled `products` prop and the component skips its internal
-           fetch. The first paint shows real product cards. As soon as the
-           user changes a filter/sort/page `usingServerData` flips to false,
-           we drop the prop, and the grid resumes its own fetching. Matches
-           propeller-next's CategoryIsland posture exactly. -->
       <div class="flex flex-col lg:flex-row gap-8 mt-4">
         <!-- Filters Sidebar -->
         <aside class="w-full lg:w-64 flex-shrink-0">
@@ -77,7 +70,6 @@
           </div>
 
           <ProductGrid
-            :products="controlledProducts"
             :graphqlClient="graphqlClient"
             :categoryId="categoryId"
             :user="authStore.user as Contact | Customer"
@@ -157,19 +149,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useHead } from "@unhead/vue";
 import { type AttributeFilter, AttributeType, Cart, type Category, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from "propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
-import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { resolveSeoTitle, resolveSeoDescription, resolveSeoKeywords, resolveCanonicalUrl } from "@/lib/seo";
 
 import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from 'propeller-v2-vue-ui';
 
@@ -184,44 +173,10 @@ const languageStore = useLanguageStore();
 // Derived from route — ProductGrid fetches internally using this
 const categoryId = computed(() => parseInt(route.params.id as string));
 
-// SSR seed: the route's `ssrPrefetch` loader fetched the full Category (incl.
-// its first product page + filter facets) and stashed it in the ssrCatalog
-// store. Consuming it here means the breadcrumbs/title/description shell —
-// and the <head> tags below — server-render real content for SEO.
-const ssrCatalog = useSsrCatalogStore();
-// peekSeed (not takeSeed): the SSR render and the client's hydration render
-// must read the same value, or the resulting DOM differs and Vue warns about
-// a hydration mismatch. The post-hydration consumeSeed call below clears the
-// entry so a later client-side navigation back to this route fetches fresh.
-const seed = ssrCatalog.peekSeed(route.fullPath);
-const seededCategory =
-  seed?.kind === "category" ? (seed.data as Category) : null;
-
-// `category` starts from the SSR seed so it is non-null on the server render.
-const category = ref<Category | null>(seededCategory);
-// Seed the products + filters too, from the category the server already
-// fetched, so first paint has data before ProductGrid's client fetch returns.
-const seededProducts =
-  (seededCategory?.products as ProductsResponse | undefined) ?? null;
-const productsResponse = ref<ProductsResponse | null>(seededProducts);
-const gridFilters = ref<AttributeFilter[]>(
-  (seededProducts?.filters as AttributeFilter[] | undefined) ?? [],
-);
-
-// Controlled-mode seam (mirrors React's CategoryIsland `usingServerData`).
-// While true and the SSR seed exists, ProductGrid receives the items array via
-// :products and its internal fetch is skipped — so the SSR HTML renders real
-// product cards. The first user interaction (filter / sort / page) flips this
-// to false, the prop becomes undefined, and the grid resumes its own fetching
-// for every subsequent change.
-const usingServerData = ref(!!seededProducts);
-const seededItems = (seededProducts?.items ?? []) as (Product | Cluster)[];
-const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
-  usingServerData.value ? seededItems : undefined,
-);
-function markUserInteracted(): void {
-  if (usingServerData.value) usingServerData.value = false;
-}
+// Populated via ProductGrid callbacks
+const category = ref<Category | null>(null);
+const productsResponse = ref<ProductsResponse | null>(null);
+const gridFilters = ref<AttributeFilter[]>([]);
 const priceBoundsMin = ref<number | undefined>();
 const priceBoundsMax = ref<number | undefined>();
 const itemsFound = ref(0);
@@ -271,10 +226,6 @@ const viewMode = ref<"grid" | "list">("list");
 // and the browser back button can restore the filtered view after visiting a product.
 let suppressQuerySync = false;
 function syncStateToUrl() {
-  // First user-driven change → hand control back to ProductGrid's internal
-  // fetcher. From this point on the SSR-seeded items are stale (the URL no
-  // longer matches them) and the grid must re-query.
-  markUserInteracted();
   const query: Record<string, string> = {};
   if (currentPage.value > 1) query.page = String(currentPage.value);
   for (const [key, values] of Object.entries(filters.value)) {
@@ -331,59 +282,6 @@ function getCategoryName(): string {
   const match = nameArr.find((n: any) => n.language === languageStore.language);
   return match?.value || nameArr[0]?.value || "";
 }
-
-// SEO <head> — driven by the (SSR-seeded) category. Reactive: a client-side
-// category switch updates the title without a reload. Server-rendered into
-// the initial HTML so crawlers see the right title/description/canonical/og:*.
-//
-// Title + description are computed once and reused for og:title / og:description
-// so the meta tags can't drift from the visible <title>.
-const seoTitle = computed(
-  () =>
-    resolveSeoTitle(
-      category.value?.metadataTitles,
-      category.value?.name,
-      languageStore.language,
-    ) || getCategoryName() || "Category",
-);
-const seoDescription = computed(
-  () =>
-    resolveSeoDescription(
-      category.value?.metadataDescriptions,
-      [category.value?.shortDescription, category.value?.description],
-      languageStore.language,
-    ) || "",
-);
-const seoKeywords = computed(
-  () =>
-    resolveSeoKeywords(
-      category.value?.metadataKeywords,
-      languageStore.language,
-    ) || "",
-);
-const seoCanonical = computed(() =>
-  resolveCanonicalUrl(category.value?.metadataCanonicalUrls, languageStore.language),
-);
-useHead({
-  title: seoTitle,
-  meta: [
-    { name: "description", content: seoDescription },
-    { name: "keywords", content: seoKeywords },
-    { property: "og:title", content: seoTitle },
-    { property: "og:description", content: seoDescription },
-    { property: "og:type", content: "website" },
-    // Twitter card: `summary` (no image) — categories rarely have a single
-    // representative image, so we don't try to pick one.
-    { name: "twitter:card", content: "summary" },
-    { name: "twitter:title", content: seoTitle },
-    { name: "twitter:description", content: seoDescription },
-  ],
-  link: computed(() =>
-    // Omit the canonical link entirely when there's no curated URL —
-    // a `<link rel="canonical">` with an empty href is worse than no tag.
-    seoCanonical.value ? [{ rel: "canonical", href: seoCanonical.value }] : [],
-  ),
-});
 
 // ── ProductGrid callbacks ─────────────────────────────────────────────────────
 
@@ -491,14 +389,6 @@ function handleGridPaginationPageChange(page: number) {
   syncStateToUrl();
 }
 
-// Post-hydration: discard the seed so a later client-side navigation back to
-// this route falls back to a client fetch (the cached items would be stale by
-// then). This runs only on the client because Vue does not call onMounted
-// during server rendering, which is exactly the contract we want.
-onMounted(() => {
-  ssrCatalog.consumeSeed(route.fullPath);
-});
-
 // Reset state when navigating to a different category
 watch(
   () => route.params.id,
@@ -514,9 +404,6 @@ watch(
     maxPrice.value = readNumberQuery(route.query.maxPrice);
     currentPage.value = readNumberQuery(route.query.page) ?? 1;
     clearSignal.value++;
-    // Drop the controlled-products seam — the seeded items belong to the
-    // previous category; the grid must fetch the new one itself.
-    markUserInteracted();
   },
 );
 </script>

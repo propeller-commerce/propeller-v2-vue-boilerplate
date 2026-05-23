@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
+import { useHead } from '@unhead/vue'
 import { providePropeller, type PropellerInfra } from 'propeller-v2-vue-ui'
 import { graphqlClient, services } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
@@ -37,6 +38,13 @@ const infra = reactive({
 }) as unknown as PropellerInfra
 
 providePropeller(infra)
+
+// Document-level head defaults. `htmlAttrs.lang` tracks the active language so
+// the SSR <html lang> reflects the rendered locale; per-page <title>/<meta>
+// are layered on top by the catalog views via their own useHead() calls.
+useHead({
+  htmlAttrs: { lang: computed(() => language.language.toLowerCase()) },
+})
 </script>
 
 <template>
