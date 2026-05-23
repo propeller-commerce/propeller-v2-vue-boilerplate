@@ -135,7 +135,10 @@ tasks:
     dir: "{{.DEPLOY_PATH}}/frontend"
     cmds:
       - pm2 delete {{.PM2_NAME}} || true
-      - unset name; NODE_ENV=production pm2 start npm --name {{.PM2_NAME}} -- run start -- --port={{.APP_PORT}} --host=127.0.0.1
+      # `npm run start` now runs the Node SSR server (server.js), not Vite.
+      # The server reads PORT/HOST from the environment — pass them as env vars,
+      # not as `-- --port` CLI flags (server.js does not parse argv).
+      - unset name; PORT={{.APP_PORT}} HOST=127.0.0.1 NODE_ENV=production pm2 start npm --name {{.PM2_NAME}} -- run start
       - pm2 save
 
   deploy-frontend-prod:
@@ -197,7 +200,9 @@ tasks:
   _start:
     internal: true
     cmds:
-      - unset name; PORT={{.APP_PORT}} NODE_ENV=production pm2 start npm --name {{.FRONTEND_NAME}} --cwd {{.DEPLOY_PATH}}/frontend -- run start -- --hostname 127.0.0.1
+      # Frontend `npm run start` is the Node SSR server (server.js); it reads
+      # PORT/HOST from the environment.
+      - unset name; PORT={{.APP_PORT}} HOST=127.0.0.1 NODE_ENV=production pm2 start npm --name {{.FRONTEND_NAME}} --cwd {{.DEPLOY_PATH}}/frontend -- run start
       - unset name; PORT={{.CMS_PORT}} NODE_ENV=production pm2 start npm --name {{.CMS_NAME}} --cwd {{.DEPLOY_PATH}}/cms -- run start
 
   start-prod:

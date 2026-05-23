@@ -1,85 +1,32 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 
-export default defineConfig(({ mode }) => {
-  // Vite reads .env from process.cwd() by default — when you run `npm run dev`
-  // from frontend/, that's frontend/.env. Pass an explicit path if you ever
-  // want to keep the env file at the workspace root.
-  const env = loadEnv(mode, process.cwd(), '')
-
-  // VITE_GRAPHQL_PROXY_TARGET is the full upstream URL the dev proxy forwards to.
-  // VITE_GRAPHQL_ENDPOINT is what the browser-side SDK config calls — typically
-  // /api/graphql so requests go through the Vite proxy. Don't put a relative
-  // path in VITE_GRAPHQL_PROXY_TARGET; new URL() needs an absolute URL.
-  const proxyUpstream =
-    env.VITE_GRAPHQL_PROXY_TARGET ||
-    (env.VITE_GRAPHQL_ENDPOINT && /^https?:/i.test(env.VITE_GRAPHQL_ENDPOINT)
-      ? env.VITE_GRAPHQL_ENDPOINT
-      : 'https://api.helice.cloud/v2/graphql')
-  const apiKey = env.VITE_API_KEY || ''
-  const orderEditorApiKey = env.VITE_ORDER_EDITOR_API_KEY || ''
-  const behindProxy = env.VITE_BEHIND_PROXY === 'true'
-
-  const endpointUrl = new URL(proxyUpstream)
-  const proxyTarget = endpointUrl.origin
-  const proxyRewritePath = endpointUrl.pathname
-
-  return {
-    plugins: [
-      vue(),
-      tailwindcss(),
-    ],
-    resolve: {
-      alias: {
-        '@': resolve(__dirname, './src'),
-      },
+/**
+ * Vite config for the SSR build.
+ *
+ * The `/api/graphql` + `/api/order-editor` proxies that used to live here are
+ * gone — `server.js` (the Node SSR server) owns proxying now, in dev *and*
+ * prod, so the API key is injected server-side in both. Vite runs in
+ * middleware mode under that server; this config no longer starts a standalone
+ * dev server.
+ *
+ * Two build targets, driven by npm scripts:
+ *   - `vite build --outDir dist/client`            → browser bundle + assets
+ *   - `vite build --ssr src/entry-server.ts ...`   → Node render bundle
+ */
+export default defineConfig({
+  plugins: [vue(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
     },
-    server: {
-      host: '127.0.0.1',
-      allowedHosts: [
-        'vue-boilerplate.dev.wp-propel.com',
-        'vue-boilerplate.stage.wp-propel.com',
-        'vue-boilerplate.prod.wp-propel.com',
-      ],
-      hmr: behindProxy ? { clientPort: 80 } : true,
-      proxy: {
-        '/api/graphql': {
-          target: proxyTarget,
-          changeOrigin: true,
-          rewrite: () => proxyRewritePath,
-          configure: (proxy) => {
-            proxy.on('proxyReq', (proxyReq, req) => {
-              proxyReq.setHeader('apikey', apiKey)
-              proxyReq.setHeader('Content-Type', 'application/json')
-              // Forward the browser's Authorization header so authenticated
-              // SDK calls (e.g. cartAddItem after login) carry the user's
-              // session token. Without this, Propeller treats every request
-              // as anonymous and operations on user-owned carts return null.
-              const auth = req.headers['authorization']
-              if (auth) {
-                proxyReq.setHeader('Authorization', Array.isArray(auth) ? auth[0] : auth)
-              }
-            })
-          },
-        },
-        '/api/order-editor': {
-          target: proxyTarget,
-          changeOrigin: true,
-          rewrite: (path) => path.replace('/api/order-editor', ''),
-          configure: (proxy) => {
-            proxy.on('proxyReq', (proxyReq, req) => {
-              proxyReq.setHeader('apikey', orderEditorApiKey)
-              proxyReq.setHeader('Content-Type', 'application/json')
-              const auth = req.headers['authorization']
-              if (auth) {
-                proxyReq.setHeader('Authorization', Array.isArray(auth) ? auth[0] : auth)
-              }
-            })
-          },
-        },
-      },
-    },
-  }
+  },
+  // `noExternal` keeps the workspace UI package in the SSR transform pipeline
+  // so its `.vue` SFCs are compiled for the Node runtime rather than required
+  // raw (Node can't `import` a `.vue` file).
+  ssr: {
+    noExternal: ['propeller-v2-vue-ui'],
+  },
 })
