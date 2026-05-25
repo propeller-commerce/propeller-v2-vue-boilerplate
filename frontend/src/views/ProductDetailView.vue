@@ -199,6 +199,105 @@
               )
           "
         />
+
+        <!-- Alternatives -->
+        <ProductSlider
+          :graphqlClient="graphqlClient"
+          :user="authStore.user as Contact | Customer"
+          :cartId="cartStore.cartId || undefined"
+          :language="languageStore.language"
+          :includeTax="priceStore.includeTax"
+          :configuration="configuration"
+          :crossUpsellTypes="[CrossupsellType.ALTERNATIVES]"
+          :productId="product.productId"
+          :showAvailability="false"
+          :showStock="true"
+          :showModal="true"
+          :createCart="true"
+          :companyId="companyStore.companyId || undefined"
+          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
+          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+          :onProductClick="
+            (p: Product) =>
+              router.push(
+                configuration.urls.getProductUrl(p, languageStore.language),
+              )
+          "
+          :onClusterClick="
+            (c: Cluster) =>
+              router.push(
+                configuration.urls.getClusterUrl(c, languageStore.language),
+              )
+          "
+        />
+
+        <!-- Options -->
+        <ProductSlider
+          :graphqlClient="graphqlClient"
+          :user="authStore.user as Contact | Customer"
+          :cartId="cartStore.cartId || undefined"
+          :language="languageStore.language"
+          :includeTax="priceStore.includeTax"
+          :configuration="configuration"
+          :crossUpsellTypes="[CrossupsellType.OPTIONS]"
+          :productId="product.productId"
+          :showAvailability="false"
+          :showStock="true"
+          :showModal="true"
+          :createCart="true"
+          :companyId="companyStore.companyId || undefined"
+          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
+          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+          :onProductClick="
+            (p: Product) =>
+              router.push(
+                configuration.urls.getProductUrl(p, languageStore.language),
+              )
+          "
+          :onClusterClick="
+            (c: Cluster) =>
+              router.push(
+                configuration.urls.getClusterUrl(c, languageStore.language),
+              )
+          "
+        />
+
+        <!-- Parts -->
+        <ProductSlider
+          :graphqlClient="graphqlClient"
+          :user="authStore.user as Contact | Customer"
+          :cartId="cartStore.cartId || undefined"
+          :language="languageStore.language"
+          :includeTax="priceStore.includeTax"
+          :configuration="configuration"
+          :crossUpsellTypes="[CrossupsellType.PARTS]"
+          :productId="product.productId"
+          :showAvailability="false"
+          :showStock="true"
+          :showModal="true"
+          :createCart="true"
+          :companyId="companyStore.companyId || undefined"
+          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
+          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
+          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+          :onProductClick="
+            (p: Product) =>
+              router.push(
+                configuration.urls.getProductUrl(p, languageStore.language),
+              )
+          "
+          :onClusterClick="
+            (c: Cluster) =>
+              router.push(
+                configuration.urls.getClusterUrl(c, languageStore.language),
+              )
+          "
+        />
       </template>
     </div>
   </div>
