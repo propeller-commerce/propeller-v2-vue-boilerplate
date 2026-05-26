@@ -131,71 +131,7 @@
             </div>
 
             <!-- Bonus Items -->
-            <div v-if="bonusItems.length > 0" class="mb-8">
-              <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-                Bonus Items
-              </h3>
-              <div
-                class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-              >
-                <table class="w-full">
-                  <thead class="bg-surface-hover border-b">
-                    <tr>
-                      <th
-                        class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase"
-                      >
-                        Product
-                      </th>
-                      <th
-                        class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase"
-                      >
-                        Quantity
-                      </th>
-                      <th
-                        class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase"
-                      >
-                        Price
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <OrderItemCard
-                      v-for="item in bonusItems"
-                      :key="item.id"
-                      :orderItem="item"
-                      :titleLinkable="false"
-                      :showImage="true"
-                      :showSku="true"
-                      :showQuantity="true"
-                      :showPrice="true"
-                    />
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Surcharges -->
-            <div v-if="surchargeItems.length > 0" class="mb-8">
-              <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-                Surcharges
-              </h3>
-              <div
-                class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-              >
-                <table class="w-full">
-                  <tbody>
-                    <OrderItemCard
-                      v-for="item in surchargeItems"
-                      :key="item.id"
-                      :orderItem="item"
-                      :titleLinkable="false"
-                      :showImage="false"
-                      :showSku="false"
-                    />
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <OrderBonusItems :order="order" />
           </div>
 
           <!-- Actions -->
@@ -241,7 +177,7 @@ import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "@/composables/shared/utils/userIdentity";
-import { OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
+import { OrderBonusItems, OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 const route = useRoute();
@@ -286,18 +222,6 @@ const childMap = computed<Map<number, OrderItem[]>>(() => {
     });
   return map;
 });
-
-const bonusItems = computed<OrderItem[]>(
-  () =>
-    order.value?.items?.filter(
-      (i: OrderItem) => i.class === "product" && i.isBonus === "Y",
-    ) || [],
-);
-
-const surchargeItems = computed<OrderItem[]>(
-  () =>
-    order.value?.items?.filter((i: OrderItem) => i.class === "surcharge") || [],
-);
 
 onMounted(async () => {
   if (!orderId.value) return;
