@@ -23,9 +23,11 @@ import {
   prefetchSearch,
   prefetchCluster,
 } from './router/ssrPrefetch'
-import { fetchMenu, getAnonymousInfra } from './lib/server'
+import { fetchMenu, getAnonymousInfra, getServerInfra } from './lib/server'
 import { useMenuStore } from './stores/menu'
 import { usePriceStore } from './stores/price'
+import { useAuthStore } from './stores/auth'
+import { useCompanyStore } from './stores/company'
 import { baseCategoryId as configBaseCategoryId } from './lib/config'
 
 /**
@@ -82,6 +84,37 @@ export async function render(
   // Seed the VAT preference store from the request cookie so SSR renders the
   // right gross/net prices and the hydration snapshot matches.
   usePriceStore(pinia).seedFromCookie(ssrContext.cookies)
+
+  // Seed the auth store from the `access_token` cookie BEFORE routing, so the
+  // router's `requiresAuth` guard sees the logged-in user. Without this the
+  // server starts anonymous (it can't read localStorage) and every `/account/*`
+  // refresh 302-redirects a logged-in user to /login. `getServerInfra` resolves
+  // the viewer via `getViewer` (cookie → Bearer) and `toPlain`s it; an absent
+  // or expired cookie yields `user: null`, so genuinely anonymous requests
+  // still redirect correctly. `hydrateFromServer` writes only the in-memory
+  // refs (no storage/cookie), which then serialize into `__INITIAL_STATE__` so
+  // the client hydrates authenticated too — no flash, no client-side redirect.
+  const authToken = ssrContext.cookies['access_token']
+  if (authToken) {
+    try {
+      const infra = await getServerInfra(ssrContext.cookies)
+      if (infra.user) {
+        useAuthStore(pinia).hydrateFromServer(infra.user, authToken)
+        // Seed the active company from the contact's default company so the
+        // dashboard (which reads addresses + company info off `activeCompany`,
+        // not off `user.company`) renders them on a refresh. The client
+        // re-reads localStorage on hydration, so an explicit company switch
+        // still wins over this default.
+        const company = (infra.user as { company?: unknown }).company
+        if (company) useCompanyStore(pinia).hydrateFromServer(company as never)
+      }
+    } catch (err) {
+      // A viewer-resolution failure must not abort the render — fall through
+      // anonymous; the guard will redirect, and the client reconciles from
+      // localStorage on hydration if a valid session exists.
+      console.error('[ssr] auth seed failed:', err)
+    }
+  }
 
   await router.push(url)
   await router.isReady()

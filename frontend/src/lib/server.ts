@@ -170,6 +170,15 @@ function tagsHeaderValue(tags: readonly string[]): string {
 export interface CreateServerClientOptions {
   /** Override the access-token resolver (tests, anonymous infra). */
   getAccessToken?: () => string | undefined
+  /**
+   * Bearer token to attach as a static `Authorization` header. Required for
+   * authenticated SSR: in `direct` mode the SDK sends the `apikey` header but
+   * NOT the Bearer (its `getAccessToken` resolver is consulted only in `proxy`
+   * mode), so without this an authenticated SSR call resolves against the bare
+   * API key — e.g. `getViewer` returns the API key's default account instead of
+   * the logged-in user.
+   */
+  bearerToken?: string
   endpoint?: string
   apiKey?: string
   /**
@@ -211,11 +220,16 @@ export function createServerClient(
     securityMode: 'direct',
     timeout: 30000,
     getAccessToken: opts.getAccessToken,
-    // When the host provided baseline cache tags (anonymous infra), attach
-    // them to every request via a static header. Per-entity tags (e.g.
-    // `product:42`) are layered on by the fetch helpers via `withCacheTags`.
-    ...(opts.cacheTags?.length && {
-      headers: { [CACHE_TAGS_HEADER]: tagsHeaderValue(opts.cacheTags) },
+    // Merge any static headers: the Bearer token for authenticated calls
+    // (direct mode ignores `getAccessToken`, so the token has to ride here),
+    // plus the cache-tags header for anonymous cacheable infra. Both are
+    // request-scoped and mutually exclusive in practice (authenticated infra
+    // isn't cacheable), but merging keeps the factory honest if that changes.
+    ...((opts.bearerToken || opts.cacheTags?.length) && {
+      headers: {
+        ...(opts.bearerToken && { Authorization: `Bearer ${opts.bearerToken}` }),
+        ...(opts.cacheTags?.length && { [CACHE_TAGS_HEADER]: tagsHeaderValue(opts.cacheTags) }),
+      },
     }),
   }
   return new GraphQLClient(config)
@@ -291,7 +305,10 @@ export async function getServerInfra(
   language: string = DEFAULT_LANGUAGE,
 ): Promise<ServerInfra> {
   const token = cookies['access_token']
-  const client = createServerClient({ getAccessToken: () => token })
+  // `bearerToken` attaches the static Authorization header — direct-mode SDK
+  // calls ignore `getAccessToken`, so without this `getViewer` below would
+  // resolve against the bare API key instead of the logged-in user.
+  const client = createServerClient({ bearerToken: token })
   const services = createServices(client)
 
   let user: Contact | Customer | null = null

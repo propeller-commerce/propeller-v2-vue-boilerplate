@@ -51,6 +51,9 @@ function buildEntityUrl(page: string, id?: number | string, slug?: string, patte
 
 export const baseCategoryId = parseInt(import.meta.env.VITE_BASE_CATEGORY_ID || '17', 10)
 export const menuDepth = parseInt(import.meta.env.VITE_MENU_DEPTH || '3', 10)
+// Set VITE_CHANNEL_ID per environment to the channel orders/quotes are placed
+// on. The account order/quote lists filter by `channelIds: [channelId]`, so a
+// wrong value silently returns zero results.
 export const channelId = parseInt(import.meta.env.VITE_CHANNEL_ID || '1', 10)
 
 /**

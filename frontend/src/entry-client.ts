@@ -12,6 +12,8 @@ import './style.css'
 import { createApp } from './app'
 import { graphqlClient } from './lib/api'
 import { setCookie } from './lib/ssr'
+import { useCartStore } from './stores/cart'
+import { useCompanyStore } from './stores/company'
 
 // Restore the access token so authenticated API calls work after a reload.
 // Client-only: this is the localStorage half of the two-stage auth model.
@@ -35,6 +37,18 @@ if (initialState) {
   pinia.state.value = initialState as typeof pinia.state.value
 }
 
+// The state transfer above clobbers any browser-only state the stores read at
+// setup time — the server rendered with no localStorage, so its snapshot wins.
+// The anonymous cart lives only in localStorage (too large for the SSR cookie
+// the price store uses), so re-read it now to let the persisted cart win back
+// over the server's null. Without this, the cart empties on every refresh.
+//
+// Synchronous and BEFORE mount: the cart-dependent DOM (the icon badge, the
+// sidebar) is gated behind the component's own `isMounted` flag, so it renders
+// nothing until after hydration — restoring a populated cart here can't create
+// a mismatch with the server's empty-cart markup.
+useCartStore(pinia).hydrateFromStorage()
+
 // Wait for the router to resolve the current route (and run async lazy
 // components) before mounting, so `app.mount` adopts a fully-resolved tree.
 router.isReady().then(() => {
@@ -52,4 +66,12 @@ router.isReady().then(() => {
       if (!auth.user) void auth.refreshUser()
     })
   }
+
+  // Post-hydration company reconcile. The server seeded the contact's DEFAULT
+  // company so the dashboard renders addresses/company on first paint; a
+  // multi-company contact may have an explicit selection in localStorage that
+  // differs. Re-read it AFTER mount so it can't perturb the hydration render —
+  // the server-seeded default matches the first client render, and this only
+  // corrects to the user's actual selection for subsequent interaction.
+  useCompanyStore().hydrateFromStorage()
 })

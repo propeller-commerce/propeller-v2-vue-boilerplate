@@ -269,6 +269,26 @@ function graphqlCachedHandler() {
       const auth = req.headers['authorization']
       const authHeader = Array.isArray(auth) ? auth[0] : auth
 
+      // Auth precedence (mirrors the nextDemo proxy):
+      //   1. `access_token` cookie — the source of truth. The browser sets it
+      //      same-origin on login (see `setCookie` in lib/ssr.ts) and it rides
+      //      along on this same-origin POST, so we can authenticate upstream
+      //      from it server-side instead of trusting the client to attach a
+      //      header. Without this, a `viewer`/account query that reaches the
+      //      proxy without the header resolves to the bare API key's default
+      //      account — the "dummy user" — and (being header-less) gets cached
+      //      and served to everyone.
+      //   2. Client `Authorization` header — fallback for the brief window
+      //      during login before the cookie lands.
+      const cookieToken = parseCookies(req.headers.cookie || '')['access_token']
+      const headerBearer = authHeader?.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : undefined
+      const upstreamBearer = cookieToken || headerBearer
+      // A request is authenticated if EITHER carries a token. Used below to
+      // forward the Bearer and to keep personalised responses out of the cache.
+      const isAuthenticated = !!upstreamBearer
+
       // Pull surgical-invalidation tags off the request. The SDK doesn't
       // know about these — `lib/server.ts` attaches them via the static
       // `headers` slot on the GraphQLClient config when `cacheable` infra
@@ -295,7 +315,14 @@ function graphqlCachedHandler() {
         !!operationName && ORDER_EDITOR_MUTATIONS.has(operationName) && !!ORDER_EDITOR_API_KEY
       const apiKey = useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY
 
-      const cacheable = !authHeader && opType === 'query'
+      // Only anonymous catalog queries are cacheable. An authenticated request
+      // (cookie or header) is personalised — caching it would leak one user's
+      // data to the next, and a header-less `viewer` would pin the dummy
+      // account for everyone. `viewer` is excluded explicitly too: it's the
+      // account-identity query, never anonymous-cacheable even if it somehow
+      // arrives without a token.
+      const cacheable =
+        !isAuthenticated && opType === 'query' && operationName !== 'viewer'
       const key = cacheable ? gqlCacheKey(rawBody) : null
 
       if (cacheable) {
@@ -309,16 +336,17 @@ function graphqlCachedHandler() {
         }
       }
 
-      // Forward to upstream with the API key injected server-side. Mirrors
-      // the old http-proxy-middleware behaviour: apikey header + content-type,
-      // pass through Authorization when present.
+      // Forward to upstream with the API key injected server-side, plus the
+      // Bearer resolved above (cookie wins over the client header). Sending the
+      // cookie token here is what makes `viewer` and other account queries
+      // resolve to the real user instead of the bare-API-key default.
       try {
         const upstreamResp = await fetch(UPSTREAM, {
           method: 'POST',
           headers: {
             'apikey': apiKey,
             'Content-Type': 'application/json',
-            ...(authHeader ? { Authorization: authHeader } : {}),
+            ...(upstreamBearer ? { Authorization: `Bearer ${upstreamBearer}` } : {}),
           },
           body: rawBody,
         })

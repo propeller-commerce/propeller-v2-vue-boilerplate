@@ -144,6 +144,13 @@ export const useAuthStore = defineStore('auth', () => {
         safeStorage.setItem('user', JSON.stringify(plain))
         user.value = plain
         if (!token.value) token.value = storedToken
+        // Re-point the company store at the fresh company copy. The dashboard
+        // reads addresses + company info off `companyStore.selectedCompany`, a
+        // separate snapshot — without this, an address edit (which calls
+        // refreshUser) updates `user` but leaves the dashboard showing the old
+        // addresses. Lazy import avoids a store-module cycle.
+        const { useCompanyStore } = await import('@/stores/company')
+        useCompanyStore().syncFromUser(plain)
       }
     } catch (e) {
       console.error('refreshUser failed', e)
