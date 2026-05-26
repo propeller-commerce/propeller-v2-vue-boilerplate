@@ -220,7 +220,7 @@ import {
   imageSearchFilters,
   localizeHref,
 } from "@/lib/config";
-import { getLanguageString } from "@/composables/shared/utils/languageResolver";
+import { getLanguageString } from "propeller-v2-vue-ui";
 import {
   ProductPrice as SDKProductPrice,
   type Category,

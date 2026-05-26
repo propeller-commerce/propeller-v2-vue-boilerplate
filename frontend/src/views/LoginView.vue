@@ -25,10 +25,9 @@ import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
-import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
+import { mergeAnonymousCart } from 'propeller-v2-vue-ui'
 import { useCart } from 'propeller-v2-vue-ui'
-import type { AnyUser } from '@/composables/shared/utils/userIdentity'
+import type { AnyUser } from 'propeller-v2-vue-ui'
 import { LoginForm } from 'propeller-v2-vue-ui';
 
 const router = useRouter()
@@ -53,7 +52,7 @@ async function handleLoginSuccess(
   expiresAt?: string,
   anonymousCart?: Cart | null,
 ) {
-  const cleanUser = stripLeadingUnderscores(user) as Contact | Customer
+  const cleanUser = user
   authStore.setUser(cleanUser)
   if (accessToken) {
     authStore.setToken(accessToken)

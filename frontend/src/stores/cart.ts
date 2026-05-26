@@ -1,18 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Cart } from 'propeller-sdk-v2'
-import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 import { isBrowser, safeStorage } from '@/lib/ssr'
-
-function normalizeCart(c: Cart): Cart {
-  return stripLeadingUnderscores(JSON.parse(JSON.stringify(c))) as Cart
-}
 
 function loadCartFromStorage(): Cart | null {
   try {
     const stored = safeStorage.getItem('cart')
     if (!stored) return null
-    return stripLeadingUnderscores(JSON.parse(stored)) as Cart
+    return JSON.parse(stored) as Cart
   } catch {
     return null
   }
@@ -35,9 +30,8 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   function setCart(c: Cart | null) {
-    const normalized = c ? normalizeCart(c) : null
-    cart.value = normalized
-    if (normalized) safeStorage.setItem('cart', JSON.stringify(normalized))
+    cart.value = c
+    if (c) safeStorage.setItem('cart', JSON.stringify(c))
     else safeStorage.removeItem('cart')
   }
 

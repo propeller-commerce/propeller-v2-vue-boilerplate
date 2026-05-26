@@ -279,12 +279,9 @@ import { useLanguageStore } from '@/stores/language'
 import { useMenuStore } from '@/stores/menu'
 import { graphqlClient } from '@/lib/api'
 import { useCart } from 'propeller-v2-vue-ui'
-import type { AnyUser } from '@/composables/shared/utils/userIdentity'
+import type { AnyUser } from 'propeller-v2-vue-ui'
 import { configuration, localizeHref, stripLanguagePrefix, detectLanguageFromPath } from '@/lib/config'
-import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
-import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
-import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart'
-import { initCart } from '@/composables/shared/utils/cartInit'
+import { mergeAnonymousCart, fetchActiveCart as fetchActiveCartShared, initCart } from 'propeller-v2-vue-ui'
 
 import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from 'propeller-v2-vue-ui';
 
@@ -435,7 +432,7 @@ async function handleAfterLogin(
   expiresAt?: string,
   anonymousCart?: Cart | null
 ) {
-  const cleanUser = stripLeadingUnderscores(user) as Contact | Customer
+  const cleanUser = user
   authStore.setUser(cleanUser)
   if (accessToken) {
     authStore.setToken(accessToken)

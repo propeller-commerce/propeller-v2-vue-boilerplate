@@ -118,7 +118,7 @@ import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
 import { useAddress } from 'propeller-v2-vue-ui'
 import type { AddressInput } from 'propeller-v2-vue-ui'
-import type { AnyUser } from '@/composables/shared/utils/userIdentity'
+import type { AnyUser } from 'propeller-v2-vue-ui'
 import { AddressCard } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 

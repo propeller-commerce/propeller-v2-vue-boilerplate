@@ -9,8 +9,7 @@ Vue 3 + Vite ecommerce storefront under SSR (Vite SSR + a thin Node server in `s
 | Item | Location |
 |---|---|
 | Vue UI components & composables | NOT here — in `propeller-v2-vue-ui` (installed from `github:propeller-commerce/propeller-v2-vue-ui#master`). Local source: `D:\laragon\www\propeller-ui\propeller-v2-vue-ui` |
-| Framework-portable utils & types (kept here) | `src/composables/shared/utils/`, `src/composables/shared/types/` |
-| Vue-reactive wrappers over shared utils | `src/composables/shared/` (e.g. `useUserIdentity.ts`, `usePagination.ts`, `useServiceFetch.ts`) |
+| Framework-portable utils & types | NOT here — re-exported from `propeller-v2-vue-ui` (root entry) and `propeller-v2-vue-ui/shared` (Node-safe entry). Only `src/composables/shared/utils/countries.ts` is kept here (consumer-specific country list) |
 | Pinia stores | `src/stores/` (`auth`, `cart`, `company`, `language`, `price`, `menu`, `ssrCatalog`) |
 | SDK client + services (browser) | `src/lib/api.ts` |
 | SDK client + services (SSR seam) | `src/lib/server.ts` |

@@ -212,7 +212,7 @@ import {
   imageSearchFilters,
   localizeHref,
 } from "@/lib/config";
-import { getLanguageString } from "@/composables/shared/utils/languageResolver";
+import { getLanguageString } from "propeller-v2-vue-ui";
 import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
 import { stripHtml } from "propeller-v2-vue-ui/shared";
 import {
