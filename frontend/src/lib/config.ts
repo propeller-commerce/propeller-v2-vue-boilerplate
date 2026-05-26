@@ -54,6 +54,24 @@ export const menuDepth = parseInt(import.meta.env.VITE_MENU_DEPTH || '3', 10)
 export const channelId = parseInt(import.meta.env.VITE_CHANNEL_ID || '1', 10)
 
 /**
+ * Portal access mode — kebab-case `'open'` | `'semi-closed'` | `'closed'`.
+ * Mirrors the React app's `BOILERPLATE_PORTAL_MODE`. The package's
+ * `isContentHidden(portalMode, user)` matches on these exact strings; using
+ * any other casing leaves the semi-closed gate as a no-op.
+ */
+export const portalMode = (
+  import.meta.env.VITE_PORTAL_MODE || 'open'
+).trim().toLowerCase() === 'semiclosed' ? 'semi-closed' :
+  (import.meta.env.VITE_PORTAL_MODE || 'open').trim().toLowerCase()
+
+/**
+ * Absolute origin of this site (no trailing slash). Used to build absolute
+ * URLs in schema.org / JSON-LD payloads emitted by ProductJsonLd / ClusterJsonLd
+ * / ItemListJsonLd. When unset, JSON-LD emits path-only URLs.
+ */
+export const siteUrl = (import.meta.env.VITE_SITE_URL || '').replace(/\/$/, '')
+
+/**
  * Prepends `/<lang>` to a path when `language` is non-default. Idempotent —
  * does nothing if the path already starts with the prefix, so it's safe to
  * call multiple times during navigation.
@@ -101,6 +119,9 @@ export const configuration = {
   urlPattern: URL_PATTERN,
   taxZone: 'NL',
   currency: '€',
+  /** ISO 4217 currency code — used by JSON-LD / schema.org payloads (`priceCurrency`).
+   *  Distinct from `currency` above, which is the display symbol shown to humans. */
+  currencyCode: 'EUR',
   baseCategoryId,
   menuDepth,
   urls: {

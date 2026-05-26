@@ -1,6 +1,9 @@
 <template>
   <div class="py-12 bg-background">
     <div class="container-width">
+      <!-- schema.org structured data for Google Rich Results. Emits Product
+           (schema.org has no Cluster type). Hidden in the DOM as a <script>. -->
+      <ClusterJsonLd v-if="cluster" :cluster="cluster" :context="jsonLdContext" />
       <!-- Breadcrumbs -->
       <div class="mb-6">
         <Breadcrumbs
@@ -196,10 +199,10 @@ import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { getLanguageString } from "@/composables/shared/utils/languageResolver";
-import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl } from "@/lib/seo";
+import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
 import { stripHtml } from "propeller-v2-vue-ui/shared";
 
-import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterJsonLd, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
 
 const route = useRoute();
 const router = useRouter();
@@ -282,6 +285,14 @@ const seoCanonical = computed(() =>
 );
 // First gallery image, used for og:image + twitter:image when present.
 const seoImage = computed(() => displayImages.value[0] ?? "");
+
+// schema.org JSON-LD context — Cluster renders as `@type: "Product"`.
+const jsonLdContext = computed(() =>
+  buildJsonLdContext({
+    language: languageStore.language,
+    user: authStore.user as any,
+  }),
+);
 useHead({
   title: seoTitle,
   meta: [

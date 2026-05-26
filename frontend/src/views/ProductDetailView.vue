@@ -20,6 +20,9 @@
       </div>
 
       <template v-else-if="product">
+        <!-- schema.org Product structured data for Google Rich Results.
+             Renders as a `<script type="application/ld+json">` in the DOM. -->
+        <ProductJsonLd :product="(product as Product)" :context="jsonLdContext" />
         <!-- Breadcrumbs -->
         <div class="mb-6">
           <Breadcrumbs
@@ -194,7 +197,7 @@ import {
   localizeHref,
 } from "@/lib/config";
 import { getLanguageString } from "@/composables/shared/utils/languageResolver";
-import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl } from "@/lib/seo";
+import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
 import { stripHtml } from "propeller-v2-vue-ui/shared";
 import {
   ProductPrice as SDKProductPrice,
@@ -205,7 +208,7 @@ import {
   type Product,
 } from "propeller-sdk-v2";
 
-import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
 
 // Ordered list of cross-sell sections shown below the PDP fold. Each entry
 // becomes one `<ProductSlider>` with its own title — passing multiple types to
@@ -290,6 +293,14 @@ const seoCanonical = computed(() =>
 // First gallery image, used for og:image + twitter:image. Cheap because the
 // `images` computed is already evaluated for the gallery; we just take [0].
 const seoImage = computed(() => images.value[0] ?? "");
+
+// schema.org Product JSON-LD — gated by portalMode + user inside the builder.
+const jsonLdContext = computed(() =>
+  buildJsonLdContext({
+    language: languageStore.language,
+    user: authStore.user as Contact | Customer | null,
+  }),
+);
 useHead({
   title: seoTitle,
   meta: [

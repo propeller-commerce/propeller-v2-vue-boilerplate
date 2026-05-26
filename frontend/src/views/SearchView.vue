@@ -1,6 +1,12 @@
 <template>
   <div class="py-8 bg-background">
     <div class="container-width">
+      <!-- schema.org ItemList of the SSR first-page search results. -->
+      <ItemListJsonLd
+        v-if="jsonLdFirstPage.length"
+        :products="jsonLdFirstPage"
+        :context="jsonLdContext"
+      />
       <GridTitle
         :title="searchTerm ? `Search Products: '${searchTerm}'` : 'Search Products'"
         :language="languageStore.language"
@@ -161,8 +167,9 @@ import { useLanguageStore } from '@/stores/language'
 import { useSsrCatalogStore } from '@/stores/ssrCatalog'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
+import { buildJsonLdContext } from '@/lib/seo'
 
-import { GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from 'propeller-v2-vue-ui';
+import { GridFilters, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from 'propeller-v2-vue-ui';
 
 const route = useRoute()
 const router = useRouter()
@@ -213,6 +220,16 @@ const filtersLoading = ref(false)
 // flips it and the grid resumes its own fetching.
 const usingServerData = ref(!!seededResponse)
 const seededItems = (seededResponse?.items ?? []) as (Product | Cluster)[]
+
+// schema.org ItemList of the SSR first-page results. Crawlers see this
+// snapshot only; client-side filter/sort/page navigation does NOT re-emit.
+const jsonLdContext = computed(() =>
+  buildJsonLdContext({
+    language: languageStore.language,
+    user: authStore.user as any,
+  }),
+)
+const jsonLdFirstPage = seededItems as Product[]
 const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
   usingServerData.value ? seededItems : undefined,
 )

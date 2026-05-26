@@ -6,8 +6,9 @@
  * string for the active language, preferring the curated metadata and falling
  * back through the content fields. Mirrors `propeller-next/lib/seo.ts`.
  */
-import type { LocalizedString } from 'propeller-sdk-v2'
-import { stripHtml } from 'propeller-v2-vue-ui/shared'
+import type { Contact, Customer, LocalizedString } from 'propeller-sdk-v2'
+import { stripHtml, type JsonLdContext } from 'propeller-v2-vue-ui/shared'
+import { configuration, portalMode, siteUrl } from './config'
 
 /** Pick the value for `language` from a localized array, with a first-entry fallback. */
 function pick(
@@ -60,4 +61,26 @@ export function resolveCanonicalUrl(
   language: string,
 ): string | undefined {
   return pick(metadataCanonicalUrls, language)
+}
+
+/**
+ * Build the per-request `JsonLdContext` consumed by `<ProductJsonLd>`,
+ * `<ClusterJsonLd>` and `<ItemListJsonLd>`. Centralised here so every view
+ * constructs the same shape.
+ *
+ * Inputs come from the stores the view already has handy (language, user)
+ * plus module-level config (siteUrl, portalMode, currencyCode).
+ */
+export function buildJsonLdContext(args: {
+  language: string
+  user: Contact | Customer | null
+}): JsonLdContext {
+  return {
+    siteUrl,
+    language: args.language,
+    currencyCode: configuration.currencyCode,
+    portalMode,
+    user: args.user,
+    urls: configuration.urls,
+  }
 }

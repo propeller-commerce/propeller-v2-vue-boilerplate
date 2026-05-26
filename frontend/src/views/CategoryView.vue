@@ -1,6 +1,12 @@
 <template>
   <div class="py-8 bg-background">
     <div class="container-width">
+      <!-- schema.org ItemList of the SSR first-page products. -->
+      <ItemListJsonLd
+        v-if="jsonLdFirstPage.length"
+        :products="jsonLdFirstPage"
+        :context="jsonLdContext"
+      />
       <Breadcrumbs
         v-if="category"
         :categoryPath="(category as any).categoryPath || []"
@@ -169,9 +175,9 @@ import { useLanguageStore } from "@/stores/language";
 import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { resolveSeoTitle, resolveSeoDescription, resolveSeoKeywords, resolveCanonicalUrl } from "@/lib/seo";
+import { resolveSeoTitle, resolveSeoDescription, resolveSeoKeywords, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
 
-import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from 'propeller-v2-vue-ui';
+import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from 'propeller-v2-vue-ui';
 
 const route = useRoute();
 const router = useRouter();
@@ -216,6 +222,16 @@ const gridFilters = ref<AttributeFilter[]>(
 // for every subsequent change.
 const usingServerData = ref(!!seededProducts);
 const seededItems = (seededProducts?.items ?? []) as (Product | Cluster)[];
+
+// schema.org ItemList of the first-page items. Built once from the SSR seed
+// — filter/sort/page navigation does NOT re-emit (crawlers see this snapshot).
+const jsonLdContext = computed(() =>
+  buildJsonLdContext({
+    language: languageStore.language,
+    user: authStore.user as any,
+  }),
+);
+const jsonLdFirstPage = seededItems as Product[];
 const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
   usingServerData.value ? seededItems : undefined,
 );
