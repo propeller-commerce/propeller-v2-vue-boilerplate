@@ -39,10 +39,9 @@ import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { stripLeadingUnderscores } from "@/composables/shared/utils/userUtils";
-import { mergeAnonymousCart } from "@/composables/shared/utils/mergeAnonymousCart";
+import { mergeAnonymousCart } from "propeller-v2-vue-ui";
 import { useCart } from "propeller-v2-vue-ui";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
+import type { AnyUser } from "propeller-v2-vue-ui";
 import { RegisterForm } from 'propeller-v2-vue-ui';
 import { COUNTRIES_MAP } from "@/composables/shared/utils/countries";
 
@@ -76,7 +75,7 @@ async function handleAfterRegistration(
     return;
   }
 
-  const cleanUser = stripLeadingUnderscores(user) as Contact | Customer;
+  const cleanUser = user;
   authStore.setUser(cleanUser);
   authStore.setToken(accessToken);
   localStorage.setItem("accessToken", accessToken);

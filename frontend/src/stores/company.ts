@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Company } from 'propeller-sdk-v2'
-import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
 import { isBrowser, safeStorage } from '@/lib/ssr'
 
 const STORAGE_KEY = 'selected_company'
@@ -9,7 +8,7 @@ const STORAGE_KEY = 'selected_company'
 function loadCompanyFromStorage(): Company | null {
   try {
     const stored = safeStorage.getItem(STORAGE_KEY)
-    return stored ? (stripLeadingUnderscores(JSON.parse(stored)) as Company) : null
+    return stored ? (JSON.parse(stored) as Company) : null
   } catch {
     return null
   }

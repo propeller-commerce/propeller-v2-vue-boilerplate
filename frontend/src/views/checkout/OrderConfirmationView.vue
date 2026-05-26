@@ -176,7 +176,7 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { useOrders } from "propeller-v2-vue-ui";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
+import type { AnyUser } from "propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 

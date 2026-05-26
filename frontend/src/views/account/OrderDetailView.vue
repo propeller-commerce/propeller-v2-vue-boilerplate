@@ -156,7 +156,7 @@ import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import type { Cart, Contact, Customer, Order } from "propeller-sdk-v2";
 import { useOrders } from "propeller-v2-vue-ui";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
+import type { AnyUser } from "propeller-v2-vue-ui";
 import { OrderActions, OrderBonusItems, OrderItemCard, OrderShipments, OrderSummary, OrderTotals } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
