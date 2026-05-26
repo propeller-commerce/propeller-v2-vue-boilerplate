@@ -25,8 +25,14 @@
         <!-- Info -->
         <div class="flex flex-col">
           <div class="mb-6">
+            <!-- Pass the seeded cluster in so ClusterInfo skips its internal
+                 re-fetch on hydration. Without this the client refetch
+                 overwrites the SSR cluster and the configurator's attribute
+                 values reset (textValues bucket order differs across runs;
+                 attributeDescription.type may also be dropped). -->
             <ClusterInfo
               :user="authStore.user"
+              :cluster="cluster ?? undefined"
               :clusterId="clusterId"
               :graphqlClient="graphqlClient"
               :onClusterLoaded="handleClusterLoaded"
