@@ -72,6 +72,37 @@ const ORDER_EDITOR_API_KEY =
 
 const upstreamUrl = new URL(UPSTREAM)
 
+// Propeller mutations the backend authorizes ONLY against the dedicated
+// "order editor" API key. Sending them with the general key returns the
+// GraphQL error "Forbidden resource". The browser SDK posts everything to
+// /api/graphql (proxy mode, no key in the body), so this server must pick the
+// right key per operation — mirrors the nextDemo proxy + the SDK's own
+// DEFAULT_ORDER_EDITOR_MUTATIONS. Keep in sync if the SDK list changes.
+const ORDER_EDITOR_MUTATIONS = new Set([
+  'orderSetStatus',
+  'passwordResetLink',
+  'triggerQuoteSendRequest',
+  'triggerOrderSendConfirm',
+])
+
+/**
+ * Resolve a GraphQL operation name for API-key routing. Prefer the explicit
+ * `operationName` the SDK sends in the body; fall back to the first
+ * `query NAME` / `mutation NAME` in the document (mirrors the SDK's
+ * `extractOperationName`), stripping leading `#` comment lines first.
+ */
+function gqlOperationName(parsed) {
+  if (parsed && typeof parsed.operationName === 'string' && parsed.operationName) {
+    return parsed.operationName
+  }
+  if (parsed && typeof parsed.query === 'string') {
+    const stripped = parsed.query.replace(/^\s*#.*$/gm, '').trimStart()
+    const match = stripped.match(/^(?:query|mutation)\s+(\w+)/)
+    if (match) return match[1]
+  }
+  return undefined
+}
+
 // ── Anonymous GraphQL response cache ────────────────────────────────────────
 //
 // In-memory LRU keyed by the request body. The `/api/graphql` handler below
@@ -255,6 +286,15 @@ function graphqlCachedHandler() {
       try { parsed = JSON.parse(rawBody.toString('utf-8')) } catch {}
       const opType = parsed ? gqlOperationType(parsed.query) : 'mutation'
 
+      // Route order-editor mutations to the dedicated key (else upstream
+      // returns "Forbidden resource"). Falls back to the general key when the
+      // order key isn't configured — surfacing the same error rather than a
+      // silent mismatch.
+      const operationName = gqlOperationName(parsed)
+      const useOrderKey =
+        !!operationName && ORDER_EDITOR_MUTATIONS.has(operationName) && !!ORDER_EDITOR_API_KEY
+      const apiKey = useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY
+
       const cacheable = !authHeader && opType === 'query'
       const key = cacheable ? gqlCacheKey(rawBody) : null
 
@@ -276,7 +316,7 @@ function graphqlCachedHandler() {
         const upstreamResp = await fetch(UPSTREAM, {
           method: 'POST',
           headers: {
-            'apikey': API_KEY,
+            'apikey': apiKey,
             'Content-Type': 'application/json',
             ...(authHeader ? { Authorization: authHeader } : {}),
           },

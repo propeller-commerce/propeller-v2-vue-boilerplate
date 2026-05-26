@@ -58,6 +58,22 @@
               :language="languageStore.language"
             />
 
+            <div
+              v-if="surchargeLines.length > 0"
+              class="propeller-product-surcharges text-sm text-muted-foreground"
+            >
+              <span class="font-medium">Additional surcharges:</span>
+              <ul class="propeller-product-surcharges__list mt-1 space-y-0.5">
+                <li
+                  v-for="(line, idx) in surchargeLines"
+                  :key="idx"
+                  class="propeller-product-surcharges__item"
+                >
+                  {{ line }}
+                </li>
+              </ul>
+            </div>
+
             <ProductBulkPrices
               v-if="product.price"
               :product="product as Product"
@@ -257,6 +273,34 @@ const productName = computed(() =>
     ? getLanguageString(product.value.names, languageStore.language, "")
     : "",
 );
+
+// Additional product surcharges (e.g. "Statiegeld" / deposit), shown under the
+// price.
+// `product.surcharges` is fetched by the SDK's getProduct query — no extra
+// request. Quantity is 1 (the price block has no quantity selector).
+const surchargeLines = computed<string[]>(() => {
+  const list = (product.value?.surcharges ?? []).filter(
+    (s) => (s as { enabled?: boolean }).enabled !== false,
+  );
+  const fmtValue = (v: number) =>
+    new Intl.NumberFormat("nl-NL", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(v || 0));
+  return list
+    .map((s) => {
+      const names = (s as { name?: { value?: string; language?: string }[] }).name ?? [];
+      const name =
+        names.find((n) => n.language === languageStore.language)?.value ??
+        names[0]?.value ??
+        "";
+      const isPercentage = String(s.type ?? "").toLowerCase() === "percentage";
+      return isPercentage
+        ? `1 x ${s.value}% (${name})`
+        : `1 x ${configuration.currency} ${fmtValue(Number(s.value))} (${name})`;
+    })
+    .filter((line) => line.length > 0);
+});
 
 // SEO <head> — server-rendered from the seeded product. Mirrors the React
 // PDP's `generateMetadata`: curated metadata fields win, with sensible

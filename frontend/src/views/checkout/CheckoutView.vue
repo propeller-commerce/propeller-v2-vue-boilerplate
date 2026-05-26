@@ -274,7 +274,7 @@
                   Carrier
                 </h3>
                 <p
-                  v-if="step3Submitted && !selectedCarrier"
+                  v-if="step3Submitted && ((cart as any)?.carriers?.length ?? 0) > 0 && !selectedCarrier"
                   class="text-sm text-destructive"
                 >
                   Please select a carrier
@@ -623,9 +623,14 @@ async function handleAddressSubmit(
 }
 
 async function handleStep3Continue() {
+  // A carrier is only required when the cart actually offers one. Some carts
+  // (e.g. digital-only or business-rule configs) return no carriers; in that
+  // case CartCarriers shows "No carriers available." and never fires a
+  // selection, so requiring one here would dead-end the checkout.
+  const hasCarriers = ((cart.value as any)?.carriers?.length ?? 0) > 0;
   if (
     !selectedPayment.value ||
-    !selectedCarrier.value ||
+    (hasCarriers && !selectedCarrier.value) ||
     !selectedDeliveryDate.value
   ) {
     step3Submitted.value = true;
@@ -633,7 +638,7 @@ async function handleStep3Continue() {
   }
   const updatedCart = await updateCartSettings((cart.value as any).cartId, {
     paymentMethod: selectedPayment.value,
-    carrier: selectedCarrier.value,
+    ...(selectedCarrier.value ? { carrier: selectedCarrier.value } : {}),
     requestDate: selectedDeliveryDate.value,
   });
   if (updatedCart) {
