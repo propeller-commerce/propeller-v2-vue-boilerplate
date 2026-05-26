@@ -134,147 +134,19 @@
           :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
         />
 
-        <!-- Accessories -->
+        <!-- Cross-sell sliders: one section per type. Passing multiple types
+             to a single ProductSlider merges them into one section, which is
+             NOT the UX we want — keep the array literal scoped to one type. -->
         <ProductSlider
+          v-for="type in CROSS_SELLS"
+          :key="type"
           :graphqlClient="graphqlClient"
           :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
           :language="languageStore.language"
           :includeTax="priceStore.includeTax"
           :configuration="configuration"
-          :crossUpsellTypes="[CrossupsellType.ACCESSORIES]"
-          :productId="product.productId"
-          :showAvailability="false"
-          :showStock="true"
-          :showModal="true"
-          :createCart="true"
-          :companyId="companyStore.companyId || undefined"
-          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
-          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
-          :onProductClick="
-            (p: Product) =>
-              router.push(
-                configuration.urls.getProductUrl(p, languageStore.language),
-              )
-          "
-          :onClusterClick="
-            (c: Cluster) =>
-              router.push(
-                configuration.urls.getClusterUrl(c, languageStore.language),
-              )
-          "
-        />
-
-        <!-- Related Products -->
-        <ProductSlider
-          :graphqlClient="graphqlClient"
-          :user="authStore.user as Contact | Customer"
-          :cartId="cartStore.cartId || undefined"
-          :language="languageStore.language"
-          :includeTax="priceStore.includeTax"
-          :configuration="configuration"
-          :crossUpsellTypes="[CrossupsellType.RELATED]"
-          :productId="product.productId"
-          :showAvailability="false"
-          :showStock="true"
-          :showModal="true"
-          :createCart="true"
-          :companyId="companyStore.companyId || undefined"
-          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
-          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
-          :onProductClick="
-            (p: Product) =>
-              router.push(
-                configuration.urls.getProductUrl(p, languageStore.language),
-              )
-          "
-          :onClusterClick="
-            (c: Cluster) =>
-              router.push(
-                configuration.urls.getClusterUrl(c, languageStore.language),
-              )
-          "
-        />
-
-        <!-- Alternatives -->
-        <ProductSlider
-          :graphqlClient="graphqlClient"
-          :user="authStore.user as Contact | Customer"
-          :cartId="cartStore.cartId || undefined"
-          :language="languageStore.language"
-          :includeTax="priceStore.includeTax"
-          :configuration="configuration"
-          :crossUpsellTypes="[CrossupsellType.ALTERNATIVES]"
-          :productId="product.productId"
-          :showAvailability="false"
-          :showStock="true"
-          :showModal="true"
-          :createCart="true"
-          :companyId="companyStore.companyId || undefined"
-          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
-          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
-          :onProductClick="
-            (p: Product) =>
-              router.push(
-                configuration.urls.getProductUrl(p, languageStore.language),
-              )
-          "
-          :onClusterClick="
-            (c: Cluster) =>
-              router.push(
-                configuration.urls.getClusterUrl(c, languageStore.language),
-              )
-          "
-        />
-
-        <!-- Options -->
-        <ProductSlider
-          :graphqlClient="graphqlClient"
-          :user="authStore.user as Contact | Customer"
-          :cartId="cartStore.cartId || undefined"
-          :language="languageStore.language"
-          :includeTax="priceStore.includeTax"
-          :configuration="configuration"
-          :crossUpsellTypes="[CrossupsellType.OPTIONS]"
-          :productId="product.productId"
-          :showAvailability="false"
-          :showStock="true"
-          :showModal="true"
-          :createCart="true"
-          :companyId="companyStore.companyId || undefined"
-          :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-          :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-          :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
-          :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
-          :onProductClick="
-            (p: Product) =>
-              router.push(
-                configuration.urls.getProductUrl(p, languageStore.language),
-              )
-          "
-          :onClusterClick="
-            (c: Cluster) =>
-              router.push(
-                configuration.urls.getClusterUrl(c, languageStore.language),
-              )
-          "
-        />
-
-        <!-- Parts -->
-        <ProductSlider
-          :graphqlClient="graphqlClient"
-          :user="authStore.user as Contact | Customer"
-          :cartId="cartStore.cartId || undefined"
-          :language="languageStore.language"
-          :includeTax="priceStore.includeTax"
-          :configuration="configuration"
-          :crossUpsellTypes="[CrossupsellType.PARTS]"
+          :crossUpsellTypes="[type]"
           :productId="product.productId"
           :showAvailability="false"
           :showStock="true"
@@ -334,6 +206,17 @@ import {
 } from "propeller-sdk-v2";
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+
+// Ordered list of cross-sell sections shown below the PDP fold. Each entry
+// becomes one `<ProductSlider>` with its own title — passing multiple types to
+// a single slider merges them into one section, which is NOT the UX we want.
+const CROSS_SELLS = [
+  CrossupsellType.ACCESSORIES,
+  CrossupsellType.RELATED,
+  CrossupsellType.ALTERNATIVES,
+  CrossupsellType.OPTIONS,
+  CrossupsellType.PARTS,
+] as const;
 
 const route = useRoute();
 const router = useRouter();

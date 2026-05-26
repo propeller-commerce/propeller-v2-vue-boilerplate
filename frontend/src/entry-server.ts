@@ -25,6 +25,7 @@ import {
 } from './router/ssrPrefetch'
 import { fetchMenu, getAnonymousInfra } from './lib/server'
 import { useMenuStore } from './stores/menu'
+import { usePriceStore } from './stores/price'
 import { baseCategoryId as configBaseCategoryId } from './lib/config'
 
 /**
@@ -77,6 +78,10 @@ export async function render(
   // Make request-scoped data (cookies, server GraphQL client) reachable from
   // route loaders and `App.vue` via inject.
   app.provide('ssrContext', ssrContext)
+
+  // Seed the VAT preference store from the request cookie so SSR renders the
+  // right gross/net prices and the hydration snapshot matches.
+  usePriceStore(pinia).seedFromCookie(ssrContext.cookies)
 
   await router.push(url)
   await router.isReady()

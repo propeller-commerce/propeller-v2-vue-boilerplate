@@ -310,17 +310,21 @@ export async function getServerInfra(
     user,
     language,
     currency: '€',
-    includeTax: false,
+    includeTax: cookies['price_include_tax'] === '1',
     cacheable: false, // authenticated render — bypasses the SSR proxy cache
   }
 }
 
 /**
- * Resolve the per-request infra for an **anonymous** render. Never reads the
- * auth cookie, never calls `getViewer` — `user` is always `null`. The route
- * stays cacheable because it never depends on a per-user cookie. Every
- * GraphQL POST carries the `[TAG_CATALOG]` baseline tag header so the
- * server-side proxy LRU can later be busted by tag.
+ * Resolve the per-request infra for an **anonymous** render. Never reads ANY
+ * cookies, never calls `getViewer` — `user` is always `null`, prices always
+ * net. The route stays cacheable because it never depends on a per-user
+ * cookie. Every GraphQL POST carries the `[TAG_CATALOG]` baseline tag header
+ * so the server-side proxy LRU can later be busted by tag.
+ *
+ * Routes that render prices AND need the VAT toggle to take effect server-
+ * side should use `getAnonymousInfraWithTax()` instead — that one reads the
+ * `price_include_tax` cookie and is therefore non-cacheable.
  */
 export function getAnonymousInfra(
   language: string = DEFAULT_LANGUAGE,
@@ -344,8 +348,34 @@ export function getAnonymousInfra(
 }
 
 /**
- * Pick the right infra for a listing page: anonymous (cacheable) when there is
- * no auth cookie, authenticated (personalised) when there is.
+ * Anonymous infra variant that honours the VAT toggle cookie. Reading the
+ * cookie opts the route out of the cacheable path — use this for routes that
+ * render prices in the initial HTML and need the gross/net toggle to take
+ * effect server-side.
+ */
+export function getAnonymousInfraWithTax(
+  cookies: Record<string, string>,
+  language: string = DEFAULT_LANGUAGE,
+): ServerInfra {
+  const client = createServerClient({ getAccessToken: () => undefined })
+  const services = createServices(client)
+  return {
+    client,
+    services,
+    user: null,
+    language,
+    currency: '€',
+    includeTax: cookies['price_include_tax'] === '1',
+    cacheable: false,
+  }
+}
+
+/**
+ * Pick the right infra for a listing page that renders prices: authenticated
+ * (personalised + tax-aware, dynamic) when logged in; anonymous-with-tax
+ * (no auth, tax cookie, dynamic) when logged out. Both branches read the tax
+ * cookie, so this is always dynamic — pages that don't show prices should
+ * call `getAnonymousInfra()` directly to stay cacheable.
  */
 export function getListingInfra(
   cookies: Record<string, string>,
@@ -353,7 +383,7 @@ export function getListingInfra(
 ): Promise<ServerInfra> | ServerInfra {
   return cookies['access_token']
     ? getServerInfra(cookies, language)
-    : getAnonymousInfra(language)
+    : getAnonymousInfraWithTax(cookies, language)
 }
 
 // ── Listing fetch options ────────────────────────────────────────────────────
