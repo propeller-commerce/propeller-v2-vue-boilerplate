@@ -55,12 +55,16 @@ export const useCompanyStore = defineStore('company', () => {
   }
 
   // Re-point the selected company at the FRESH copy carried on a just-refreshed
-  // user, keeping the same companyId. `selectedCompany` holds its own snapshot
-  // of the company (the dashboard reads addresses + company info off it, not off
-  // `user.company`), so after an address mutation + `refreshUser` it would
-  // otherwise stay stale — old addresses on the dashboard. Match the current
-  // selection by id (multi-company contacts), else fall back to the user's
-  // default company. Persist so the refreshed copy also survives a reload.
+  // user. `selectedCompany` holds its own snapshot of the company (the dashboard
+  // reads addresses + company info off it, not off `user.company`), so after an
+  // address mutation + `refreshUser` it would otherwise stay stale — old
+  // addresses on the dashboard. Prefer the fresh copy of the current selection
+  // (multi-company contacts keep their choice); if the current selection isn't
+  // one of THIS user's companies — e.g. a stale `selected_company` from a
+  // previously logged-in identity — fall back to their default, and clear it if
+  // there's none. Leaving a non-member company set makes `fetchActiveCart`
+  // filter `carts` by it → "Unauthorized use of companyIds". Reconcile
+  // localStorage too so a reload doesn't resurrect the stale company.
   function syncFromUser(user: unknown): void {
     const u = user as { company?: Company; companies?: { items?: Company[] } } | null
     if (!u) return
@@ -73,9 +77,9 @@ export const useCompanyStore = defineStore('company', () => {
       (targetId != null && candidates.find((c) => c?.companyId === targetId)) ||
       u.company ||
       null
-    if (!next) return
     selectedCompany.value = next
-    safeStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    if (next) safeStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    else safeStorage.removeItem(STORAGE_KEY)
   }
 
   // Cross-tab sync + logout reset — browser-only.

@@ -555,9 +555,26 @@ function handleLogout() {
   router.push(localizeHref('/', languageStore.language))
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (localStorage.getItem('price_include_tax') === null) {
     priceStore.setIncludeTax(import.meta.env.VITE_INCLUDE_VAT === 'true')
+  }
+
+  // Reconcile the persisted cart against the server for an already-authenticated
+  // user (page load / refresh — no login event fires then). The cart is restored
+  // from localStorage on hydration, but its cartId can be stale: the server-side
+  // cart may have been processed, deleted, or replaced since it was persisted, so
+  // every later operation on it fails with "Cart … not found" (e.g. a purchaser's
+  // Request Authorization). Re-fetching the active cart here guarantees we hold a
+  // live cartId, mirroring what login/company-switch already do.
+  //
+  // Authenticated ONLY: an anonymous cart lives solely in localStorage with no
+  // server record to reconcile against, so fetching would clear a valid cart.
+  // `fetchActiveCart` already returns null for an anonymous user, but gating here
+  // also avoids a pointless request and any accidental clear.
+  if (authStore.isAuthenticated) {
+    const serverCart = await fetchActiveCart()
+    cartStore.setCart(serverCart ?? null)
   }
 })
 

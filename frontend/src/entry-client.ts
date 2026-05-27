@@ -37,22 +37,23 @@ if (initialState) {
   pinia.state.value = initialState as typeof pinia.state.value
 }
 
-// The state transfer above clobbers any browser-only state the stores read at
-// setup time — the server rendered with no localStorage, so its snapshot wins.
-// The anonymous cart lives only in localStorage (too large for the SSR cookie
-// the price store uses), so re-read it now to let the persisted cart win back
-// over the server's null. Without this, the cart empties on every refresh.
-//
-// Synchronous and BEFORE mount: the cart-dependent DOM (the icon badge, the
-// sidebar) is gated behind the component's own `isMounted` flag, so it renders
-// nothing until after hydration — restoring a populated cart here can't create
-// a mismatch with the server's empty-cart markup.
-useCartStore(pinia).hydrateFromStorage()
-
 // Wait for the router to resolve the current route (and run async lazy
 // components) before mounting, so `app.mount` adopts a fully-resolved tree.
 router.isReady().then(() => {
   app.mount('#app')
+
+  // Re-read the persisted cart from localStorage. The state transfer above
+  // clobbers it (the server rendered with no localStorage, so its `cart: null`
+  // snapshot wins), and the anonymous cart lives only in localStorage. Run this
+  // AFTER mount, NOT before: cart pages that render cart contents directly
+  // (cart, checkout, authorization-request-sent) are NOT mount-gated, so a
+  // pre-mount restore makes the client's first render (cart populated) differ
+  // from the server's (cart empty) → "Hydration completed but contains
+  // mismatches". Post-mount, the first render matches the server and the cart
+  // populates immediately after — the header badge is `isMounted`-gated so it
+  // appears post-mount regardless. The authenticated reconcile below then
+  // overrides this with the live server cart.
+  useCartStore().hydrateFromStorage()
 
   // Post-hydration auth reconcile. The server may have rendered anonymously
   // (no auth cookie, or an expired one) while localStorage still holds a valid
