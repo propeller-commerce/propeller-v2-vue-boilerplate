@@ -12,8 +12,12 @@ import './style.css'
 import { createApp } from './app'
 import { graphqlClient } from './lib/api'
 import { setCookie } from './lib/ssr'
+import { configuration } from './lib/config'
+import { fetchActiveCart } from 'propeller-v2-vue-ui'
 import { useCartStore } from './stores/cart'
 import { useCompanyStore } from './stores/company'
+import { useAuthStore } from './stores/auth'
+import { useLanguageStore } from './stores/language'
 
 // Restore the access token so authenticated API calls work after a reload.
 // Client-only: this is the localStorage half of the two-stage auth model.
@@ -42,37 +46,47 @@ if (initialState) {
 router.isReady().then(() => {
   app.mount('#app')
 
-  // Re-read the persisted cart from localStorage. The state transfer above
-  // clobbers it (the server rendered with no localStorage, so its `cart: null`
-  // snapshot wins), and the anonymous cart lives only in localStorage. Run this
-  // AFTER mount, NOT before: cart pages that render cart contents directly
-  // (cart, checkout, authorization-request-sent) are NOT mount-gated, so a
-  // pre-mount restore makes the client's first render (cart populated) differ
-  // from the server's (cart empty) → "Hydration completed but contains
-  // mismatches". Post-mount, the first render matches the server and the cart
-  // populates immediately after — the header badge is `isMounted`-gated so it
-  // appears post-mount regardless. The authenticated reconcile below then
-  // overrides this with the live server cart.
-  useCartStore().hydrateFromStorage()
+  // All three client-only reconciles below run AFTER mount so they never
+  // perturb the hydration render (the server rendered with no localStorage; the
+  // first client render must match it). ORDER MATTERS: company first, then cart.
 
-  // Post-hydration auth reconcile. The server may have rendered anonymously
-  // (no auth cookie, or an expired one) while localStorage still holds a valid
-  // session. Run this AFTER mount so it never perturbs the hydration render —
-  // it only updates client state for subsequent interaction. `refreshUser`
-  // re-validates the token against the API and refreshes the profile.
+  // 1. Company reconcile. The server seeded the contact's DEFAULT company; a
+  // multi-company contact may have an explicit selection in localStorage that
+  // differs. Restore it FIRST so the cart reconcile below is scoped to the
+  // user's actual selected company — otherwise a refresh fetches the cart for
+  // the default company and shows the wrong company's cart.
+  useCompanyStore().hydrateFromStorage()
+
+  // 2. Auth reconcile. The server may have rendered anonymously (no/expired auth
+  // cookie) while localStorage still holds a valid session. `refreshUser`
+  // re-validates the token and refreshes the profile.
   if (storedToken) {
-    import('./stores/auth').then(({ useAuthStore }) => {
-      const auth = useAuthStore()
-      if (!auth.token) auth.setToken(storedToken)
-      if (!auth.user) void auth.refreshUser()
-    })
+    const auth = useAuthStore()
+    if (!auth.token) auth.setToken(storedToken)
+    if (!auth.user) void auth.refreshUser()
   }
 
-  // Post-hydration company reconcile. The server seeded the contact's DEFAULT
-  // company so the dashboard renders addresses/company on first paint; a
-  // multi-company contact may have an explicit selection in localStorage that
-  // differs. Re-read it AFTER mount so it can't perturb the hydration render —
-  // the server-seeded default matches the first client render, and this only
-  // corrects to the user's actual selection for subsequent interaction.
-  useCompanyStore().hydrateFromStorage()
+  // 3. Cart reconcile. For an AUTHENTICATED user, fetch the server's active cart
+  // scoped to the (now-correct) selected company and use that — the persisted
+  // localStorage cartId can be stale (server cart processed/deleted/replaced) or
+  // belong to a different company, so re-fetching guarantees a live, correctly
+  // scoped cart. For an ANONYMOUS user there's no server cart, so re-read the
+  // localStorage cart instead. Either way this is post-mount, so cart pages that
+  // render contents directly (cart/checkout/authorization-request-sent) first
+  // render empty (matching the server) and populate immediately after.
+  const authStore = useAuthStore()
+  const companyStore = useCompanyStore()
+  const cartStore = useCartStore()
+  if (authStore.isAuthenticated && authStore.user) {
+    void fetchActiveCart({
+      graphqlClient,
+      user: authStore.user,
+      companyId: companyStore.selectedCompany?.companyId ?? undefined,
+      language: useLanguageStore().language,
+      imageSearchFilters: configuration.imageSearchFiltersGrid,
+      imageVariantFilters: configuration.imageVariantFiltersSmall,
+    }).then((serverCart) => cartStore.setCart(serverCart ?? null))
+  } else {
+    cartStore.hydrateFromStorage()
+  }
 })
