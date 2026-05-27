@@ -655,15 +655,15 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
     notes,
   });
 
-  if (result.success && result.orderId) {
+  if (result.ok) {
     cartStore.setCart(null);
     const thankYouUrl = isQuoteMode.value
       ? localizeHref(
-          `/checkout/thank-you/${result.orderId}`,
+          `/checkout/thank-you/${result.data.orderId}`,
           languageStore.language,
         ) + "?mode=quote"
       : localizeHref(
-          `/checkout/thank-you/${result.orderId}`,
+          `/checkout/thank-you/${result.data.orderId}`,
           languageStore.language,
         );
     router.push(thankYouUrl);
