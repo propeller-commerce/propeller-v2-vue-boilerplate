@@ -559,6 +559,10 @@ onMounted(() => {
   if (localStorage.getItem('price_include_tax') === null) {
     priceStore.setIncludeTax(import.meta.env.VITE_INCLUDE_VAT === 'true')
   }
+  // NOTE: the authenticated mount-time cart reconcile lives in `entry-client.ts`
+  // (after the company store is restored from localStorage), NOT here — doing it
+  // in onMounted fetched the cart before the SELECTED company was restored, so a
+  // refresh showed the default company's cart. See entry-client's post-mount block.
 })
 
 onUnmounted(() => {

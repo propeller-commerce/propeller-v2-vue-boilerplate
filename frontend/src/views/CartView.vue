@@ -31,6 +31,11 @@
             :crossupsellLimit="2"
             :afterCartUpdate="(cart: any) => cartStore.setCart(cart)"
           />
+
+          <!-- Bonus items — free items added via incentives. Read-only list.
+               currency/includeTax/language resolve from the Propeller provider
+               (providePropeller in App.vue). -->
+          <CartBonusItems :cart="cartStore.cart as Cart" />
         </div>
 
         <div class="h-fit space-y-4">
@@ -87,7 +92,7 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { ActionCode, CartItem, CartSummary } from 'propeller-v2-vue-ui';
+import { ActionCode, CartBonusItems, CartItem, CartSummary } from 'propeller-v2-vue-ui';
 
 const router = useRouter();
 const authStore = useAuthStore();

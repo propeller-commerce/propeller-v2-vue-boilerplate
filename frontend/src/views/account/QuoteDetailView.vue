@@ -127,71 +127,7 @@
         </div>
 
         <!-- Bonus Items -->
-        <div v-if="bonusItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-            Bonus Items
-          </h3>
-          <div
-            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-          >
-            <table class="w-full">
-              <thead class="bg-surface-hover border-b">
-                <tr>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Product
-                  </th>
-                  <th
-                    class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Quantity
-                  </th>
-                  <th
-                    class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Price
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <OrderItemCard
-                  v-for="item in bonusItems"
-                  :key="item.id"
-                  :orderItem="item"
-                  :titleLinkable="false"
-                  :showImage="true"
-                  :showSku="true"
-                  :showQuantity="true"
-                  :showPrice="true"
-                />
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Surcharges -->
-        <div v-if="surchargeItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-            Surcharges
-          </h3>
-          <div
-            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-          >
-            <table class="w-full">
-              <tbody>
-                <OrderItemCard
-                  v-for="item in surchargeItems"
-                  :key="item.id"
-                  :orderItem="item"
-                  :titleLinkable="false"
-                  :showImage="false"
-                  :showSku="false"
-                />
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <OrderBonusItems :order="quote" />
       </div>
 
       <!-- Totals -->
@@ -248,7 +184,7 @@ import { configuration, localizeHref } from "@/lib/config";
 import type { Order } from "propeller-sdk-v2";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
-import { OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from 'propeller-v2-vue-ui';
+import { OrderBonusItems, OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
@@ -294,16 +230,6 @@ const childMap = computed(() => {
     });
   return map;
 });
-
-const bonusItems = computed(() =>
-  (quote.value?.items || []).filter(
-    (i: any) => i.class === "product" && i.isBonus === "Y",
-  ),
-);
-
-const surchargeItems = computed(() =>
-  (quote.value?.items || []).filter((i: any) => i.class === "surcharge"),
-);
 
 function handleAfterAccept(acceptedQuote: any) {
   router.push(
