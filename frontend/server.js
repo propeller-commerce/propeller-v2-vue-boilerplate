@@ -607,7 +607,7 @@ async function createServer() {
 
       res
         .status(result.status)
-        .set({ 'Content-Type': 'text/html' })
+        .set({ 'Content-Type': 'text/html; charset=utf-8' })
         .end(html)
     } catch (err) {
       // Let Vite rewrite the stack to original source in dev.
