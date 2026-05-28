@@ -51,7 +51,7 @@
             "
             :afterRequestAuthorization="
               (cart: any) => {
-                cartStore.setCart(null);
+                cartStore.setCart(restoreManagerCart());
                 router.push(
                   localizeHref(
                     '/authorization-request-sent/' + cart.cartId,
@@ -92,6 +92,7 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { restoreManagerCart } from "@/lib/cartHelpers";
 import { ActionCode, CartBonusItems, CartItem, CartSummary } from 'propeller-v2-vue-ui';
 
 const router = useRouter();

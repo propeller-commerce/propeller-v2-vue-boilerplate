@@ -281,6 +281,7 @@ import { graphqlClient } from '@/lib/api'
 import { useCart } from 'propeller-v2-vue-ui'
 import type { AnyUser } from 'propeller-v2-vue-ui'
 import { configuration, localizeHref, stripLanguagePrefix, detectLanguageFromPath } from '@/lib/config'
+import { restoreManagerCart } from '@/lib/cartHelpers'
 import { mergeAnonymousCart, fetchActiveCart as fetchActiveCartShared, initCart } from 'propeller-v2-vue-ui'
 
 import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from 'propeller-v2-vue-ui';
@@ -510,7 +511,10 @@ async function handleCompanyChange(company: Company) {
 }
 
 function handleAfterRequestAuthorization(cart: Cart) {
-  cartStore.setCart(null)
+  // If a manager parked their own cart to act on this request, hand it back;
+  // otherwise clear.
+  const parked = restoreManagerCart()
+  cartStore.setCart(parked)
   router.push(localizeHref(`/authorization-request-sent/${cart.cartId}`, languageStore.language))
 }
 

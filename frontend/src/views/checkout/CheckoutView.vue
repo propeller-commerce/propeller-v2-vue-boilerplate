@@ -469,6 +469,7 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { restoreManagerCart } from "@/lib/cartHelpers";
 import { useCheckout } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
 
@@ -656,7 +657,9 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
   });
 
   if (result.ok) {
-    cartStore.setCart(null);
+    // Restore the manager's parked cart if they were acting on a requester's
+    // authorization cart; otherwise clear.
+    cartStore.setCart(restoreManagerCart());
     const thankYouUrl = isQuoteMode.value
       ? localizeHref(
           `/checkout/thank-you/${result.data.orderId}`,
@@ -677,7 +680,9 @@ function openTermsAndConditions() {
 }
 
 function handleAfterRequestAuthorization(updatedCart: Cart) {
-  cartStore.setCart(null);
+  // If a manager parked their own cart to act on this request, hand it back;
+  // otherwise clear.
+  cartStore.setCart(restoreManagerCart());
   router.push(
     localizeHref(
       `/authorization-request-sent/${updatedCart.cartId}`,
