@@ -5,7 +5,7 @@
     </div>
     <PurchaseAuthorizationConfigurator
       v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
-      :graphqlClient="graphqlClient"
+      :graphqlClient="orderEditorGraphqlClient"
       :user="authStore.user"
       :companyId="companyStore.companyId"
       :labels="{
@@ -50,7 +50,7 @@
 import { Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
-import { graphqlClient } from '@/lib/api'
+import { orderEditorGraphqlClient } from '@/lib/api'
 import { PurchaseAuthorizationConfigurator } from 'propeller-v2-vue-ui';
 
 const authStore = useAuthStore()

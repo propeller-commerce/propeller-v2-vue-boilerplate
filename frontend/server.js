@@ -85,6 +85,15 @@ const ORDER_EDITOR_MUTATIONS = new Set([
   'triggerOrderSendConfirm',
 ])
 
+// Operations that route to the order key ONLY when the caller identifies as the
+// order-editor client. `contactRegister` is used by BOTH public self-registration
+// (general key) AND authorization-settings "add contact" (order key) — the
+// operationName is identical, so the caller signals intent via the SDK's
+// `clientId` (sent as the `X-Client-ID` header in proxy mode) and the proxy
+// routes accordingly. The header is server-internal: not forwarded upstream.
+const ORDER_EDITOR_OPT_IN_MUTATIONS = new Set(['contactRegister'])
+const ORDER_EDITOR_CLIENT_ID = 'order-editor'
+
 /**
  * Resolve a GraphQL operation name for API-key routing. Prefer the explicit
  * `operationName` the SDK sends in the body; fall back to the first
@@ -311,8 +320,17 @@ function graphqlCachedHandler() {
       // order key isn't configured — surfacing the same error rather than a
       // silent mismatch.
       const operationName = gqlOperationName(parsed)
+      // The order-editor client (authorization-settings "add contact") sets the
+      // SDK `clientId`, sent as `X-Client-ID`. Public self-registration uses the
+      // default client (no clientId) and stays on the general key.
+      const clientIdHeader = req.headers['x-client-id']
+      const orderEditorOptIn =
+        (Array.isArray(clientIdHeader) ? clientIdHeader[0] : clientIdHeader) === ORDER_EDITOR_CLIENT_ID
       const useOrderKey =
-        !!operationName && ORDER_EDITOR_MUTATIONS.has(operationName) && !!ORDER_EDITOR_API_KEY
+        !!ORDER_EDITOR_API_KEY &&
+        !!operationName &&
+        (ORDER_EDITOR_MUTATIONS.has(operationName) ||
+          (orderEditorOptIn && ORDER_EDITOR_OPT_IN_MUTATIONS.has(operationName)))
       const apiKey = useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY
 
       // Only anonymous catalog queries are cacheable. An authenticated request

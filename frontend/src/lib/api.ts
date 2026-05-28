@@ -25,6 +25,22 @@ const clientConfig: GraphQLClientConfig = {
 // `services` bundle below, to <App> via providePropeller().
 export const graphqlClient = new GraphQLClient(clientConfig)
 
+/**
+ * A sibling client identified as the "order-editor" caller via the SDK's
+ * built-in `clientId` (sent as the `X-Client-ID` header in proxy mode). The
+ * proxy in `server.js` routes clientId-gated operations (`contactRegister`) to
+ * the ORDER_EDITOR key only for this client id — so the authorization-settings
+ * "add contact" uses the order key while public self-registration (the default
+ * `graphqlClient`, no clientId) stays on the general key. No API key is sent
+ * client-side; the proxy injects it server-side. Pass this to
+ * `PurchaseAuthorizationConfigurator`'s `graphqlClient` prop.
+ */
+export const ORDER_EDITOR_CLIENT_ID = 'order-editor'
+export const orderEditorGraphqlClient = new GraphQLClient({
+  ...clientConfig,
+  clientId: ORDER_EDITOR_CLIENT_ID,
+})
+
 // The 15-service bundle keyed to our client, built by the package's factory.
 // createServices is memoized per client, so this is the single shared bundle.
 export const services = createServices(graphqlClient)
