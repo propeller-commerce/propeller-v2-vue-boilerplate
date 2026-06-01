@@ -623,6 +623,72 @@ async function handleAddressSubmit(
   }
 }
 
+// First available delivery date — tomorrow, skipping weekends. Mirrors the
+// tile-0 logic inside the `DeliveryDate` component (`computeUpcomingDates(1,
+// true)` + `toApiDate`) so an auto-advance picks the same date the user would
+// have seen highlighted on the quick-pick row. ISO `YYYY-MM-DDT00:00:00Z`.
+function computeFirstDeliveryDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}T00:00:00Z`;
+}
+
+// One-shot guard for the step-3 auto-advance: we only auto-skip step 3 the
+// FIRST time we enter it for a given cart. Otherwise clicking Back from step 4
+// (or expanding the step-3 header) would immediately push the user right back
+// to step 4, making step 3 unreachable in single-option carts.
+const autoAdvancedCartId = ref<string | null>(null);
+
+// Auto-advance step 3 → 4 when the cart offers only ONE payment method and at
+// most ONE carrier. Preselects payment + carrier (if any) + the first available
+// delivery date, persists via `updateCartSettings`, then jumps to step 4. Falls
+// through to the normal step-3 UI when a precondition isn't met (no payments
+// yet, multi-option, quote mode).
+watch(
+  [currentStep, cart, isQuoteMode],
+  async () => {
+    if (currentStep.value !== 3) return;
+    if (isQuoteMode.value) return;
+    const c = cart.value as any;
+    if (!c?.cartId) return;
+    if (autoAdvancedCartId.value === c.cartId) return;
+    const payMethods = (c.payMethods ?? []) as { code?: string }[];
+    const carriers = (c.carriers ?? []) as { name?: string }[];
+    if (payMethods.length !== 1) return;
+    if (carriers.length > 1) return;
+    const onlyPayment = payMethods[0]?.code;
+    const onlyCarrier = carriers[0]?.name;
+    if (!onlyPayment) return;
+    const requestDate =
+      (c.postageData?.requestDate as string | undefined) || computeFirstDeliveryDate();
+    autoAdvancedCartId.value = c.cartId;
+    try {
+      const updatedCart = await updateCartSettings(c.cartId, {
+        paymentMethod: onlyPayment,
+        ...(onlyCarrier ? { carrier: onlyCarrier } : {}),
+        requestDate,
+      });
+      if (updatedCart) {
+        cartStore.setCart(updatedCart);
+        selectedPayment.value = onlyPayment;
+        selectedCarrier.value = onlyCarrier ?? "";
+        selectedDeliveryDate.value = requestDate;
+        currentStep.value = 4;
+      }
+    } catch (e) {
+      // On failure, release the one-shot guard so the user can try Continue
+      // manually. The normal step-3 UI is still rendered.
+      autoAdvancedCartId.value = null;
+      console.error("[checkout] auto-advance step 3 failed:", e);
+    }
+  },
+  { immediate: true },
+);
+
 async function handleStep3Continue() {
   // A carrier is only required when the cart actually offers one. Some carts
   // (e.g. digital-only or business-rule configs) return no carriers; in that
