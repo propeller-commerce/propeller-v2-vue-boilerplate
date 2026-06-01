@@ -9,7 +9,7 @@ import { isBrowser, setCookie } from '@/lib/ssr'
  * every request and render the right prices in the initial HTML — no client
  * hydration flip needed for users who have the toggle on.
  *
- * Cookie format: `'1'` (gross / VAT-inclusive) or `'0'` (net). Absent → net.
+ * Cookie format: `'1'` (gross / VAT-inclusive) or `'0'` (net). Absent → gross.
  *
  * The store reads from `document.cookie` in the browser. On the server, the
  * entry-server seeds this store from the request cookies before render, so
@@ -20,14 +20,15 @@ const COOKIE_NAME = 'price_include_tax'
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
 
 function readClientCookie(): boolean {
-  if (typeof document === 'undefined') return false
+  if (typeof document === 'undefined') return true
   const match = document.cookie.match(/(?:^|;\s*)price_include_tax=([^;]+)/)
-  return match?.[1] === '1'
+  if (!match) return true
+  return match[1] === '1'
 }
 
 export const usePriceStore = defineStore('price', () => {
-  // On the client this reads the cookie; on the server it returns false and
-  // the entry-server overrides via `seedFromCookie()` before render.
+  // On the client this reads the cookie; on the server it returns the gross
+  // default and the entry-server overrides via `seedFromCookie()` before render.
   const includeTax = ref(readClientCookie())
 
   function setIncludeTax(value: boolean) {
@@ -47,7 +48,8 @@ export const usePriceStore = defineStore('price', () => {
    * agree. Called by `entry-server.ts` before `renderToString`.
    */
   function seedFromCookie(cookies: Record<string, string>) {
-    includeTax.value = cookies[COOKIE_NAME] === '1'
+    const raw = cookies[COOKIE_NAME]
+    includeTax.value = raw === undefined ? true : raw === '1'
   }
 
   return { includeTax, setIncludeTax, toggleTax, seedFromCookie }
