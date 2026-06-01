@@ -12,6 +12,7 @@
       :onListLoaded="(list: any) => { listName = list?.name || '' }"
       :onItemDelete="handleItemDelete"
       :onItemsDelete="handleItemsDelete"
+      :onItemAdded="() => authStore.refreshUser()"
       :configuration="configuration"
       :cartId="cartStore.cartId || undefined"
       :createCart="true"
