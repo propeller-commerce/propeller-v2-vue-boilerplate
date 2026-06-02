@@ -14,7 +14,7 @@
         :showCurrent="true"
       />
 
-      <GridTitle :title="getCategoryName()" :language="languageStore.language" />
+      <GridTitle :title="getCategoryName()" />
 
       <CategoryDescription v-if="category" :category="category as Category" />
 
