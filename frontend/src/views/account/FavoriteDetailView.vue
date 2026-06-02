@@ -6,14 +6,11 @@
     </div>
     <FavoriteListDetails
       v-if="authStore.user"
-      :graphqlClient="graphqlClient"
-      :user="authStore.user as Contact | Customer"
       :favoriteListId="String(route.params.id)"
       :onListLoaded="(list: any) => { listName = list?.name || '' }"
       :onItemDelete="handleItemDelete"
       :onItemsDelete="handleItemsDelete"
       :onItemAdded="() => authStore.refreshUser()"
-      :configuration="configuration"
       :cartId="cartStore.cartId || undefined"
       :createCart="true"
       :onCartCreated="(cart: any) => cartStore.setCart(cart)"
@@ -23,7 +20,6 @@
       :showStockComponent="true"
       :showAvailability="false"
       :showStock="true"
-      :includeTax="priceStore.includeTax"
     />
   </div>
 </template>

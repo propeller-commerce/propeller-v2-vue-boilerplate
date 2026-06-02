@@ -19,17 +19,11 @@
       </div>
 
       <ProductSlider
-        :graphqlClient="graphqlClient"
-        :user="authStore.user as Contact | Customer"
-        :companyId="companyStore.selectedCompany?.companyId"
         :productIds="[140, 64, 1382, 142, 146, 145]"
         :taxZone="configuration.taxZone"
         :cartId="cartStore.cartId || undefined"
         :createCart="true"
         :showModal="true"
-        :language="languageStore.language"
-        :includeTax="priceStore.includeTax"
-        :configuration="configuration"
         :showStock="true"
         :showAvailability="false"
         :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"

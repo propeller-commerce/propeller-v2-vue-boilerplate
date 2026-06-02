@@ -40,8 +40,6 @@
         <OrderSummary
           :order="order as Order"
           :countries="COUNTRIES"
-          :includeTax="priceStore.includeTax"
-          :language="languageStore.language"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -54,12 +52,8 @@
           :showRemarks="true"
         />
         <OrderActions
-          :graphqlClient="graphqlClient"
           :order="order as Order"
-          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
-          :companyId="companyStore.companyId ?? undefined"
-          :configuration="configuration"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterReorder="(cart: Cart) => cartStore.setCart(cart)"
         />
@@ -120,18 +114,13 @@
         class="flex flex-col md:flex-row justify-between gap-8 pt-6 border-t"
       >
         <OrderActions
-          :graphqlClient="graphqlClient"
           :order="order"
-          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
-          :companyId="companyStore.companyId ?? undefined"
-          :configuration="configuration"
           :onCartCreated="(cart: any) => cartStore.setCart(cart)"
           :afterReorder="(cart: any) => cartStore.setCart(cart)"
         />
         <OrderTotals
           :order="order as Order"
-          :includeTax="priceStore.includeTax"
           :showSubtotal="true"
           :showDiscount="true"
           :showShippingCosts="true"

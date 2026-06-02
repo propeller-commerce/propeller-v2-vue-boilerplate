@@ -200,8 +200,6 @@
                   </button>
                   <AddressSelector
                     v-if="authStore.isAuthenticated"
-                    :user="authStore.user as Contact | Customer | null"
-                    :companyId="companyStore.companyId ?? undefined"
                     :addressType="AddressType.delivery"
                     :onAddressSelected="
                       (addr) => handleAddressSubmit(addr, 'DELIVERY', true)
@@ -264,7 +262,6 @@
                 <CartPaymethods
                   v-if="cart"
                   :cart="cart as Cart"
-                  :user="authStore.user as Contact | Customer"
                   :onPaymethodSelect="(pm) => (selectedPayment = pm.code)"
                 />
               </div>
@@ -396,7 +393,6 @@
               <template v-else>
                 <CartOverview
                   v-if="cart"
-                  :graphqlClient="graphqlClient"
                   :cart="cart as Cart"
                   :showTermsAndConditions="true"
                   :showReference="true"
@@ -441,9 +437,6 @@
                 :cart="cart as Cart"
                 title="Order Summary"
                 :showCheckoutButton="false"
-                :graphqlClient="graphqlClient"
-                :user="authStore.user as Contact | Customer | undefined"
-                :companyId="companyStore.companyId ?? undefined"
                 :afterRequestAuthorization="handleAfterRequestAuthorization"
                 :onError="
                   (err) => console.error('Authorization request failed:', err)

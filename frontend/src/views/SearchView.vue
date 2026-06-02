@@ -9,7 +9,6 @@
       />
       <GridTitle
         :title="searchTerm ? `Search Products: '${searchTerm}'` : 'Search Products'"
-        :language="languageStore.language"
       />
 
       <!-- Hybrid SSR island. Mirrors propeller-next's SearchIsland posture:
@@ -27,7 +26,6 @@
             :filters="gridFilters as AttributeFilter[]"
             :priceMin="priceBoundsMin"
             :priceMax="priceBoundsMax"
-            :language="languageStore.language"
             :onFilterChange="handleFilterChange"
             :onPriceChange="handlePriceChange"
             :onClearFilters="handleClearFilters"
@@ -37,7 +35,6 @@
             :activePriceMax="maxPrice"
             :isLoading="filtersLoading"
             :isMobile="false"
-            portalMode="open"
             :collapsed="true"
           />
         </aside>
@@ -101,14 +98,8 @@
           <ProductGrid
             v-show="!hasNoResults"
             :products="controlledProducts"
-            :graphqlClient="graphqlClient"
             :term="effectiveTerm"
             :categoryId="effectiveCategoryId"
-            :user="authStore.user as Contact | Customer"
-            :companyId="companyStore.selectedCompany?.companyId"
-            :configuration="configuration"
-            :language="languageStore.language"
-            :includeTax="priceStore.includeTax"
             :columns="viewMode === 'list' ? 1 : 3"
             :cartId="cartStore.cartId || undefined"
             :createCart="true"
@@ -143,7 +134,6 @@
             <GridPagination
               v-if="productsResponse"
               :products="productsResponse as ProductsResponse"
-              :language="languageStore.language"
               :onPageChange="handleGridPaginationPageChange"
               variant="full"
             />

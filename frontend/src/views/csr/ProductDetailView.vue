@@ -25,8 +25,6 @@
           <Breadcrumbs
             :categoryPath="(product.categoryPath as Category[]) || []"
             :currentCategory="(product as any).category || undefined"
-            :language="languageStore.language"
-            :configuration="configuration"
             :currentLabel="productName"
           />
         </div>
@@ -42,47 +40,33 @@
           <div class="flex flex-col gap-4">
             <ProductInfo
               :product="product as Product"
-              :user="authStore.user as Contact | Customer"
-              :companyId="companyStore.companyId || undefined"
-              :language="languageStore.language"
-              :includeTax="priceStore.includeTax"
             />
 
             <ProductPrice
               :product="product as Product"
               :price="product.price as SDKProductPrice"
-              :includeTax="priceStore.includeTax"
-              :language="languageStore.language"
             />
 
             <ProductBulkPrices
               v-if="product.price"
               :product="product as Product"
               :bulkPrices="product.bulkPrices as SDKProductPrice[]"
-              :includeTax="priceStore.includeTax"
-              :language="languageStore.language"
             />
 
             <ProductShortDescription
               :product="product as Product | Cluster"
-              :language="languageStore.language"
             />
 
             <ItemStock
               v-if="product.inventory"
               :inventory="product.inventory as ProductInventory"
-              :language="languageStore.language"
               :showAvailability="false"
             />
 
             <div class="flex items-center gap-2 mt-4">
               <AddToCart
-                :graphqlClient="graphqlClient"
-                :user="authStore.user as Contact | Customer"
                 :product="product as Product"
                 :cartId="cartStore.cartId || undefined"
-                :language="languageStore.language"
-                :companyId="companyStore.companyId || undefined"
                 :createCart="true"
                 :showModal="true"
                 :className="'flex items-center w-full gap-2'"
@@ -91,12 +75,9 @@
                 :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
                 :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
                 :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
-                :configuration="configuration"
               />
               <AddToFavorite
                 v-if="authStore.user"
-                :graphqlClient="graphqlClient"
-                :user="authStore.user as Contact | Customer"
                 :productId="product.productId"
                 :onFavoriteChanged="() => authStore.refreshUser()"
               />
@@ -107,25 +88,16 @@
         <!-- Tabs -->
         <div class="mb-6">
           <ProductTabs
-            :graphqlClient="graphqlClient"
             :product="product as Product"
             :productId="product.productId"
-            :language="languageStore.language"
-            :includeTax="priceStore.includeTax"
           />
         </div>
 
         <!-- Bundles -->
         <ProductBundles
-          :graphqlClient="graphqlClient"
           :productId="product.productId"
-          :companyId="companyStore.companyId || undefined"
-          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
-          :language="languageStore.language"
           taxZone="NL"
-          :includeTax="priceStore.includeTax"
-          :configuration="configuration"
           :createCart="true"
           :showIndividualItems="true"
           :showModal="true"
@@ -136,19 +108,13 @@
 
         <!-- Accessories -->
         <ProductSlider
-          :graphqlClient="graphqlClient"
-          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
-          :language="languageStore.language"
-          :includeTax="priceStore.includeTax"
-          :configuration="configuration"
           :crossUpsellTypes="[CrossupsellType.ACCESSORIES]"
           :productId="product.productId"
           :showAvailability="false"
           :showStock="true"
           :showModal="true"
           :createCart="true"
-          :companyId="companyStore.companyId || undefined"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
           :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
@@ -169,19 +135,13 @@
 
         <!-- Related Products -->
         <ProductSlider
-          :graphqlClient="graphqlClient"
-          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
-          :language="languageStore.language"
-          :includeTax="priceStore.includeTax"
-          :configuration="configuration"
           :crossUpsellTypes="[CrossupsellType.RELATED]"
           :productId="product.productId"
           :showAvailability="false"
           :showStock="true"
           :showModal="true"
           :createCart="true"
-          :companyId="companyStore.companyId || undefined"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
           :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"

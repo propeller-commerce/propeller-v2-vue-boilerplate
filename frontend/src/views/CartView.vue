@@ -19,13 +19,7 @@
             v-for="item in cartItems"
             :key="item.itemId"
             :cartItem="item"
-            :graphqlClient="graphqlClient"
-            :user="authStore.user as Contact | Customer"
             :cartId="cartStore.cartId as string"
-            :includeTax="priceStore.includeTax"
-            :language="languageStore.language"
-            :configuration="configuration"
-            :companyId="companyStore.companyId || undefined"
             :showCrossupsells="true"
             :crossupsellTypes="[CrossupsellType.ACCESSORIES]"
             :crossupsellLimit="2"
@@ -42,9 +36,6 @@
           <CartSummary
             v-if="cartStore.cart"
             :cart="cartStore.cart as Cart"
-            :graphqlClient="graphqlClient"
-            :user="authStore.user as Contact | Customer"
-            :companyId="companyStore.companyId || undefined"
             :onCheckoutButtonClick="
               () =>
                 router.push(localizeHref('/checkout', languageStore.language))
@@ -69,9 +60,7 @@
           />
           <ActionCode
             v-if="cartStore.cart"
-            :graphqlClient="graphqlClient"
             :cart="cartStore.cart as Cart"
-            :configuration="configuration"
             :afterActionCodeApply="(cart: any) => cartStore.setCart(cart)"
             :afterActionCodeRemove="(cart: any) => cartStore.setCart(cart)"
           />

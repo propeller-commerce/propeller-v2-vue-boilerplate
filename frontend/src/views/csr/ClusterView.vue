@@ -6,8 +6,6 @@
         <Breadcrumbs
           :categoryPath="(selectedProduct as any)?.categoryPath || []"
           :currentCategory="(selectedProduct as any)?.category || undefined"
-          :language="languageStore.language"
-          :configuration="configuration"
           :showCurrent="true"
         />
       </div>
@@ -23,12 +21,8 @@
         <div class="flex flex-col">
           <div class="mb-6">
             <ClusterInfo
-              :user="authStore.user"
               :clusterId="clusterId"
-              :graphqlClient="graphqlClient"
               :onClusterLoaded="handleClusterLoaded"
-              :language="languageStore.language"
-              :configuration="configuration"
               :imageSearchFilters="configuration.imageSearchFilters"
               :imageVariantFilters="configuration.imageVariantFiltersLarge"
             />
@@ -39,21 +33,17 @@
                   selectedProduct?.price ??
                   (cluster as any).defaultProduct?.price
                 "
-                :includeTax="priceStore.includeTax"
                 :options="(cluster as any).options"
                 :selectedOptionProducts="Object.values(selectedOptionProducts)"
               />
 
               <ProductBulkPrices
                 :product="selectedProduct || (cluster as any).defaultProduct"
-                :includeTax="priceStore.includeTax"
-                :language="languageStore.language"
               />
 
               <div class="mt-6">
                 <ProductShortDescription
                   :product="selectedProduct || (cluster as any).defaultProduct"
-                  :language="languageStore.language"
                 />
               </div>
 
@@ -99,8 +89,6 @@
 
             <div class="flex items-center gap-2">
               <AddToCart
-                :graphqlClient="graphqlClient"
-                :user="authStore.user"
                 :product="selectedProduct"
                 :cluster="cluster as any"
                 :beforeAddToCart="validateClusterOptions"
@@ -110,12 +98,9 @@
                   )
                 "
                 :cartId="cartStore.cartId || undefined"
-                :language="languageStore.language"
-                :companyId="companyStore.companyId || undefined"
                 :className="'flex items-center w-full gap-2'"
                 :createCart="true"
                 :showModal="true"
-                :configuration="configuration"
                 :onCartCreated="(cart: any) => cartStore.setCart(cart)"
                 :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
                 :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
@@ -123,8 +108,6 @@
               />
               <AddToFavorite
                 v-if="authStore.user"
-                :graphqlClient="graphqlClient"
-                :user="authStore.user"
                 :clusterId="clusterId"
                 :onFavoriteChanged="() => authStore.refreshUser()"
               />
@@ -136,11 +119,8 @@
       <!-- Product Tabs -->
       <ProductTabs
         v-if="displayProduct"
-        :graphqlClient="graphqlClient"
         :product="displayProduct"
         :productId="displayProduct.productId"
-        :language="languageStore.language"
-        :includeTax="priceStore.includeTax"
         class="pb-8"
       />
 
@@ -148,15 +128,9 @@
       <ProductSlider
         v-for="crossType in crossUpsellSliders"
         :key="crossType"
-        :graphqlClient="graphqlClient"
         :crossUpsellTypes="[crossType]"
         :clusterId="clusterId"
-        :language="languageStore.language"
-        :includeTax="priceStore.includeTax"
-        :user="authStore.user"
-        :companyId="companyStore.companyId || undefined"
         :cartId="cartStore.cartId || undefined"
-        :configuration="configuration"
         :showAvailability="false"
         :showStock="true"
         :showModal="true"

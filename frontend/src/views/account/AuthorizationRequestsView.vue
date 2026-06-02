@@ -5,11 +5,6 @@
     </div>
     <PurchaseAuthorizationRequests
       v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
-      :graphqlClient="graphqlClient"
-      :user="authStore.user"
-      :companyId="companyStore.companyId"
-      :configuration="configuration"
-      :language="languageStore.language"
       :afterAcceptRequest="handleAfterAccept"
       :labels="{
         title: 'Authorization Requests',

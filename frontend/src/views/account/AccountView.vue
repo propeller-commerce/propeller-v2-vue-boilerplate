@@ -6,9 +6,6 @@
 
     <UserDetails
       v-if="authStore.user"
-      :graphqlClient="graphqlClient"
-      :user="authStore.user as Contact | Customer"
-      :language="languageStore.language"
       :activeCompany="companyStore.selectedCompany as Company"
       :showCompanyInfo="true"
       :listAllContactCompanies="false"

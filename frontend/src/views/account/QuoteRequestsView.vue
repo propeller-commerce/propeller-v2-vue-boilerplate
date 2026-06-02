@@ -6,9 +6,6 @@
     <div class="bg-card shadow-sm">
       <OrderList
         v-if="authStore.isAuthenticated"
-        :graphqlClient="graphqlClient"
-        :user="authStore.user"
-        :companyId="companyStore.companyId ?? undefined"
         :showCompanyOrders="false"
         :onOrderClick="(id) => router.push(localizeHref(`/account/quote-requests/${id}`, languageStore.language))"
         :orderStatus="['REQUEST']"

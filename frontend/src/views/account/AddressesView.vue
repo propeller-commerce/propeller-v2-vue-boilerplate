@@ -13,7 +13,6 @@
           <AddressCard
             v-if="defaultAddresses.invoice"
             :key="`inv-${defaultAddresses.invoice.id}`"
-            :graphqlClient="graphqlClient"
             :address="defaultAddresses.invoice"
             :enableDelete="false"
             :onEdit="handleEditAddress"
@@ -32,7 +31,6 @@
           <AddressCard
             v-if="defaultAddresses.delivery"
             :key="`del-${defaultAddresses.delivery.id}`"
-            :graphqlClient="graphqlClient"
             :address="defaultAddresses.delivery"
             :enableDelete="false"
             :onEdit="handleEditAddress"
@@ -60,7 +58,6 @@
         <AddressCard
           v-for="address in billingAddresses"
           :key="address.id"
-          :graphqlClient="graphqlClient"
           :address="address"
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
@@ -83,7 +80,6 @@
         <AddressCard
           v-for="address in deliveryAddresses"
           :key="address.id"
-          :graphqlClient="graphqlClient"
           :address="address"
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
@@ -97,7 +93,6 @@
     <!-- Add New Address Modal -->
     <AddressCard
       v-if="showAddModal"
-      :graphqlClient="graphqlClient"
       :address="null"
       :addressType="addModalType"
       :isNew="true"

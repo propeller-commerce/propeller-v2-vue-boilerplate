@@ -2,8 +2,6 @@
   <div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-md">
       <ForgotPassword
-        :graphqlClient="graphqlClient"
-        :language="languageStore.language"
         :onNavigateToLogin="() => router.push(localizeHref('/login', languageStore.language))"
       />
     </div>

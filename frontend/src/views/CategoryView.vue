@@ -11,21 +11,12 @@
         v-if="category"
         :categoryPath="(category as any).categoryPath || []"
         :currentCategory="category as Category"
-        :language="languageStore.language"
-        :configuration="configuration"
         :showCurrent="true"
       />
 
-      <GridTitle
-        :title="getCategoryName()"
-        :language="languageStore.language"
-      />
+      <GridTitle :title="getCategoryName()" :language="languageStore.language" />
 
-      <CategoryDescription
-        v-if="category"
-        :category="category as Category"
-        :language="languageStore.language"
-      />
+      <CategoryDescription v-if="category" :category="category as Category" />
 
       <!-- Hybrid SSR island. The grid is now server-rendered too — when a
            seed is available we hand the items array to <ProductGrid> via the
@@ -41,7 +32,6 @@
             :filters="gridFilters as AttributeFilter[]"
             :priceMin="priceBoundsMin"
             :priceMax="priceBoundsMax"
-            :language="languageStore.language"
             :onFilterChange="handleFilterChange"
             :onPriceChange="handlePriceChange"
             :onClearFilters="handleClearFilters"
@@ -51,8 +41,6 @@
             :activePriceMax="maxPrice"
             :isLoading="filtersLoading"
             :isMobile="false"
-            portalMode="open"
-            :user="authStore.user as Contact | Customer"
             :collapsed="true"
           />
         </aside>
@@ -84,13 +72,7 @@
 
           <ProductGrid
             :products="controlledProducts"
-            :graphqlClient="graphqlClient"
             :categoryId="categoryId"
-            :user="authStore.user as Contact | Customer"
-            :companyId="companyStore.selectedCompany?.companyId"
-            :configuration="configuration"
-            :language="languageStore.language"
-            :includeTax="priceStore.includeTax"
             :columns="viewMode === 'list' ? 1 : 3"
             :cartId="cartStore.cartId || undefined"
             :createCart="true"
@@ -146,12 +128,11 @@
                 )
             "
           />
-
+          
           <div class="flex justify-center gap-2 mt-12">
             <GridPagination
               v-if="productsResponse"
               :products="productsResponse as ProductsResponse"
-              :language="languageStore.language"
               :onPageChange="handleGridPaginationPageChange"
               variant="full"
             />

@@ -5,9 +5,6 @@
     </div>
     <PurchaseAuthorizationConfigurator
       v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
-      :graphqlClient="orderEditorGraphqlClient"
-      :user="authStore.user"
-      :companyId="companyStore.companyId"
       :labels="{
         title: 'Purchase Authorization Settings',
         addContact: 'Add contact',

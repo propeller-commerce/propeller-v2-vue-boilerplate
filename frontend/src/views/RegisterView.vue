@@ -2,8 +2,6 @@
   <div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-5xl">
       <RegisterForm
-        :graphqlClient="graphqlClient"
-        :language="languageStore.language"
         :countries="COUNTRIES_MAP"
         :cart="cartStore.cart as Cart | null"
         :afterRegistration="

@@ -5,9 +5,6 @@
     </div>
     <FavoriteLists
       v-if="authStore.user"
-      :graphqlClient="graphqlClient"
-      :user="authStore.user"
-      :language="languageStore.language"
       :showActions="true"
       :allowFavoriteListCreate="true"
       :onListChanged="() => authStore.refreshUser()"

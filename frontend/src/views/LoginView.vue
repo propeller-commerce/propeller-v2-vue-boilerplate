@@ -2,7 +2,6 @@
   <div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-md">
       <LoginForm
-        :graphqlClient="graphqlClient"
         :cart="cartStore.cart as Cart | null"
         :afterLogin="(user: any, accessToken: any, refreshToken: any, expiresAt: any, anonymousCart: any) => handleLoginSuccess(user, accessToken, refreshToken, expiresAt, anonymousCart)"
         :onForgotPasswordClick="() => router.push(localizeHref('/forgot-password', languageStore.language))"

@@ -41,8 +41,6 @@
           :order="quote"
           :countries="COUNTRIES"
           :labels="{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
-          :includeTax="priceStore.includeTax"
-          :language="languageStore.language"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -56,7 +54,6 @@
         />
         <div class="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
           <QuoteActions
-            :graphqlClient="graphqlClient"
             :quote="quote as Order"
             :afterAccept="handleAfterAccept"
             :showTermsAndConditions="true"
