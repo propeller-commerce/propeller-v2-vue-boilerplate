@@ -26,10 +26,7 @@
           <!-- Company Switcher — Contact users with multiple companies only -->
           <CompanySwitcher
             v-if="isContactWithMultipleCompanies"
-            :graphqlClient="graphqlClient"
-            :user="(authStore.user as Contact)"
             :selectedCompanyId="companyStore.companyId ?? undefined"
-            :language="languageStore.language"
             :onCompanyChange="handleCompanyChange"
           />
 
@@ -114,12 +111,9 @@
           <!-- Search Bar (desktop only) -->
           <div v-if="showSearch" class="hidden lg:block flex-1 max-w-2xl">
             <SearchBar
-              :graphqlClient="graphqlClient"
-              :language="languageStore.language"
               :onSubmit="handleSearch"
               :onViewAllClick="handleSearch"
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
-              :configuration="configuration"
               :clearSignal="searchClearSignal"
             />
           </div>
@@ -128,10 +122,7 @@
           <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <AccountIconAndMenu
               v-if="showAccount"
-              :graphqlClient="graphqlClient"
-              :user="authStore.user as Contact | Customer"
               :cart="cartStore.cart as Cart"
-              :language="languageStore.language"
               :afterLogin="handleAfterLogin"
               :onMenuItemClick="(href: string) => router.push(href)"
               :onLogoutClick="handleLogout"
@@ -144,12 +135,7 @@
 
             <CartIconAndSidebar
               v-if="showCart"
-              :graphqlClient="graphqlClient"
-              :user="authStore.user as Contact | Customer"
               :cart="cartStore.cart as Cart"
-              :language="languageStore.language"
-              :includeTax="priceStore.includeTax"
-              :companyId="companyStore.companyId || undefined"
               :cartCheckoutButton="true"
               :onCheckoutButtonClick="() => router.push(localizeHref('/checkout', languageStore.language))"
               :onCartPageButtonClick="() => router.push(localizeHref('/cart', languageStore.language))"
@@ -157,7 +143,6 @@
               :afterRequestAuthorization="handleAfterRequestAuthorization"
               :onError="(err: Error) => console.error('Authorization request failed:', err)"
               :showTotals="true"
-              :configuration="configuration"
               iconClassName="text-white hover:text-white hover:bg-white/10"
             />
           </div>
@@ -193,13 +178,10 @@
                    is in the initial response, no loading flash, no client
                    roundtrip on hydration. -->
               <PropellerMenu
-                :graphqlClient="graphqlClient"
                 :categoryId="configuration.baseCategoryId"
                 :depth="configuration.menuDepth"
-                :language="languageStore.language"
                 :tree="menuTreeProp"
                 :onMenuItemClick="handleCategoryClick"
-                :configuration="configuration"
                 menuStyle="dropdown-vertical"
               />
             </div>
@@ -225,12 +207,9 @@
       <!-- Mobile search -->
       <div v-if="showSearch" class="p-4 border-b border-border">
         <SearchBar
-          :graphqlClient="graphqlClient"
-          :language="languageStore.language"
           :onSubmit="(term: string) => { showMobileMenu = false; handleSearch(term) }"
           :onViewAllClick="(term: string) => { showMobileMenu = false; handleSearch(term) }"
           :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
-          :configuration="configuration"
           :clearSignal="searchClearSignal"
         />
       </div>
@@ -239,13 +218,10 @@
            Both `<PropellerMenu>` mounts share one fetch via `useMenuStore`. -->
       <PropellerMenu
         v-if="showCategoriesMenu"
-        :graphqlClient="graphqlClient"
         :categoryId="configuration.baseCategoryId"
         :depth="configuration.menuDepth"
-        :language="languageStore.language"
         :tree="menuTreeProp"
         :onMenuItemClick="handleCategoryClick"
-        :configuration="configuration"
         menuStyle="dropdown-vertical"
       />
 

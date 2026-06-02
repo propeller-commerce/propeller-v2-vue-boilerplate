@@ -10,7 +10,6 @@
             <AccountIconAndMenu
               variant="sidebar"
               :currentPath="currentPath"
-              :user="authStore.user ?? null"
               :onMenuItemClick="handleMenuItemClick"
               :onLogoutClick="handleLogout"
               :menuLinks="menuLinks"
