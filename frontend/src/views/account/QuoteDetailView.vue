@@ -19,20 +19,12 @@
       <div class="h-4 bg-slate-100 rounded w-1/2 mx-auto animate-pulse"></div>
     </div>
 
-    <div
+    <AccessErrorView
       v-else-if="error"
-      class="p-8 text-center border rounded-[var(--radius-container)]"
-    >
-      <p class="text-destructive mb-4">{{ error }}</p>
-      <button
-        @click="
-          router.push(localizeHref('/account/quotes', languageStore.language))
-        "
-        class="text-primary hover:underline"
-      >
-        Return to Quotes
-      </button>
-    </div>
+      :kind="classifyApiError(error)"
+      :backHref="errorBackHref"
+      :backLabel="errorBackLabel"
+    />
 
     <div v-else-if="quote" class="space-y-8">
       <!-- Quote Summary + Actions -->
@@ -181,6 +173,8 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { useTranslations } from "@/lib/i18n/composable";
+import AccessErrorView from "@/components/access/AccessErrorView.vue";
+import { classifyApiError } from "@/lib/errors";
 import type { Order } from "propeller-sdk-v2";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
@@ -199,6 +193,19 @@ const quoteActionsLabels = useTranslations('QuoteActions');
 const orderItemCardLabels = useTranslations('OrderItemCard');
 const orderBonusItemsLabels = useTranslations('OrderBonusItems');
 const orderTotalsLabels = useTranslations('OrderTotals');
+const errorPagesLabels = useTranslations('ErrorPages');
+
+// The router maps both /account/quotes/:id and /account/quote-requests/:id
+// to this view. Detect which list to send the user back to on error.
+const isQuoteRequest = computed(() => route.name === 'account-quote-request-detail');
+const errorBackHref = computed(() =>
+  isQuoteRequest.value ? '/account/quote-requests' : '/account/quotes'
+);
+const errorBackLabel = computed(() =>
+  isQuoteRequest.value
+    ? errorPagesLabels.value.backToQuoteRequests
+    : errorPagesLabels.value.backToQuotes
+);
 
 const quoteId = route.params.id as string;
 

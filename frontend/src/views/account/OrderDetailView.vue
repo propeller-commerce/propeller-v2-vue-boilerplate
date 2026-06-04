@@ -19,20 +19,7 @@
       <div class="h-4 bg-slate-100 rounded w-1/2 mx-auto animate-pulse"></div>
     </div>
 
-    <div
-      v-else-if="error"
-      class="p-8 text-center border rounded-[var(--radius-container)]"
-    >
-      <p class="text-destructive mb-4">{{ error }}</p>
-      <button
-        @click="
-          router.push(localizeHref('/account/orders', languageStore.language))
-        "
-        class="text-primary hover:underline"
-      >
-        Return to Orders
-      </button>
-    </div>
+    <AccessErrorView v-else-if="error" :kind="classifyApiError(error)" />
 
     <div v-else-if="order" class="space-y-8">
       <!-- Order Summary + Actions -->
@@ -148,6 +135,8 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import AccessErrorView from "@/components/access/AccessErrorView.vue";
+import { classifyApiError } from "@/lib/errors";
 import type { Cart, Contact, Customer, Order } from "propeller-sdk-v2";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";

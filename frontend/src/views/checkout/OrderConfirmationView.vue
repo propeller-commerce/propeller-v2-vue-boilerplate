@@ -14,17 +14,11 @@
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="container mx-auto px-4 text-center">
-      <h2 class="text-2xl font-bold text-destructive mb-4">
-        Oops! Something went wrong
-      </h2>
-      <p class="text-muted-foreground mb-6">{{ error }}</p>
-      <router-link
-        :to="localizeHref('/', languageStore.language)"
-        class="px-6 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/80"
-        >Return to Home</router-link
-      >
-    </div>
+    <AccessErrorView
+      v-else-if="error"
+      :kind="classifyApiError(error)"
+      class="container mx-auto px-4"
+    />
 
     <!-- Success -->
     <div v-else class="container mx-auto px-4">
@@ -177,6 +171,8 @@ import { useAuthStore } from "@/stores/auth";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import AccessErrorView from "@/components/access/AccessErrorView.vue";
+import { classifyApiError } from "@/lib/errors";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
