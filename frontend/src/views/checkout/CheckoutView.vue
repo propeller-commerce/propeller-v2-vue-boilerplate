@@ -102,6 +102,7 @@
                 :enableSetDefault="false"
                 :onEdit="(addr) => handleAddressSubmit(addr, 'INVOICE', false)"
                 :countries="COUNTRIES"
+                :labels="addressCardLabels"
               />
               <template v-else>
                 <AddressCard
@@ -118,6 +119,7 @@
                   "
                   :onEdit="(addr) => handleAddressSubmit(addr, 'INVOICE')"
                   :countries="COUNTRIES"
+                  :labels="addressCardLabels"
                 />
                 <label
                   v-if="!authStore.isAuthenticated"
@@ -184,6 +186,7 @@
                     (addr) => handleAddressSubmit(addr, 'DELIVERY', false)
                   "
                   :countries="COUNTRIES"
+                  :labels="addressCardLabels"
                 />
                 <div class="flex items-center gap-4">
                   <button
@@ -205,6 +208,7 @@
                       (addr) => handleAddressSubmit(addr, 'DELIVERY', true)
                     "
                     :countries="COUNTRIES"
+                    :labels="addressSelectorLabels"
                     class="ml-auto"
                   />
                 </div>
@@ -224,6 +228,7 @@
                   "
                   :onEdit="(addr) => handleAddressSubmit(addr, 'DELIVERY')"
                   :countries="COUNTRIES"
+                  :labels="addressCardLabels"
                 />
               </template>
             </div>
@@ -263,6 +268,7 @@
                   v-if="cart"
                   :cart="cart as Cart"
                   :onPaymethodSelect="(pm) => (selectedPayment = pm.code)"
+                  :labels="cartPaymethodsLabels"
                 />
               </div>
               <!-- Carrier -->
@@ -281,6 +287,7 @@
                   :cart="cart as Cart"
                   :showPrice="false"
                   :onCarrierSelect="(c) => (selectedCarrier = c.name)"
+                  :labels="cartCarriersLabels"
                 />
               </div>
               <!-- Delivery Date -->
@@ -302,6 +309,7 @@
                   :showUpcomingDays="3"
                   :skipWeekends="true"
                   :showDatePicker="true"
+                  :labels="deliveryDateLabels"
                 />
               </div>
               <div class="flex gap-4 pt-4">
@@ -403,6 +411,7 @@
                     (_cart, reference, notes) =>
                       handlePlaceOrder(reference, notes)
                   "
+                  :labels="cartOverviewLabels"
                 />
               </template>
             </div>
@@ -427,6 +436,7 @@
                 :showPrice="true"
                 :showStockComponent="true"
                 :isChildItem="true"
+                :labels="itemsOverviewLabels"
               />
             </div>
             <div
@@ -441,6 +451,7 @@
                 :onError="
                   (err) => console.error('Authorization request failed:', err)
                 "
+                :labels="cartSummaryLabels"
               />
             </div>
           </div>
@@ -462,12 +473,22 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { useTranslations } from "@/lib/i18n/composable";
 import { restoreManagerCart } from "@/lib/cartHelpers";
 import { useCheckout } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
 
 import { AddressCard, AddressSelector, CartCarriers, CartOverview, CartPaymethods, CartSummary, DeliveryDate, ItemsOverview } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
+
+const addressCardLabels = useTranslations('AddressCard');
+const addressSelectorLabels = useTranslations('AddressSelector');
+const cartCarriersLabels = useTranslations('CartCarriers');
+const cartOverviewLabels = useTranslations('CartOverview');
+const cartPaymethodsLabels = useTranslations('CartPaymethods');
+const cartSummaryLabels = useTranslations('CartSummary');
+const deliveryDateLabels = useTranslations('DeliveryDate');
+const itemsOverviewLabels = useTranslations('ItemsOverview');
 
 const router = useRouter();
 const route = useRoute();

@@ -6,35 +6,7 @@
     <PurchaseAuthorizationRequests
       v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
       :afterAcceptRequest="handleAfterAccept"
-      :labels="{
-        title: 'Authorization Requests',
-        colId: '#',
-        colDate: 'Date',
-        colQuantity: 'Quantity',
-        colTotal: 'Total',
-        colRequestedBy: 'Requested by',
-        colActions: 'Actions',
-        view: 'View',
-        modalTitle: 'Authorization Request',
-        requesterInfo: 'Requester',
-        itemsTitle: 'Items',
-        itemProduct: 'Product',
-        itemQty: 'Qty',
-        itemUnitPrice: 'Unit price',
-        itemTotal: 'Total',
-        totalExclVat: 'Total excl. VAT:',
-        totalVat: 'VAT:',
-        total: 'Total:',
-        acceptRequest: 'Accept request',
-        accepting: 'Accepting...',
-        delete: 'Delete',
-        deleting: 'Deleting...',
-        deleteConfirmTitle: 'Delete authorization request?',
-        deleteConfirmBody: 'Are you sure you want to delete this authorization request? The cart will be permanently removed.',
-        deleteConfirmYes: 'Yes, delete',
-        deleteConfirmNo: 'No',
-        empty: 'No pending authorization requests',
-      }"
+      :labels="purchaseAuthorizationRequestsLabels"
     />
   </div>
 </template>
@@ -48,6 +20,7 @@ import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
+import { useTranslations } from '@/lib/i18n/composable'
 import { PurchaseAuthorizationRequests } from 'propeller-v2-vue-ui';
 
 const router = useRouter()
@@ -55,6 +28,7 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const languageStore = useLanguageStore()
+const purchaseAuthorizationRequestsLabels = useTranslations('PurchaseAuthorizationRequests')
 
 function isContact(u: Contact | Customer | null): u is Contact {
   return u !== null && 'contactId' in u

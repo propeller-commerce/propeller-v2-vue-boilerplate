@@ -5,40 +5,7 @@
     </div>
     <PurchaseAuthorizationConfigurator
       v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
-      :labels="{
-        title: 'Purchase Authorization Settings',
-        addContact: 'Add contact',
-        addContactTitle: 'Add Contact',
-        colId: 'ID',
-        colName: 'Name',
-        colRole: 'Role',
-        colLimit: 'Limit',
-        colActions: 'Actions',
-        selectRole: '— Select role —',
-        rolePurchaser: 'Purchaser',
-        roleManager: 'Authorization Manager',
-        limitPlaceholder: '0.00',
-        save: 'Save',
-        create: 'Create',
-        delete: 'Delete',
-        previous: 'Previous',
-        next: 'Next',
-        page: 'Page',
-        of: 'of',
-        companyName: 'Company',
-        gender: 'Gender',
-        selectGender: '— Select —',
-        genderM: 'Male',
-        genderF: 'Female',
-        genderU: 'Unspecified',
-        email: 'Email',
-        firstName: 'First name',
-        middleName: 'Middle',
-        lastName: 'Last name',
-        phone: 'Phone',
-        cancel: 'Cancel',
-        addContactSubmit: 'Add Contact',
-      }"
+      :labels="purchaseAuthorizationConfiguratorLabels"
     />
   </div>
 </template>
@@ -48,10 +15,12 @@ import { Contact, Customer } from 'propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { orderEditorGraphqlClient } from '@/lib/api'
+import { useTranslations } from '@/lib/i18n/composable'
 import { PurchaseAuthorizationConfigurator } from 'propeller-v2-vue-ui';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
+const purchaseAuthorizationConfiguratorLabels = useTranslations('PurchaseAuthorizationConfigurator')
 
 function isContact(u: Contact | Customer | null): u is Contact {
   return u !== null && 'contactId' in u

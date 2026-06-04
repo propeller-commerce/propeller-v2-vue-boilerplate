@@ -10,6 +10,7 @@
           :categoryPath="(selectedProduct as any)?.categoryPath || []"
           :currentCategory="(selectedProduct as any)?.category || undefined"
           :showCurrent="true"
+          :labels="breadcrumbsLabels"
         />
       </div>
 
@@ -17,7 +18,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
         <!-- Gallery -->
         <div class="bg-card rounded-[var(--radius-container)] shadow p-6">
-          <ProductGallery :images="displayImages" />
+          <ProductGallery :images="displayImages" :labels="productGalleryLabels" />
         </div>
 
         <!-- Info -->
@@ -44,10 +45,12 @@
                 "
                 :options="(cluster as any).options"
                 :selectedOptionProducts="Object.values(selectedOptionProducts)"
+                :labels="productPriceLabels"
               />
 
               <ProductBulkPrices
                 :product="selectedProduct || (cluster as any).defaultProduct"
+                :labels="productBulkPricesLabels"
               />
 
               <div class="mt-6">
@@ -60,6 +63,7 @@
                 <ItemStock
                   :inventory="(selectedProduct as any).inventory"
                   :showAvailability="false"
+                  :labels="itemStockLabels"
                 />
               </div>
 
@@ -81,6 +85,7 @@
                       selectedProduct = product;
                     }
                   "
+                  :labels="clusterConfiguratorLabels"
                 />
               </div>
 
@@ -92,6 +97,7 @@
                   :onOptionSelect="handleOptionSelect"
                   :onOptionClear="handleOptionClear"
                   :showErrors="showClusterErrors"
+                  :labels="clusterOptionsLabels"
                 />
               </div>
             </template>
@@ -114,11 +120,13 @@
                 :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
                 :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
                 :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+                :labels="addToCartLabels"
               />
               <AddToFavorite
                 v-if="authStore.user"
                 :clusterId="clusterId"
                 :onFavoriteChanged="() => authStore.refreshUser()"
+                :labels="addToFavoriteLabels"
               />
             </div>
           </div>
@@ -131,6 +139,7 @@
         :product="displayProduct"
         :productId="displayProduct.productId"
         class="pb-8"
+        :labels="productTabsLabels"
       />
 
       <!-- 5 ProductSliders -->
@@ -160,6 +169,12 @@
               configuration.urls.getClusterUrl(c, languageStore.language),
             )
         "
+        :labels="productSliderLabels"
+        :productCardLabels="productCardLabels"
+        :clusterCardLabels="clusterCardLabels"
+        :stockLabels="itemStockLabels"
+        :addToCartLabels="addToCartLabels"
+        :priceLabels="productPriceLabels"
       />
     </div>
   </div>
@@ -183,6 +198,21 @@ import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonL
 import { stripHtml } from "propeller-v2-vue-ui/shared";
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterJsonLd, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const breadcrumbsLabels = useTranslations('Breadcrumbs');
+const productGalleryLabels = useTranslations('ProductGallery');
+const productPriceLabels = useTranslations('ProductPrice');
+const productBulkPricesLabels = useTranslations('ProductBulkPrices');
+const itemStockLabels = useTranslations('ItemStock');
+const clusterConfiguratorLabels = useTranslations('ClusterConfigurator');
+const clusterOptionsLabels = useTranslations('ClusterOptions');
+const addToCartLabels = useTranslations('AddToCart');
+const addToFavoriteLabels = useTranslations('AddToFavorite');
+const productTabsLabels = useTranslations('ProductTabs');
+const productSliderLabels = useTranslations('ProductSlider');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
 
 const route = useRoute();
 const router = useRouter();

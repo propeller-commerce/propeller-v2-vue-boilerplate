@@ -6,6 +6,7 @@
 
     <UserDetails
       v-if="authStore.user"
+      :labels="userDetailsLabels"
       :activeCompany="companyStore.selectedCompany as Company"
       :showCompanyInfo="true"
       :listAllContactCompanies="false"
@@ -25,10 +26,12 @@ import { graphqlClient } from '@/lib/api'
 import { UserDetails } from 'propeller-v2-vue-ui';
 import type { Company, Contact, Customer } from 'propeller-sdk-v2'
 import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { useTranslations } from '@/lib/i18n/composable';
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
+const userDetailsLabels = useTranslations('UserDetails')
 
 // COUNTRIES imported from shared utils
 </script>

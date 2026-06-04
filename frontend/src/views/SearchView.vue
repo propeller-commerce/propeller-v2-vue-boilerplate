@@ -9,6 +9,7 @@
       />
       <GridTitle
         :title="searchTerm ? `Search Products: '${searchTerm}'` : 'Search Products'"
+        :labels="gridTitleLabels"
       />
 
       <!-- Hybrid SSR island. Mirrors propeller-next's SearchIsland posture:
@@ -36,6 +37,7 @@
             :isLoading="filtersLoading"
             :isMobile="false"
             :collapsed="true"
+            :labels="gridFiltersLabels"
           />
         </aside>
 
@@ -57,6 +59,7 @@
               :onFilterRemove="handleFilterRemove"
               :onPriceFilterRemove="handlePriceFilterRemove"
               :onClearFilters="handleClearFilters"
+              :labels="gridToolbarLabels"
             />
           </div>
 
@@ -128,6 +131,12 @@
             :onClusterClick="(cluster: Cluster) => router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))"
             :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
             :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+            :labels="productGridLabels"
+            :productCardLabels="productCardLabels"
+            :clusterCardLabels="clusterCardLabels"
+            :stockLabels="itemStockLabels"
+            :addToCartLabels="addToCartLabels"
+            :priceLabels="productPriceLabels"
           />
 
           <div v-if="!hasNoResults" class="flex justify-center gap-2 mt-12">
@@ -136,6 +145,7 @@
               :products="productsResponse as ProductsResponse"
               :onPageChange="handleGridPaginationPageChange"
               variant="full"
+              :labels="gridPaginationLabels"
             />
           </div>
         </div>
@@ -160,6 +170,7 @@ import { configuration, localizeHref } from '@/lib/config'
 import { buildJsonLdContext } from '@/lib/seo'
 
 import { GridFilters, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute()
 const router = useRouter()
@@ -168,6 +179,17 @@ const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
+
+const gridTitleLabels = useTranslations('GridTitle');
+const gridFiltersLabels = useTranslations('GridFilters');
+const gridToolbarLabels = useTranslations('GridToolbar');
+const productGridLabels = useTranslations('ProductGrid');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
+const itemStockLabels = useTranslations('ItemStock');
+const addToCartLabels = useTranslations('AddToCart');
+const productPriceLabels = useTranslations('ProductPrice');
+const gridPaginationLabels = useTranslations('GridPagination');
 
 const searchTerm = computed(() => {
   const term = route.params.term

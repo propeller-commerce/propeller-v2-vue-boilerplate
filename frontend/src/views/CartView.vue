@@ -24,12 +24,13 @@
             :crossupsellTypes="[CrossupsellType.ACCESSORIES]"
             :crossupsellLimit="2"
             :afterCartUpdate="(cart: any) => cartStore.setCart(cart)"
+            :labels="cartItemLabels"
           />
 
           <!-- Bonus items — free items added via incentives. Read-only list.
                currency/includeTax/language resolve from the Propeller provider
                (providePropeller in App.vue). -->
-          <CartBonusItems :cart="cartStore.cart as Cart" />
+          <CartBonusItems :cart="cartStore.cart as Cart" :labels="cartBonusItemsLabels" />
         </div>
 
         <div class="h-fit space-y-4">
@@ -57,12 +58,14 @@
                   localizeHref('/checkout?mode=quote', languageStore.language),
                 )
             "
+            :labels="cartSummaryLabels"
           />
           <ActionCode
             v-if="cartStore.cart"
             :cart="cartStore.cart as Cart"
             :afterActionCodeApply="(cart: any) => cartStore.setCart(cart)"
             :afterActionCodeRemove="(cart: any) => cartStore.setCart(cart)"
+            :labels="actionCodeLabels"
           />
         </div>
       </div>
@@ -83,6 +86,12 @@ import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { restoreManagerCart } from "@/lib/cartHelpers";
 import { ActionCode, CartBonusItems, CartItem, CartSummary } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const cartItemLabels = useTranslations('CartItem');
+const cartBonusItemsLabels = useTranslations('CartBonusItems');
+const cartSummaryLabels = useTranslations('CartSummary');
+const actionCodeLabels = useTranslations('ActionCode');
 
 const router = useRouter();
 const authStore = useAuthStore();

@@ -50,6 +50,12 @@
               localizeHref('/checkout?mode=quote', languageStore.language),
             )
         "
+        :labels="productSliderLabels"
+        :productCardLabels="productCardLabels"
+        :clusterCardLabels="clusterCardLabels"
+        :stockLabels="itemStockLabels"
+        :addToCartLabels="addToCartLabels"
+        :priceLabels="productPriceLabels"
       />
     </div>
   </div>
@@ -66,6 +72,14 @@ import { useCompanyStore } from "@/stores/company";
 import { graphqlClient, productService } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { ProductSlider } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const productSliderLabels = useTranslations('ProductSlider');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
+const itemStockLabels = useTranslations('ItemStock');
+const addToCartLabels = useTranslations('AddToCart');
+const productPriceLabels = useTranslations('ProductPrice');
 import type {
   Cart,
   Cluster,

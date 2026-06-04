@@ -83,6 +83,7 @@
               :showOrderTotal="true"
               :showDeliveryInfo="true"
               :showRemarks="true"
+              :labels="orderSummaryLabels"
             />
           </div>
 
@@ -126,12 +127,13 @@
                   :showSku="true"
                   :showQuantity="true"
                   :showPrice="true"
+                  :labels="orderItemCardLabels"
                 />
               </table>
             </div>
 
             <!-- Bonus Items -->
-            <OrderBonusItems :order="order" />
+            <OrderBonusItems :order="order" :labels="orderBonusItemsLabels" />
           </div>
 
           <!-- Actions -->
@@ -178,7 +180,12 @@ import { configuration, localizeHref } from "@/lib/config";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
+
+const orderSummaryLabels = useTranslations('OrderSummary');
+const orderItemCardLabels = useTranslations('OrderItemCard');
+const orderBonusItemsLabels = useTranslations('OrderBonusItems');
 
 const route = useRoute();
 const authStore = useAuthStore();

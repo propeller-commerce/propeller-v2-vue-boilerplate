@@ -29,6 +29,7 @@
             :categoryPath="(product.categoryPath as Category[]) || []"
             :currentCategory="(product as any).category || undefined"
             :currentLabel="productName"
+            :labels="breadcrumbsLabels"
           />
         </div>
 
@@ -36,7 +37,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <!-- Gallery -->
           <div class="bg-card rounded-[var(--radius-container)] shadow p-6">
-            <ProductGallery :images="images" />
+            <ProductGallery :images="images" :labels="productGalleryLabels" />
           </div>
 
           <!-- Info -->
@@ -46,6 +47,7 @@
             <ProductPrice
               :product="product as Product"
               :price="product.price as SDKProductPrice"
+              :labels="productPriceLabels"
             />
 
             <div
@@ -68,6 +70,7 @@
               v-if="product.price"
               :product="product as Product"
               :bulkPrices="product.bulkPrices as SDKProductPrice[]"
+              :labels="productBulkPricesLabels"
             />
 
             <ProductShortDescription :product="product as Product | Cluster" />
@@ -76,6 +79,7 @@
               v-if="product.inventory"
               :inventory="product.inventory as ProductInventory"
               :showAvailability="false"
+              :labels="itemStockLabels"
             />
 
             <div class="flex items-center gap-2 mt-4">
@@ -90,11 +94,13 @@
                 :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
                 :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
                 :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+                :labels="addToCartLabels"
               />
               <AddToFavorite
                 v-if="authStore.user"
                 :productId="product.productId"
                 :onFavoriteChanged="() => authStore.refreshUser()"
+                :labels="addToFavoriteLabels"
               />
             </div>
           </div>
@@ -105,6 +111,7 @@
           <ProductTabs
             :product="product as Product"
             :productId="product.productId"
+            :labels="productTabsLabels"
           />
         </div>
 
@@ -119,6 +126,7 @@
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterBundleAddToCart="(cart: Cart) => cartStore.setCart(cart)"
           :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
+          :labels="productBundlesLabels"
         />
 
         <!-- Cross-sell sliders: one section per type. Passing multiple types
@@ -150,6 +158,12 @@
                 configuration.urls.getClusterUrl(c, languageStore.language),
               )
           "
+          :labels="productSliderLabels"
+          :productCardLabels="productCardLabels"
+          :clusterCardLabels="clusterCardLabels"
+          :stockLabels="itemStockLabels"
+          :addToCartLabels="addToCartLabels"
+          :priceLabels="productPriceLabels"
         />
       </template>
     </div>
@@ -187,6 +201,20 @@ import {
 } from "propeller-sdk-v2";
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const breadcrumbsLabels = useTranslations('Breadcrumbs');
+const productGalleryLabels = useTranslations('ProductGallery');
+const productPriceLabels = useTranslations('ProductPrice');
+const productBulkPricesLabels = useTranslations('ProductBulkPrices');
+const itemStockLabels = useTranslations('ItemStock');
+const addToCartLabels = useTranslations('AddToCart');
+const addToFavoriteLabels = useTranslations('AddToFavorite');
+const productTabsLabels = useTranslations('ProductTabs');
+const productBundlesLabels = useTranslations('ProductBundles');
+const productSliderLabels = useTranslations('ProductSlider');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
 
 // Ordered list of cross-sell sections shown below the PDP fold. Each entry
 // becomes one `<ProductSlider>` with its own title — passing multiple types to

@@ -2,6 +2,7 @@
   <div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-md">
       <LoginForm
+        :labels="loginFormLabels"
         :cart="cartStore.cart as Cart | null"
         :afterLogin="(user: any, accessToken: any, refreshToken: any, expiresAt: any, anonymousCart: any) => handleLoginSuccess(user, accessToken, refreshToken, expiresAt, anonymousCart)"
         :onForgotPasswordClick="() => router.push(localizeHref('/forgot-password', languageStore.language))"
@@ -28,10 +29,12 @@ import { mergeAnonymousCart } from 'propeller-v2-vue-ui'
 import { useCart } from 'propeller-v2-vue-ui'
 import type { AnyUser } from 'propeller-v2-vue-ui'
 import { LoginForm } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const loginFormLabels = useTranslations('LoginForm')
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const languageStore = useLanguageStore()

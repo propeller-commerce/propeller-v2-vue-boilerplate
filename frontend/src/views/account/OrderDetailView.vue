@@ -50,17 +50,19 @@
           :showOrderTotal="true"
           :showDeliveryInfo="true"
           :showRemarks="true"
+          :labels="orderSummaryLabels"
         />
         <OrderActions
           :order="order as Order"
           :cartId="cartStore.cartId || undefined"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterReorder="(cart: Cart) => cartStore.setCart(cart)"
+          :labels="orderActionsLabels"
         />
       </div>
 
       <!-- Shipments -->
-      <OrderShipments :order="order" />
+      <OrderShipments :order="order" :labels="orderShipmentsLabels" />
 
       <!-- Order Overview -->
       <div class="pt-10">
@@ -101,12 +103,13 @@
               :showSku="true"
               :showQuantity="true"
               :showPrice="true"
+              :labels="orderItemCardLabels"
             />
           </table>
         </div>
 
         <!-- Bonus Items -->
-        <OrderBonusItems :order="order" />
+        <OrderBonusItems :order="order" :labels="orderBonusItemsLabels" />
       </div>
 
       <!-- Bottom Actions + Totals -->
@@ -118,6 +121,7 @@
           :cartId="cartStore.cartId || undefined"
           :onCartCreated="(cart: any) => cartStore.setCart(cart)"
           :afterReorder="(cart: any) => cartStore.setCart(cart)"
+          :labels="orderActionsLabels"
         />
         <OrderTotals
           :order="order as Order"
@@ -127,6 +131,7 @@
           :showVATs="true"
           :showTotalExclVat="true"
           :showTotalVat="true"
+          :labels="orderTotalsLabels"
         />
       </div>
     </div>
@@ -147,9 +152,17 @@ import type { Cart, Contact, Customer, Order } from "propeller-sdk-v2";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
 import { OrderActions, OrderBonusItems, OrderItemCard, OrderShipments, OrderSummary, OrderTotals } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
+const orderSummaryLabels = useTranslations('OrderSummary');
+const orderActionsLabels = useTranslations('OrderActions');
+const orderShipmentsLabels = useTranslations('OrderShipments');
+const orderItemCardLabels = useTranslations('OrderItemCard');
+const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+const orderTotalsLabels = useTranslations('OrderTotals');
+
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();

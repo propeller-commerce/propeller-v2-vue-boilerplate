@@ -13,6 +13,7 @@
           <AddressCard
             v-if="defaultAddresses.invoice"
             :key="`inv-${defaultAddresses.invoice.id}`"
+            :labels="addressCardLabels"
             :address="defaultAddresses.invoice"
             :enableDelete="false"
             :onEdit="handleEditAddress"
@@ -31,6 +32,7 @@
           <AddressCard
             v-if="defaultAddresses.delivery"
             :key="`del-${defaultAddresses.delivery.id}`"
+            :labels="addressCardLabels"
             :address="defaultAddresses.delivery"
             :enableDelete="false"
             :onEdit="handleEditAddress"
@@ -58,6 +60,7 @@
         <AddressCard
           v-for="address in billingAddresses"
           :key="address.id"
+          :labels="addressCardLabels"
           :address="address"
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
@@ -80,6 +83,7 @@
         <AddressCard
           v-for="address in deliveryAddresses"
           :key="address.id"
+          :labels="addressCardLabels"
           :address="address"
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
@@ -93,6 +97,7 @@
     <!-- Add New Address Modal -->
     <AddressCard
       v-if="showAddModal"
+      :labels="addressCardLabels"
       :address="null"
       :addressType="addModalType"
       :isNew="true"
@@ -116,9 +121,11 @@ import type { AddressInput } from 'propeller-v2-vue-ui'
 import type { AnyUser } from 'propeller-v2-vue-ui'
 import { AddressCard } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { useTranslations } from '@/lib/i18n/composable';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
+const addressCardLabels = useTranslations('AddressCard')
 
 // COUNTRIES imported from shared utils
 const showAddModal = ref(false)

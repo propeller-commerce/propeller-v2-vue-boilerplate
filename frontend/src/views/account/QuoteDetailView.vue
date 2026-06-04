@@ -40,7 +40,7 @@
         <OrderSummary
           :order="quote"
           :countries="COUNTRIES"
-          :labels="{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
+          :labels="{ ...orderSummaryLabels, orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -56,6 +56,7 @@
           <QuoteActions
             :quote="quote as Order"
             :afterAccept="handleAfterAccept"
+            :labels="quoteActionsLabels"
             :showTermsAndConditions="true"
             :onTermsAndConditionsClick="
               () => window.open(localizeHref('/terms-conditions', languageStore.language), '_blank')
@@ -113,6 +114,7 @@
               :key="item.id"
               :orderItem="item"
               :childItems="childMap.get(item.id) || []"
+              :labels="orderItemCardLabels"
               :titleLinkable="true"
               :showImage="true"
               :showSku="true"
@@ -124,12 +126,12 @@
         </div>
 
         <!-- Bonus Items -->
-        <OrderBonusItems :order="quote" />
+        <OrderBonusItems :order="quote" :labels="orderBonusItemsLabels" />
       </div>
 
       <!-- Totals -->
       <div class="flex flex-col md:flex-row justify-end gap-8 pt-6 border-t">
-        <OrderTotals :order="quote" />
+        <OrderTotals :order="quote" :labels="orderTotalsLabels" />
       </div>
     </div>
 
@@ -178,6 +180,7 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { useTranslations } from "@/lib/i18n/composable";
 import type { Order } from "propeller-sdk-v2";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
@@ -190,6 +193,12 @@ const router = useRouter();
 const authStore = useAuthStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
+
+const orderSummaryLabels = useTranslations('OrderSummary');
+const quoteActionsLabels = useTranslations('QuoteActions');
+const orderItemCardLabels = useTranslations('OrderItemCard');
+const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+const orderTotalsLabels = useTranslations('OrderTotals');
 
 const quoteId = route.params.id as string;
 

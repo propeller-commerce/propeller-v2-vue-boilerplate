@@ -2,6 +2,7 @@
   <div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-5xl">
       <RegisterForm
+        :labels="registerFormLabels"
         :countries="COUNTRIES_MAP"
         :cart="cartStore.cart as Cart | null"
         :afterRegistration="
@@ -42,9 +43,11 @@ import { useCart } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
 import { RegisterForm } from 'propeller-v2-vue-ui';
 import { COUNTRIES_MAP } from "@/composables/shared/utils/countries";
+import { useTranslations } from '@/lib/i18n/composable';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const registerFormLabels = useTranslations('RegisterForm');
 const cartStore = useCartStore();
 const companyStore = useCompanyStore();
 const languageStore = useLanguageStore();

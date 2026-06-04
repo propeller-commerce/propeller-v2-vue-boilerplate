@@ -6,10 +6,12 @@
         :categoryPath="(category as any).categoryPath || []"
         :currentCategory="category as Category"
         :showCurrent="true"
+        :labels="breadcrumbsLabels"
       />
 
       <GridTitle
         :title="getCategoryName()"
+        :labels="gridTitleLabels"
       />
 
       <CategoryDescription
@@ -34,6 +36,7 @@
             :isLoading="filtersLoading"
             :isMobile="false"
             :collapsed="true"
+            :labels="gridFiltersLabels"
           />
         </aside>
 
@@ -59,6 +62,7 @@
               :onFilterRemove="handleFilterRemove"
               :onPriceFilterRemove="handlePriceFilterRemove"
               :onClearFilters="handleClearFilters"
+              :labels="gridToolbarLabels"
             />
           </div>
 
@@ -118,6 +122,12 @@
                   localizeHref('/checkout?mode=quote', languageStore.language),
                 )
             "
+            :labels="productGridLabels"
+            :productCardLabels="productCardLabels"
+            :clusterCardLabels="clusterCardLabels"
+            :stockLabels="itemStockLabels"
+            :addToCartLabels="addToCartLabels"
+            :priceLabels="productPriceLabels"
           />
 
           <div class="flex justify-center gap-2 mt-12">
@@ -126,6 +136,7 @@
               :products="productsResponse as ProductsResponse"
               :onPageChange="handleGridPaginationPageChange"
               variant="full"
+              :labels="gridPaginationLabels"
             />
           </div>
         </div>
@@ -147,6 +158,7 @@ import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 
 import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute();
 const router = useRouter();
@@ -155,6 +167,18 @@ const cartStore = useCartStore();
 const companyStore = useCompanyStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
+
+const breadcrumbsLabels = useTranslations('Breadcrumbs');
+const gridTitleLabels = useTranslations('GridTitle');
+const gridFiltersLabels = useTranslations('GridFilters');
+const gridToolbarLabels = useTranslations('GridToolbar');
+const productGridLabels = useTranslations('ProductGrid');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
+const itemStockLabels = useTranslations('ItemStock');
+const addToCartLabels = useTranslations('AddToCart');
+const productPriceLabels = useTranslations('ProductPrice');
+const gridPaginationLabels = useTranslations('GridPagination');
 
 // Derived from route — ProductGrid fetches internally using this
 const categoryId = computed(() => parseInt(route.params.id as string));

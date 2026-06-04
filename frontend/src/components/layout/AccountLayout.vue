@@ -13,6 +13,8 @@
               :onMenuItemClick="handleMenuItemClick"
               :onLogoutClick="handleLogout"
               :menuLinks="menuLinks"
+              :labels="accountIconAndMenuLabels"
+              :loginFormLabels="loginFormLabels"
             />
           </div>
         </aside>
@@ -34,6 +36,10 @@ import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { localizeHref } from "@/lib/config";
 import { AccountIconAndMenu } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
+const loginFormLabels = useTranslations('LoginForm');
 
 const authStore = useAuthStore();
 const companyStore = useCompanyStore();

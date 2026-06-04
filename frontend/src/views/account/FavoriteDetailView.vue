@@ -6,6 +6,7 @@
     </div>
     <FavoriteListDetails
       v-if="authStore.user"
+      :labels="favoriteListDetailsLabels"
       :favoriteListId="String(route.params.id)"
       :onListLoaded="(list: any) => { listName = list?.name || '' }"
       :onItemDelete="handleItemDelete"
@@ -36,12 +37,14 @@ import { useFavorites } from 'propeller-v2-vue-ui'
 import type { AnyUser } from 'propeller-v2-vue-ui'
 import { FavoriteListDetails } from 'propeller-v2-vue-ui';
 import type { Contact, Customer } from 'propeller-sdk-v2'
+import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const priceStore = usePriceStore()
+const favoriteListDetailsLabels = useTranslations('FavoriteListDetails')
 
 const listName = ref('')
 

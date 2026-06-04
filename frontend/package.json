@@ -4,9 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "locales:build": "node scripts/build-locales-registry.mjs",
     "start": "cross-env NODE_ENV=production node server.js",
     "dev": "node server.js",
+    "predev": "node scripts/build-locales-registry.mjs",
     "build": "npm run build:client && npm run build:server",
+    "prebuild": "node scripts/build-locales-registry.mjs",
     "build:client": "vite build --ssrManifest --outDir dist/client",
     "build:server": "vite build --ssr src/entry-server.ts --outDir dist/server",
     "build:check": "vue-tsc -b && npm run build",

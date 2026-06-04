@@ -28,6 +28,7 @@
             v-if="isContactWithMultipleCompanies"
             :selectedCompanyId="companyStore.companyId ?? undefined"
             :onCompanyChange="handleCompanyChange"
+            :labels="companySwitcherLabels"
           />
 
           <PriceToggle
@@ -36,6 +37,7 @@
             :onToggle="(val: boolean) => { priceStore.includeTax = val }"
             :inclExclVatSwitched="(val: boolean) => { priceStore.includeTax = val }"
             :language="languageStore.language"
+            :labels="priceToggleLabels"
           />
 
           <div v-if="showLanguageSwitcher && availableLanguages.length > 1" ref="langMenuRef" class="relative">
@@ -115,6 +117,7 @@
               :onViewAllClick="handleSearch"
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
               :clearSignal="searchClearSignal"
+              :labels="searchBarLabels"
             />
           </div>
 
@@ -131,6 +134,8 @@
               :accountHeaderLoginForm="true"
               :menuLinks="accountMenuLinks"
               iconClassName="text-white hover:text-white hover:bg-white/10"
+              :labels="accountIconAndMenuLabels"
+              :loginFormLabels="loginFormLabels"
             />
 
             <CartIconAndSidebar
@@ -144,6 +149,7 @@
               :onError="(err: Error) => console.error('Authorization request failed:', err)"
               :showTotals="true"
               iconClassName="text-white hover:text-white hover:bg-white/10"
+              :labels="cartIconAndSidebarLabels"
             />
           </div>
         </div>
@@ -183,6 +189,7 @@
                 :tree="menuTreeProp"
                 :onMenuItemClick="handleCategoryClick"
                 menuStyle="dropdown-vertical"
+                :labels="menuLabels"
               />
             </div>
           </div>
@@ -211,6 +218,7 @@
           :onViewAllClick="(term: string) => { showMobileMenu = false; handleSearch(term) }"
           :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
           :clearSignal="searchClearSignal"
+          :labels="searchBarLabels"
         />
       </div>
 
@@ -223,6 +231,7 @@
         :tree="menuTreeProp"
         :onMenuItemClick="handleCategoryClick"
         menuStyle="dropdown-vertical"
+        :labels="menuLabels"
       />
 
       <!-- Mobile nav links -->
@@ -261,6 +270,15 @@ import { restoreManagerCart } from '@/lib/cartHelpers'
 import { mergeAnonymousCart, fetchActiveCart as fetchActiveCartShared, initCart } from 'propeller-v2-vue-ui'
 
 import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const companySwitcherLabels = useTranslations('CompanySwitcher');
+const priceToggleLabels = useTranslations('PriceToggle');
+const searchBarLabels = useTranslations('SearchBar');
+const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
+const loginFormLabels = useTranslations('LoginForm');
+const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+const menuLabels = useTranslations('Menu');
 
 const router = useRouter()
 const route = useRoute()
