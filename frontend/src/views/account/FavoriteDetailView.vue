@@ -36,7 +36,7 @@ import { configuration } from '@/lib/config'
 import { useFavorites } from 'propeller-v2-vue-ui'
 import type { AnyUser } from 'propeller-v2-vue-ui'
 import { FavoriteListDetails } from 'propeller-v2-vue-ui';
-import type { Contact, Customer } from 'propeller-sdk-v2'
+import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute()

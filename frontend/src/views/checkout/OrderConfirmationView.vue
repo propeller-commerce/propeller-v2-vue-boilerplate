@@ -166,7 +166,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import type { OrderItem } from "propeller-sdk-v2";
+import type { OrderItem } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";

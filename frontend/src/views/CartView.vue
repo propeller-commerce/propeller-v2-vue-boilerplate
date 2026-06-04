@@ -76,7 +76,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { Cart, Contact, CrossupsellType, Customer } from "propeller-sdk-v2";
+import { Cart, Contact, CrossupsellType, Customer } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";

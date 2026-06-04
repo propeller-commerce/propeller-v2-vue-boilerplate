@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { type Contact, type Customer, PurchaseRole, UserService } from 'propeller-sdk-v2';
+import { type Contact, type Customer, PurchaseRole, UserService } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api'
 import { isBrowser, safeStorage, setCookie, deleteCookie } from '@/lib/ssr'
 

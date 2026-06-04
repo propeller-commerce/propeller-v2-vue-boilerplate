@@ -31,9 +31,9 @@ import {
   type ListingFetchOptions,
 } from '@/lib/server'
 import { DEFAULT_LANGUAGE } from '@/lib/config'
-import { ProductSortField, SortOrder } from 'propeller-sdk-v2'
-import type { ProductTextFilterInput } from 'propeller-sdk-v2'
-import { AttributeType } from 'propeller-sdk-v2'
+import { ProductSortField, SortOrder } from '@propeller-commerce/propeller-sdk-v2'
+import type { ProductTextFilterInput } from '@propeller-commerce/propeller-sdk-v2'
+import { AttributeType } from '@propeller-commerce/propeller-sdk-v2'
 
 /** Resolve the active language from the route's optional `:lang` param. */
 function routeLanguage(route: RouteLocationNormalized): string {

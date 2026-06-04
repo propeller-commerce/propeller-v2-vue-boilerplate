@@ -1,5 +1,5 @@
-import type { Category, Cluster, Product } from 'propeller-sdk-v2'
-import { Fit, Format } from 'propeller-sdk-v2';
+import type { Category, Cluster, Product } from '@propeller-commerce/propeller-sdk-v2'
+import { Fit, Format } from '@propeller-commerce/propeller-sdk-v2';
 
 // Offset 1 = "first image only" — used in product cards / grids where a single
 // thumbnail is enough.

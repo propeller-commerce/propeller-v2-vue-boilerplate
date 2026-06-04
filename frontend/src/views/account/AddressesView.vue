@@ -111,8 +111,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { type Address, AddressType, type Company, YesNo } from 'propeller-sdk-v2';
-import type { Contact, Customer } from 'propeller-sdk-v2'
+import { type Address, AddressType, type Company, YesNo } from '@propeller-commerce/propeller-sdk-v2';
+import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'

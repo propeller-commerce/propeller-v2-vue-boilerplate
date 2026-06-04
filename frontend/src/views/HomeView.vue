@@ -86,7 +86,7 @@ import type {
   Contact,
   Customer,
   Product,
-} from "propeller-sdk-v2";
+} from "@propeller-commerce/propeller-sdk-v2";
 
 const router = useRouter();
 const authStore = useAuthStore();

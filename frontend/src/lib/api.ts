@@ -5,7 +5,7 @@ import {
   CartService,
   OrderService,
   type GraphQLClientConfig,
-} from 'propeller-sdk-v2'
+} from '@propeller-commerce/propeller-sdk-v2'
 import { createServices } from 'propeller-v2-vue-ui'
 
 // Use /api/graphql proxy in development (Vite proxy adds apikey server-side).

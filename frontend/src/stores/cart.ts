@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Cart } from 'propeller-sdk-v2'
+import type { Cart } from '@propeller-commerce/propeller-sdk-v2'
 import { isBrowser, safeStorage } from '@/lib/ssr'
 
 function loadCartFromStorage(): Cart | null {

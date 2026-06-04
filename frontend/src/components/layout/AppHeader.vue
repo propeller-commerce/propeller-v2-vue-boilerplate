@@ -254,8 +254,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-vue-next'
-import { CartService, PurchaseRole } from 'propeller-sdk-v2';
-import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
+import { CartService, PurchaseRole } from '@propeller-commerce/propeller-sdk-v2';
+import type { Cart, Category, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'

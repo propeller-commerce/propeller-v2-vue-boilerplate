@@ -6,7 +6,7 @@
  * string for the active language, preferring the curated metadata and falling
  * back through the content fields. Mirrors `propeller-next/lib/seo.ts`.
  */
-import type { Contact, Customer, LocalizedString } from 'propeller-sdk-v2'
+import type { Contact, Customer, LocalizedString } from '@propeller-commerce/propeller-sdk-v2'
 import { stripHtml, type JsonLdContext } from 'propeller-v2-vue-ui/shared'
 import { configuration, portalMode, siteUrl } from './config'
 

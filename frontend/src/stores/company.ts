@@ -1,9 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Company } from 'propeller-sdk-v2'
+import type { Company } from '@propeller-commerce/propeller-sdk-v2'
 import { isBrowser, safeStorage } from '@/lib/ssr'
 
 const STORAGE_KEY = 'selected_company'
+/**
+ * Non-httpOnly cookie shadowing the localStorage selection so server-side
+ * fetchers (`src/lib/server.ts`) can scope queries by the active company on
+ * the very first SSR render — without it the server would always use the
+ * user's default company while the client uses the picked one, silently
+ * desynchronising prices, assortment, and filter facets.
+ */
+const COOKIE_KEY = 'selected_company_id'
 
 function loadCompanyFromStorage(): Company | null {
   try {
@@ -14,6 +22,18 @@ function loadCompanyFromStorage(): Company | null {
   }
 }
 
+function writeCompanyCookie(companyId: number | undefined | null): void {
+  if (!isBrowser) return
+  if (companyId === undefined || companyId === null) {
+    document.cookie = `${COOKIE_KEY}=; path=/; max-age=0; samesite=lax`
+    return
+  }
+  // 30-day persistence; matches typical session cookie lifetime — long enough
+  // to survive a tab close, short enough that an abandoned device eventually
+  // drops the selection.
+  document.cookie = `${COOKIE_KEY}=${companyId}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`
+}
+
 export const useCompanyStore = defineStore('company', () => {
   const selectedCompany = ref<Company | null>(loadCompanyFromStorage())
 
@@ -22,6 +42,7 @@ export const useCompanyStore = defineStore('company', () => {
   function setSelectedCompany(company: Company) {
     selectedCompany.value = company
     safeStorage.setItem(STORAGE_KEY, JSON.stringify(company))
+    writeCompanyCookie(company.companyId)
     if (isBrowser) {
       window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }))
     }
@@ -30,6 +51,7 @@ export const useCompanyStore = defineStore('company', () => {
   function clearSelectedCompany() {
     selectedCompany.value = null
     safeStorage.removeItem(STORAGE_KEY)
+    writeCompanyCookie(undefined)
   }
 
   // Client-only re-hydration after SSR state transfer. The server can't read
@@ -43,7 +65,14 @@ export const useCompanyStore = defineStore('company', () => {
   function hydrateFromStorage() {
     if (!isBrowser) return
     const stored = loadCompanyFromStorage()
-    if (stored) selectedCompany.value = stored
+    if (stored) {
+      selectedCompany.value = stored
+      // Cookie may be missing (new device, cookie cleared while localStorage
+      // survived) while localStorage carries the last pick — without this
+      // sync the next SSR render would scope to the user's default company
+      // instead of what the UI is showing.
+      writeCompanyCookie(stored.companyId)
+    }
   }
 
   // SSR seed — set the in-memory ref only (no storage write), so the value
@@ -80,6 +109,7 @@ export const useCompanyStore = defineStore('company', () => {
     selectedCompany.value = next
     if (next) safeStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     else safeStorage.removeItem(STORAGE_KEY)
+    writeCompanyCookie(next?.companyId)
   }
 
   // Cross-tab sync + logout reset — browser-only.

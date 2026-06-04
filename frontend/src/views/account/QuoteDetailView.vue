@@ -175,7 +175,7 @@ import { configuration, localizeHref } from "@/lib/config";
 import { useTranslations } from "@/lib/i18n/composable";
 import AccessErrorView from "@/components/access/AccessErrorView.vue";
 import { classifyApiError } from "@/lib/errors";
-import type { Order } from "propeller-sdk-v2";
+import type { Order } from "@propeller-commerce/propeller-sdk-v2";
 import { useOrders } from "propeller-v2-vue-ui";
 import type { AnyUser } from "propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from 'propeller-v2-vue-ui';

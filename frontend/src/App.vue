@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useHead } from '@unhead/vue'
 import { PropellerProvider } from 'propeller-v2-vue-ui'
 import { useAuthStore } from '@/stores/auth'
@@ -23,6 +23,23 @@ const company = useCompanyStore()
 useHead({
   htmlAttrs: { lang: computed(() => language.language.toLowerCase()) },
 })
+
+// Force a fresh view mount whenever the active company changes. The catalog
+// views (CategoryView / SearchView / ClusterDetailView / ProductDetailView)
+// run their SSR-style `services.*` fetches in `<script setup>`, which is
+// re-executed on remount. The company store has already mirrored the new
+// selection into the `selected_company_id` cookie, so the next fetch reads
+// it via `lib/server.ts:getServerInfra()` and scopes results to the new
+// company. Without this the seeded server data sticks around forever after
+// a company switch (the controlled `:products` prop on `<ProductGrid>` is
+// only released by URL-bound interaction handlers).
+const viewKey = ref(0)
+watch(
+  () => company.companyId,
+  () => {
+    viewKey.value++
+  },
+)
 </script>
 
 <template>
@@ -33,6 +50,6 @@ useHead({
     :include-tax="price.includeTax"
     portal-mode="open"
   >
-    <router-view />
+    <router-view :key="viewKey" />
   </PropellerProvider>
 </template>

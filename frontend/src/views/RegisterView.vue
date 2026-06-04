@@ -30,8 +30,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { CartService } from "propeller-sdk-v2";
-import type { Cart, Contact, Customer } from "propeller-sdk-v2";
+import { CartService } from "@propeller-commerce/propeller-sdk-v2";
+import type { Cart, Contact, Customer } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";

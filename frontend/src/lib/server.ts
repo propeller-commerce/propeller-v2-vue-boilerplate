@@ -44,7 +44,7 @@ import {
   ProductSortField,
   SortOrder,
   ProductSearchableField,
-} from 'propeller-sdk-v2'
+} from '@propeller-commerce/propeller-sdk-v2'
 import { createServices, toPlain, type Services, type MenuCategory } from 'propeller-v2-vue-ui/shared'
 import {
   imageSearchFilters,
@@ -280,6 +280,13 @@ export interface ServerInfra {
   /** Tax-inclusive pricing — the server defaults to net prices. */
   includeTax: boolean
   /**
+   * Active companyId selected via the CompanySwitcher (`selected_company_id`
+   * cookie). Overrides the user's default company in product / price queries.
+   * `undefined` for anonymous renders and for authenticated users who haven't
+   * switched away from their default company.
+   */
+  selectedCompanyId?: number
+  /**
    * Whether GraphQL POSTs issued through this infra should attach cache
    * tags. True for `getAnonymousInfra()`, false for `getServerInfra()`
    * (authenticated). The fetch helpers branch on this flag to decide
@@ -321,6 +328,13 @@ export async function getServerInfra(
     }
   }
 
+  const selectedCompanyIdRaw = cookies['selected_company_id']
+  const selectedCompanyId = selectedCompanyIdRaw
+    ? (Number.isFinite(parseInt(selectedCompanyIdRaw, 10))
+      ? parseInt(selectedCompanyIdRaw, 10)
+      : undefined)
+    : undefined
+
   return {
     client,
     services,
@@ -328,6 +342,7 @@ export async function getServerInfra(
     language,
     currency: '€',
     includeTax: cookies['price_include_tax'] === '1',
+    selectedCompanyId,
     cacheable: false, // authenticated render — bypasses the SSR proxy cache
   }
 }
@@ -462,6 +477,22 @@ function resolveUserId(user: Contact | Customer | null): number | undefined {
   if ('contactId' in user) return (user as Contact).contactId
   if ('customerId' in user) return (user as Customer).customerId
   return undefined
+}
+
+/**
+ * Resolve the active `companyId` for product/search scoping. The client grid
+ * scopes a contact's listing query by the active company (CompanyContext's
+ * `selectedCompany`), falling back to the user's default. The SSR fetch must
+ * do the same — else the server seeds products from a different company than
+ * the client re-fetches and any filter the user picks from the seeded sidebar
+ * returns 0 products. The active selection arrives via the
+ * `selected_company_id` cookie set by the consumer's company store.
+ */
+function resolveCompanyId(infra: ServerInfra): number | undefined {
+  if (infra.selectedCompanyId !== undefined) return infra.selectedCompanyId
+  const user = infra.user
+  if (!user || !('contactId' in user)) return undefined
+  return (user as Contact).company?.companyId
 }
 
 // ── Anonymous-only SSR response cache ────────────────────────────────────────
@@ -660,6 +691,7 @@ export async function fetchCategory(
   const offset = opts.offset ?? 12
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }]
   const userId = resolveUserId(infra.user)
+  const companyId = resolveCompanyId(infra)
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,
@@ -670,6 +702,7 @@ export async function fetchCategory(
     sortInputs,
     ...buildFilterInput(opts),
     ...(userId !== undefined && { userId }),
+    ...(companyId !== undefined && { companyId }),
   }
 
   const cacheKey = `category:${categoryId}:${lang}:${sortField}:${sortOrder}:${page}:${offset}:${stableListingKey(opts)}`
@@ -714,6 +747,7 @@ export async function fetchSearch(
   const offset = opts.offset ?? 12
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }]
   const userId = resolveUserId(infra.user)
+  const companyId = resolveCompanyId(infra)
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,
@@ -725,6 +759,7 @@ export async function fetchSearch(
     sortInputs,
     ...buildFilterInput(opts),
     ...(userId !== undefined && { userId }),
+    ...(companyId !== undefined && { companyId }),
   }
 
   const cacheKey = `search:${baseCategoryId}:${lang}:${term}:${sortField}:${sortOrder}:${page}:${offset}:${stableListingKey(opts)}`

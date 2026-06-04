@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { Contact, Customer } from 'propeller-sdk-v2'
+import { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { orderEditorGraphqlClient } from '@/lib/api'

@@ -187,7 +187,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Cart, Cluster, CrossupsellType, Inventory, ProductInventory } from "propeller-sdk-v2";
+import { Cart, Cluster, CrossupsellType, Inventory, ProductInventory } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
@@ -208,7 +208,7 @@ import {
   type Customer,
   type Price,
   type Product,
-} from "propeller-sdk-v2";
+} from "@propeller-commerce/propeller-sdk-v2";
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
