@@ -21,6 +21,7 @@
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@propeller-commerce/propeller-sdk-v2": "^0.11.1",
     "@unhead/vue": "^2.1.15",
     "@vueuse/core": "^14.2.1",
     "class-variance-authority": "^0.7.1",
@@ -31,7 +32,6 @@
     "lodash.debounce": "^4.0.8",
     "lucide-vue-next": "^1.0.0",
     "marked": "^18.0.0",
-    "@propeller-commerce/propeller-sdk-v2": "^0.11.1",
     "pinia": "^3.0.4",
     "propeller-v2-vue-ui": "github:propeller-commerce/propeller-v2-vue-ui#master",
     "qs": "^6.15.0",
