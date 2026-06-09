@@ -225,7 +225,12 @@ const gridFilters = ref<AttributeFilter[]>(
 // to false, the prop becomes undefined, and the grid resumes its own fetching
 // for every subsequent change.
 const usingServerData = ref(!!seededProducts);
-const seededItems = (seededProducts?.items ?? []) as (Product | Cluster)[];
+// Derive from the reactive productsResponse — not a snapshot — so SPA
+// navigation to a different category replaces the items as soon as
+// ProductGrid emits :onProductsResponse.
+const seededItems = computed<(Product | Cluster)[]>(
+  () => (productsResponse.value?.items ?? []) as (Product | Cluster)[]
+);
 
 // schema.org ItemList of the first-page items. Built once from the SSR seed
 // — filter/sort/page navigation does NOT re-emit (crawlers see this snapshot).
@@ -235,9 +240,9 @@ const jsonLdContext = computed(() =>
     user: authStore.user as any,
   }),
 );
-const jsonLdFirstPage = seededItems as Product[];
+const jsonLdFirstPage = computed(() => seededItems.value as Product[]);
 const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
-  usingServerData.value ? seededItems : undefined,
+  usingServerData.value ? seededItems.value : undefined,
 );
 function markUserInteracted(): void {
   if (usingServerData.value) usingServerData.value = false;
@@ -329,6 +334,33 @@ watch(
     offset.value = readNumberQuery(q.offset) ?? 12;
     sortField.value = (q.sortField as string) || ProductSortField.CATEGORY_ORDER;
     sortOrder.value = (q.sortOrder as string) || SortOrder.DESC;
+  },
+);
+
+// SPA-nav between categories. Vue Router reuses the same CategoryView
+// component instance when only :id/:slug change — setup() does not re-run,
+// so the seeded category/products/usingServerData refs would stay frozen
+// at the first-visit values without this. Re-peek the SSR store, reset all
+// dependent state, and re-arm controlled-mode if a new seed exists.
+// Mirrors the propeller-nuxt fix in app/pages/category/[id]/[slug].vue.
+watch(
+  () => route.fullPath,
+  () => {
+    const nextSeed = ssrCatalog.peekSeed(route.fullPath);
+    const nextSeededCategory =
+      nextSeed?.kind === "category" ? (nextSeed.data as Category) : null;
+    category.value = nextSeededCategory;
+    const nextSeededProducts =
+      (nextSeededCategory?.products as ProductsResponse | undefined) ?? null;
+    productsResponse.value = nextSeededProducts;
+    gridFilters.value =
+      (nextSeededProducts?.filters as AttributeFilter[] | undefined) ?? [];
+    itemsFound.value =
+      (nextSeededProducts?.itemsFound as number | undefined) ?? 0;
+    // If we have a fresh server-side seed for the new route, re-arm
+    // controlled mode so the grid shows it directly. Otherwise drop the
+    // controlled prop so ProductGrid resumes its own fetch.
+    usingServerData.value = !!nextSeededProducts;
   },
 );
 

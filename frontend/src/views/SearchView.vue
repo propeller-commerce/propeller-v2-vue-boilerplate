@@ -231,7 +231,11 @@ const filtersLoading = ref(false)
 // and its internal fetch is a no-op. The first interaction (or a term change)
 // flips it and the grid resumes its own fetching.
 const usingServerData = ref(!!seededResponse)
-const seededItems = (seededResponse?.items ?? []) as (Product | Cluster)[]
+// Derive from the reactive productsResponse — SPA navigation to a new term
+// will replace the items as ProductGrid emits :onProductsResponse.
+const seededItems = computed<(Product | Cluster)[]>(
+  () => (productsResponse.value?.items ?? []) as (Product | Cluster)[],
+)
 
 // schema.org ItemList of the SSR first-page results. Crawlers see this
 // snapshot only; client-side filter/sort/page navigation does NOT re-emit.
@@ -241,9 +245,9 @@ const jsonLdContext = computed(() =>
     user: authStore.user as any,
   }),
 )
-const jsonLdFirstPage = seededItems as Product[]
+const jsonLdFirstPage = computed(() => seededItems.value as Product[])
 const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
-  usingServerData.value ? seededItems : undefined,
+  usingServerData.value ? seededItems.value : undefined,
 )
 function markUserInteracted(): void {
   if (usingServerData.value) usingServerData.value = false
@@ -320,6 +324,24 @@ watch(
     offset.value = readNumberQuery(q.offset) ?? 12
     sortField.value = (q.sortField as string) || ProductSortField.RELEVANCE
     sortOrder.value = (q.sortOrder as string) || SortOrder.DESC
+  },
+)
+
+// SPA-nav between search terms. Same instance-reuse issue as CategoryView:
+// when only `:term` changes, setup() doesn't re-run, so re-peek the seed
+// and reset state. Mirrors the propeller-nuxt search page fix.
+watch(
+  () => route.fullPath,
+  () => {
+    const nextSeed = ssrCatalog.peekSeed(route.fullPath)
+    const nextSeededResponse =
+      nextSeed?.kind === 'search' ? (nextSeed.data as ProductsResponse) : null
+    productsResponse.value = nextSeededResponse
+    gridFilters.value =
+      (nextSeededResponse?.filters as AttributeFilter[] | undefined) ?? []
+    itemsFound.value =
+      (nextSeededResponse?.itemsFound as number | undefined) ?? 0
+    usingServerData.value = !!nextSeededResponse
   },
 )
 
