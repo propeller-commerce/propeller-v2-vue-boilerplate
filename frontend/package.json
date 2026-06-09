@@ -14,7 +14,7 @@
     "build:server": "vite build --ssr src/entry-server.ts --outDir dist/server",
     "build:check": "vue-tsc -b && npm run build",
     "preview": "cross-env NODE_ENV=production node server.js",
-    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\"",
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\";\"Remove-Item -Recurse -Force node_modules/.vite -ErrorAction SilentlyContinue\"",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
