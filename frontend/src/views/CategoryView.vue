@@ -247,8 +247,20 @@ const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
 function markUserInteracted(): void {
   if (usingServerData.value) usingServerData.value = false;
 }
-const priceBoundsMin = ref<number | undefined>();
-const priceBoundsMax = ref<number | undefined>();
+function derivePriceBounds(resp: ProductsResponse | null): { min: number; max: number } | null {
+  if (!resp) return null;
+  const aggMax = resp.maxPrice;
+  if (typeof aggMax === 'number' && aggMax > 0) return { min: resp.minPrice ?? 0, max: aggMax };
+  const prices = ((resp.items ?? []) as Product[])
+    .map((p) => p?.price?.gross ?? p?.price?.net)
+    .filter((n): n is number => typeof n === 'number' && n > 0);
+  if (!prices.length) return null;
+  return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
+}
+
+const seededBounds = derivePriceBounds(seededProducts);
+const priceBoundsMin = ref<number | undefined>(seededBounds?.min);
+const priceBoundsMax = ref<number | undefined>(seededBounds?.max);
 const itemsFound = ref(0);
 const filtersLoading = ref(false);
 
@@ -357,6 +369,9 @@ watch(
       (nextSeededProducts?.filters as AttributeFilter[] | undefined) ?? [];
     itemsFound.value =
       (nextSeededProducts?.itemsFound as number | undefined) ?? 0;
+    const nextBounds = derivePriceBounds(nextSeededProducts);
+    priceBoundsMin.value = nextBounds?.min;
+    priceBoundsMax.value = nextBounds?.max;
     // If we have a fresh server-side seed for the new route, re-arm
     // controlled mode so the grid shows it directly. Otherwise drop the
     // controlled prop so ProductGrid resumes its own fetch.

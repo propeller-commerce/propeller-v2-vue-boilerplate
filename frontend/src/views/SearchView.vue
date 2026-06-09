@@ -221,8 +221,20 @@ const productsResponse = ref<ProductsResponse | null>(seededResponse)
 const gridFilters = ref<AttributeFilter[]>(
   (seededResponse?.filters as AttributeFilter[] | undefined) ?? [],
 )
-const priceBoundsMin = ref<number | undefined>()
-const priceBoundsMax = ref<number | undefined>()
+function derivePriceBounds(resp: ProductsResponse | null): { min: number; max: number } | null {
+  if (!resp) return null
+  const aggMax = resp.maxPrice
+  if (typeof aggMax === 'number' && aggMax > 0) return { min: resp.minPrice ?? 0, max: aggMax }
+  const prices = ((resp.items ?? []) as Product[])
+    .map((p) => p?.price?.gross ?? p?.price?.net)
+    .filter((n): n is number => typeof n === 'number' && n > 0)
+  if (!prices.length) return null
+  return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) }
+}
+
+const seededBounds = derivePriceBounds(seededResponse)
+const priceBoundsMin = ref<number | undefined>(seededBounds?.min)
+const priceBoundsMax = ref<number | undefined>(seededBounds?.max)
 const itemsFound = ref(seededResponse?.itemsFound ?? 0)
 const filtersLoading = ref(false)
 
@@ -341,6 +353,9 @@ watch(
       (nextSeededResponse?.filters as AttributeFilter[] | undefined) ?? []
     itemsFound.value =
       (nextSeededResponse?.itemsFound as number | undefined) ?? 0
+    const nextBounds = derivePriceBounds(nextSeededResponse)
+    priceBoundsMin.value = nextBounds?.min
+    priceBoundsMax.value = nextBounds?.max
     usingServerData.value = !!nextSeededResponse
   },
 )
