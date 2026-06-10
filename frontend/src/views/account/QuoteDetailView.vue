@@ -176,9 +176,9 @@ import { useTranslations } from "@/lib/i18n/composable";
 import AccessErrorView from "@/components/access/AccessErrorView.vue";
 import { classifyApiError } from "@/lib/errors";
 import type { Order } from "@propeller-commerce/propeller-sdk-v2";
-import { useOrders } from "propeller-v2-vue-ui";
-import type { AnyUser } from "propeller-v2-vue-ui";
-import { OrderBonusItems, OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from 'propeller-v2-vue-ui';
+import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
+import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
+import { OrderBonusItems, OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from '@propeller-commerce/propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils

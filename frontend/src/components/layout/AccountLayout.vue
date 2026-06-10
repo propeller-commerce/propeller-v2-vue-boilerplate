@@ -35,7 +35,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { localizeHref } from "@/lib/config";
-import { AccountIconAndMenu } from 'propeller-v2-vue-ui';
+import { AccountIconAndMenu } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');

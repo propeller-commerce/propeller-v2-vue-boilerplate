@@ -173,9 +173,9 @@ import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import AccessErrorView from "@/components/access/AccessErrorView.vue";
 import { classifyApiError } from "@/lib/errors";
-import { useOrders } from "propeller-v2-vue-ui";
-import type { AnyUser } from "propeller-v2-vue-ui";
-import { OrderBonusItems, OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
+import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
+import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
+import { OrderBonusItems, OrderItemCard, OrderSummary } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 

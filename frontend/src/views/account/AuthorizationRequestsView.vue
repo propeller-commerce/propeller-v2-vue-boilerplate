@@ -21,7 +21,7 @@ import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable'
-import { PurchaseAuthorizationRequests } from 'propeller-v2-vue-ui';
+import { PurchaseAuthorizationRequests } from '@propeller-commerce/propeller-v2-vue-ui';
 
 const router = useRouter()
 const authStore = useAuthStore()

@@ -6,7 +6,7 @@ import {
   OrderService,
   type GraphQLClientConfig,
 } from '@propeller-commerce/propeller-sdk-v2'
-import { createServices } from 'propeller-v2-vue-ui'
+import { createServices } from '@propeller-commerce/propeller-v2-vue-ui'
 
 // Use /api/graphql proxy in development (Vite proxy adds apikey server-side).
 // The SDK still needs the key for its internal config, but the proxy handles headers.

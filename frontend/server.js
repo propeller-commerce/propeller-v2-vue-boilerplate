@@ -541,7 +541,7 @@ async function createServer() {
     try {
       const cssPath = path.resolve(
         __dirname,
-        'node_modules/propeller-v2-vue-ui/dist/styles.css',
+        'node_modules/@propeller-commerce/propeller-v2-vue-ui/dist/styles.css',
       )
       if (fs.existsSync(cssPath)) {
         devInlineStyles = fs.readFileSync(cssPath, 'utf-8')

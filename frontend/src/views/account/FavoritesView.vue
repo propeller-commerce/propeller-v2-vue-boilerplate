@@ -20,7 +20,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { localizeHref } from '@/lib/config'
-import { FavoriteLists } from 'propeller-v2-vue-ui';
+import { FavoriteLists } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const router = useRouter()

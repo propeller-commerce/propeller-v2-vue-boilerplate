@@ -193,11 +193,11 @@ import { useLanguageStore } from "@/stores/language";
 import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { getLanguageString } from "propeller-v2-vue-ui";
+import { getLanguageString } from "@propeller-commerce/propeller-v2-vue-ui";
 import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
-import { stripHtml } from "propeller-v2-vue-ui/shared";
+import { stripHtml } from "@propeller-commerce/propeller-v2-vue-ui/shared";
 
-import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterJsonLd, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterJsonLd, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const breadcrumbsLabels = useTranslations('Breadcrumbs');

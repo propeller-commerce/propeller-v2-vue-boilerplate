@@ -71,7 +71,7 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient, productService } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { ProductSlider } from 'propeller-v2-vue-ui';
+import { ProductSlider } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const productSliderLabels = useTranslations('ProductSlider');

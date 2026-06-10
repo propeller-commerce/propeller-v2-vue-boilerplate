@@ -26,6 +26,6 @@ export default defineConfig({
   // so its `.vue` SFCs are compiled for the Node runtime rather than required
   // raw (Node can't `import` a `.vue` file).
   ssr: {
-    noExternal: ['propeller-v2-vue-ui'],
+    noExternal: ['@propeller-commerce/propeller-v2-vue-ui'],
   },
 })

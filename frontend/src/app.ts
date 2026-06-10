@@ -16,7 +16,7 @@ import { createHead as createServerHead } from '@unhead/vue/server'
 import type { RouterHistory } from 'vue-router'
 import App from './App.vue'
 import { createAppRouter } from './router'
-import { propellerVue } from 'propeller-v2-vue-ui'
+import { propellerVue } from '@propeller-commerce/propeller-v2-vue-ui'
 import { graphqlClient, services } from './lib/api'
 import { configuration } from './lib/config'
 

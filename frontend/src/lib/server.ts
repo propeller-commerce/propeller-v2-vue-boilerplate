@@ -45,7 +45,7 @@ import {
   SortOrder,
   ProductSearchableField,
 } from '@propeller-commerce/propeller-sdk-v2'
-import { createServices, toPlain, type Services, type MenuCategory } from 'propeller-v2-vue-ui/shared'
+import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-vue-ui/shared'
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,

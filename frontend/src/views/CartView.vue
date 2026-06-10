@@ -85,7 +85,7 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { restoreManagerCart } from "@/lib/cartHelpers";
-import { ActionCode, CartBonusItems, CartItem, CartSummary } from 'propeller-v2-vue-ui';
+import { ActionCode, CartBonusItems, CartItem, CartSummary } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const cartItemLabels = useTranslations('CartItem');

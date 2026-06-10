@@ -13,7 +13,7 @@
 import { useRouter } from 'vue-router'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
-import { ForgotPassword } from 'propeller-v2-vue-ui';
+import { ForgotPassword } from '@propeller-commerce/propeller-v2-vue-ui';
 import { localizeHref } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable';
 

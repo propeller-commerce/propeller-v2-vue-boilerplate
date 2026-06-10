@@ -25,10 +25,10 @@ import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import { mergeAnonymousCart } from 'propeller-v2-vue-ui'
-import { useCart } from 'propeller-v2-vue-ui'
-import type { AnyUser } from 'propeller-v2-vue-ui'
-import { LoginForm } from 'propeller-v2-vue-ui';
+import { mergeAnonymousCart } from '@propeller-commerce/propeller-v2-vue-ui'
+import { useCart } from '@propeller-commerce/propeller-v2-vue-ui'
+import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
+import { LoginForm } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const router = useRouter()

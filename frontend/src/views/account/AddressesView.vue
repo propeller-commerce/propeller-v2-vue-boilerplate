@@ -116,10 +116,10 @@ import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
-import { useAddress } from 'propeller-v2-vue-ui'
-import type { AddressInput } from 'propeller-v2-vue-ui'
-import type { AnyUser } from 'propeller-v2-vue-ui'
-import { AddressCard } from 'propeller-v2-vue-ui';
+import { useAddress } from '@propeller-commerce/propeller-v2-vue-ui'
+import type { AddressInput } from '@propeller-commerce/propeller-v2-vue-ui'
+import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
+import { AddressCard } from '@propeller-commerce/propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';
 

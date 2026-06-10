@@ -16,7 +16,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { MenuCategory } from 'propeller-v2-vue-ui/shared'
+import type { MenuCategory } from '@propeller-commerce/propeller-v2-vue-ui/shared'
 
 export const useMenuStore = defineStore('menu', () => {
   /** Pre-fetched category tree. `null` until the SSR prefetch runs. */

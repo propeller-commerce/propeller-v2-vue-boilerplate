@@ -263,13 +263,13 @@ import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
 import { useMenuStore } from '@/stores/menu'
 import { graphqlClient } from '@/lib/api'
-import { useCart } from 'propeller-v2-vue-ui'
-import type { AnyUser } from 'propeller-v2-vue-ui'
+import { useCart } from '@propeller-commerce/propeller-v2-vue-ui'
+import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
 import { configuration, localizeHref, stripLanguagePrefix, detectLanguageFromPath } from '@/lib/config'
 import { restoreManagerCart } from '@/lib/cartHelpers'
-import { mergeAnonymousCart, fetchActiveCart as fetchActiveCartShared, initCart } from 'propeller-v2-vue-ui'
+import { mergeAnonymousCart, fetchActiveCart as fetchActiveCartShared, initCart } from '@propeller-commerce/propeller-v2-vue-ui'
 
-import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from 'propeller-v2-vue-ui';
+import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const companySwitcherLabels = useTranslations('CompanySwitcher');
