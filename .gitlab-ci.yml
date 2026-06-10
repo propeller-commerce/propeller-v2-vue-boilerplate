@@ -108,7 +108,7 @@ deploy:prod:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
 
-# ── Stage: mirror ───────────────────────────────────────────────────────────
+# -- Stage: mirror ------------------------------------------------------------
 # One-way, SCRUBBED mirror of develop/master to the PUBLIC GitHub repo.
 #
 # This boilerplate tracks private development files (Claude config/skills,
@@ -135,17 +135,16 @@ mirror_to_github:
     - git config --global user.name "GitLab CI"
     - git remote add github https://${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-vue-boilerplate.git || true
     - git fetch origin --unshallow || git fetch origin || true
-    # ── scrub private paths into an ephemeral commit on the runner only ──
     - git rm -r --cached --ignore-unmatch .claude CLAUDE.md frontend/CLAUDE.md memory Taskfile.yml >/dev/null 2>&1 || true
-    - git commit -m "chore(mirror): strip private dev files for public mirror" --no-verify || echo "nothing to scrub"
+    - 'git commit -m "chore(mirror): strip private dev files for public mirror" --no-verify || echo "nothing to scrub"'
     - git push --no-thin github HEAD:refs/heads/master --force
     - git push --no-thin github --tags --force
   when: on_success
   allow_failure: false
 
-# ── Stage: release ──────────────────────────────────────────────────────────
+# -- Stage: release ------------------------------------------------------------
 # Automatic GitHub Release, cut on the mirrored commit. Idempotent +
-# Unreleased-gated. propeller-vue has no root package.json — the version lives
+# Unreleased-gated. propeller-vue has no root package.json - the version lives
 # in frontend/package.json; the CHANGELOG lives at the repo root. Reuses
 # GITHUB_TOKEN.
 release_to_github:
@@ -170,12 +169,12 @@ release_to_github:
     - git remote add github https://${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-vue-boilerplate.git || true
     - |
       if git ls-remote --tags github "refs/tags/${TAG}" | grep -q "${TAG}"; then
-        echo "Tag ${TAG} already on GitHub — release already cut, nothing to do.";
+        echo "Tag ${TAG} already on GitHub - release already cut, nothing to do.";
         exit 0;
       fi
     - |
       if grep -Eiq "^##[[:space:]]*\[${VERSION}\][^\n]*unreleased" CHANGELOG.md; then
-        echo "CHANGELOG marks ${VERSION} as Unreleased — skipping release per policy.";
+        echo "CHANGELOG marks ${VERSION} as Unreleased - skipping release per policy.";
         exit 0;
       fi
     - |
