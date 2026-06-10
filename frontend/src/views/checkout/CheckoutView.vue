@@ -102,6 +102,7 @@
                 :enableSetDefault="false"
                 :onEdit="(addr) => handleAddressSubmit(addr, 'INVOICE', false)"
                 :countries="COUNTRIES"
+                :labels="addressCardLabels"
               />
               <template v-else>
                 <AddressCard
@@ -118,6 +119,7 @@
                   "
                   :onEdit="(addr) => handleAddressSubmit(addr, 'INVOICE')"
                   :countries="COUNTRIES"
+                  :labels="addressCardLabels"
                 />
                 <label
                   v-if="!authStore.isAuthenticated"
@@ -184,6 +186,7 @@
                     (addr) => handleAddressSubmit(addr, 'DELIVERY', false)
                   "
                   :countries="COUNTRIES"
+                  :labels="addressCardLabels"
                 />
                 <div class="flex items-center gap-4">
                   <button
@@ -200,13 +203,12 @@
                   </button>
                   <AddressSelector
                     v-if="authStore.isAuthenticated"
-                    :user="authStore.user as Contact | Customer | null"
-                    :companyId="companyStore.companyId ?? undefined"
-                    :addressType="Enums.AddressType.delivery"
+                    :addressType="AddressType.delivery"
                     :onAddressSelected="
                       (addr) => handleAddressSubmit(addr, 'DELIVERY', true)
                     "
                     :countries="COUNTRIES"
+                    :labels="addressSelectorLabels"
                     class="ml-auto"
                   />
                 </div>
@@ -226,6 +228,7 @@
                   "
                   :onEdit="(addr) => handleAddressSubmit(addr, 'DELIVERY')"
                   :countries="COUNTRIES"
+                  :labels="addressCardLabels"
                 />
               </template>
             </div>
@@ -264,8 +267,8 @@
                 <CartPaymethods
                   v-if="cart"
                   :cart="cart as Cart"
-                  :user="authStore.user as Contact | Customer"
                   :onPaymethodSelect="(pm) => (selectedPayment = pm.code)"
+                  :labels="cartPaymethodsLabels"
                 />
               </div>
               <!-- Carrier -->
@@ -274,7 +277,7 @@
                   Carrier
                 </h3>
                 <p
-                  v-if="step3Submitted && !selectedCarrier"
+                  v-if="step3Submitted && ((cart as any)?.carriers?.length ?? 0) > 0 && !selectedCarrier"
                   class="text-sm text-destructive"
                 >
                   Please select a carrier
@@ -284,6 +287,7 @@
                   :cart="cart as Cart"
                   :showPrice="false"
                   :onCarrierSelect="(c) => (selectedCarrier = c.name)"
+                  :labels="cartCarriersLabels"
                 />
               </div>
               <!-- Delivery Date -->
@@ -305,6 +309,7 @@
                   :showUpcomingDays="3"
                   :skipWeekends="true"
                   :showDatePicker="true"
+                  :labels="deliveryDateLabels"
                 />
               </div>
               <div class="flex gap-4 pt-4">
@@ -396,7 +401,6 @@
               <template v-else>
                 <CartOverview
                   v-if="cart"
-                  :graphqlClient="graphqlClient"
                   :cart="cart as Cart"
                   :showTermsAndConditions="true"
                   :showReference="true"
@@ -407,6 +411,7 @@
                     (_cart, reference, notes) =>
                       handlePlaceOrder(reference, notes)
                   "
+                  :labels="cartOverviewLabels"
                 />
               </template>
             </div>
@@ -431,6 +436,7 @@
                 :showPrice="true"
                 :showStockComponent="true"
                 :isChildItem="true"
+                :labels="itemsOverviewLabels"
               />
             </div>
             <div
@@ -441,13 +447,11 @@
                 :cart="cart as Cart"
                 title="Order Summary"
                 :showCheckoutButton="false"
-                :graphqlClient="graphqlClient"
-                :user="authStore.user as Contact | Customer | undefined"
-                :companyId="companyStore.companyId ?? undefined"
                 :afterRequestAuthorization="handleAfterRequestAuthorization"
                 :onError="
                   (err) => console.error('Authorization request failed:', err)
                 "
+                :labels="cartSummaryLabels"
               />
             </div>
           </div>
@@ -460,8 +464,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Enums } from "propeller-sdk-v2";
-import type { Cart, Contact, Customer, CartAddress } from "propeller-sdk-v2";
+import type { Cart, Contact, Customer, CartAddress } from "@propeller-commerce/propeller-sdk-v2";
+import { AddressType } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { usePriceStore } from "@/stores/price";
@@ -469,18 +473,22 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { useCheckout } from "@/composables/useCheckout";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
+import { useTranslations } from "@/lib/i18n/composable";
+import { restoreManagerCart } from "@/lib/cartHelpers";
+import { useCheckout } from "propeller-v2-vue-ui";
+import type { AnyUser } from "propeller-v2-vue-ui";
 
-import CartPaymethods from "@/components/propeller/CartPaymethods.vue";
-import CartCarriers from "@/components/propeller/CartCarriers.vue";
-import DeliveryDate from "@/components/propeller/DeliveryDate.vue";
-import CartSummary from "@/components/propeller/CartSummary.vue";
-import CartOverview from "@/components/propeller/CartOverview.vue";
-import ItemsOverview from "@/components/propeller/ItemsOverview.vue";
-import AddressCard from "@/components/propeller/AddressCard.vue";
-import AddressSelector from "@/components/propeller/AddressSelector.vue";
+import { AddressCard, AddressSelector, CartCarriers, CartOverview, CartPaymethods, CartSummary, DeliveryDate, ItemsOverview } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
+
+const addressCardLabels = useTranslations('AddressCard');
+const addressSelectorLabels = useTranslations('AddressSelector');
+const cartCarriersLabels = useTranslations('CartCarriers');
+const cartOverviewLabels = useTranslations('CartOverview');
+const cartPaymethodsLabels = useTranslations('CartPaymethods');
+const cartSummaryLabels = useTranslations('CartSummary');
+const deliveryDateLabels = useTranslations('DeliveryDate');
+const itemsOverviewLabels = useTranslations('ItemsOverview');
 
 const router = useRouter();
 const route = useRoute();
@@ -629,10 +637,81 @@ async function handleAddressSubmit(
   }
 }
 
+// First available delivery date — tomorrow, skipping weekends. Mirrors the
+// tile-0 logic inside the `DeliveryDate` component (`computeUpcomingDates(1,
+// true)` + `toApiDate`) so an auto-advance picks the same date the user would
+// have seen highlighted on the quick-pick row. ISO `YYYY-MM-DDT00:00:00Z`.
+function computeFirstDeliveryDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}T00:00:00Z`;
+}
+
+// One-shot guard for the step-3 auto-advance: we only auto-skip step 3 the
+// FIRST time we enter it for a given cart. Otherwise clicking Back from step 4
+// (or expanding the step-3 header) would immediately push the user right back
+// to step 4, making step 3 unreachable in single-option carts.
+const autoAdvancedCartId = ref<string | null>(null);
+
+// Auto-advance step 3 → 4 when the cart offers only ONE payment method and at
+// most ONE carrier. Preselects payment + carrier (if any) + the first available
+// delivery date, persists via `updateCartSettings`, then jumps to step 4. Falls
+// through to the normal step-3 UI when a precondition isn't met (no payments
+// yet, multi-option, quote mode).
+watch(
+  [currentStep, cart, isQuoteMode],
+  async () => {
+    if (currentStep.value !== 3) return;
+    if (isQuoteMode.value) return;
+    const c = cart.value as any;
+    if (!c?.cartId) return;
+    if (autoAdvancedCartId.value === c.cartId) return;
+    const payMethods = (c.payMethods ?? []) as { code?: string }[];
+    const carriers = (c.carriers ?? []) as { name?: string }[];
+    if (payMethods.length !== 1) return;
+    if (carriers.length > 1) return;
+    const onlyPayment = payMethods[0]?.code;
+    const onlyCarrier = carriers[0]?.name;
+    if (!onlyPayment) return;
+    const requestDate =
+      (c.postageData?.requestDate as string | undefined) || computeFirstDeliveryDate();
+    autoAdvancedCartId.value = c.cartId;
+    try {
+      const updatedCart = await updateCartSettings(c.cartId, {
+        paymentMethod: onlyPayment,
+        ...(onlyCarrier ? { carrier: onlyCarrier } : {}),
+        requestDate,
+      });
+      if (updatedCart) {
+        cartStore.setCart(updatedCart);
+        selectedPayment.value = onlyPayment;
+        selectedCarrier.value = onlyCarrier ?? "";
+        selectedDeliveryDate.value = requestDate;
+        currentStep.value = 4;
+      }
+    } catch (e) {
+      // On failure, release the one-shot guard so the user can try Continue
+      // manually. The normal step-3 UI is still rendered.
+      autoAdvancedCartId.value = null;
+      console.error("[checkout] auto-advance step 3 failed:", e);
+    }
+  },
+  { immediate: true },
+);
+
 async function handleStep3Continue() {
+  // A carrier is only required when the cart actually offers one. Some carts
+  // (e.g. digital-only or business-rule configs) return no carriers; in that
+  // case CartCarriers shows "No carriers available." and never fires a
+  // selection, so requiring one here would dead-end the checkout.
+  const hasCarriers = ((cart.value as any)?.carriers?.length ?? 0) > 0;
   if (
     !selectedPayment.value ||
-    !selectedCarrier.value ||
+    (hasCarriers && !selectedCarrier.value) ||
     !selectedDeliveryDate.value
   ) {
     step3Submitted.value = true;
@@ -640,7 +719,7 @@ async function handleStep3Continue() {
   }
   const updatedCart = await updateCartSettings((cart.value as any).cartId, {
     paymentMethod: selectedPayment.value,
-    carrier: selectedCarrier.value,
+    ...(selectedCarrier.value ? { carrier: selectedCarrier.value } : {}),
     requestDate: selectedDeliveryDate.value,
   });
   if (updatedCart) {
@@ -657,15 +736,17 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
     notes,
   });
 
-  if (result.success && result.orderId) {
-    cartStore.setCart(null);
+  if (result.ok) {
+    // Restore the manager's parked cart if they were acting on a requester's
+    // authorization cart; otherwise clear.
+    cartStore.setCart(restoreManagerCart());
     const thankYouUrl = isQuoteMode.value
       ? localizeHref(
-          `/checkout/thank-you/${result.orderId}`,
+          `/checkout/thank-you/${result.data.orderId}`,
           languageStore.language,
         ) + "?mode=quote"
       : localizeHref(
-          `/checkout/thank-you/${result.orderId}`,
+          `/checkout/thank-you/${result.data.orderId}`,
           languageStore.language,
         );
     router.push(thankYouUrl);
@@ -679,7 +760,9 @@ function openTermsAndConditions() {
 }
 
 function handleAfterRequestAuthorization(updatedCart: Cart) {
-  cartStore.setCart(null);
+  // If a manager parked their own cart to act on this request, hand it back;
+  // otherwise clear.
+  cartStore.setCart(restoreManagerCart());
   router.push(
     localizeHref(
       `/authorization-request-sent/${updatedCart.cartId}`,

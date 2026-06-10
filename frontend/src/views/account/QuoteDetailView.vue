@@ -19,20 +19,12 @@
       <div class="h-4 bg-slate-100 rounded w-1/2 mx-auto animate-pulse"></div>
     </div>
 
-    <div
+    <AccessErrorView
       v-else-if="error"
-      class="p-8 text-center border rounded-[var(--radius-container)]"
-    >
-      <p class="text-destructive mb-4">{{ error }}</p>
-      <button
-        @click="
-          router.push(localizeHref('/account/quotes', languageStore.language))
-        "
-        class="text-primary hover:underline"
-      >
-        Return to Quotes
-      </button>
-    </div>
+      :kind="classifyApiError(error)"
+      :backHref="errorBackHref"
+      :backLabel="errorBackLabel"
+    />
 
     <div v-else-if="quote" class="space-y-8">
       <!-- Quote Summary + Actions -->
@@ -40,9 +32,7 @@
         <OrderSummary
           :order="quote"
           :countries="COUNTRIES"
-          :labels="{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
-          :includeTax="priceStore.includeTax"
-          :language="languageStore.language"
+          :labels="{ ...orderSummaryLabels, orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -56,9 +46,9 @@
         />
         <div class="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
           <QuoteActions
-            :graphqlClient="graphqlClient"
             :quote="quote as Order"
             :afterAccept="handleAfterAccept"
+            :labels="quoteActionsLabels"
             :showTermsAndConditions="true"
             :onTermsAndConditionsClick="
               () => window.open(localizeHref('/terms-conditions', languageStore.language), '_blank')
@@ -116,6 +106,7 @@
               :key="item.id"
               :orderItem="item"
               :childItems="childMap.get(item.id) || []"
+              :labels="orderItemCardLabels"
               :titleLinkable="true"
               :showImage="true"
               :showSku="true"
@@ -127,76 +118,12 @@
         </div>
 
         <!-- Bonus Items -->
-        <div v-if="bonusItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-            Bonus Items
-          </h3>
-          <div
-            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-          >
-            <table class="w-full">
-              <thead class="bg-surface-hover border-b">
-                <tr>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Product
-                  </th>
-                  <th
-                    class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Quantity
-                  </th>
-                  <th
-                    class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Price
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <OrderItemCard
-                  v-for="item in bonusItems"
-                  :key="item.id"
-                  :orderItem="item"
-                  :titleLinkable="false"
-                  :showImage="true"
-                  :showSku="true"
-                  :showQuantity="true"
-                  :showPrice="true"
-                />
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Surcharges -->
-        <div v-if="surchargeItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-            Surcharges
-          </h3>
-          <div
-            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-          >
-            <table class="w-full">
-              <tbody>
-                <OrderItemCard
-                  v-for="item in surchargeItems"
-                  :key="item.id"
-                  :orderItem="item"
-                  :titleLinkable="false"
-                  :showImage="false"
-                  :showSku="false"
-                />
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <OrderBonusItems :order="quote" :labels="orderBonusItemsLabels" />
       </div>
 
       <!-- Totals -->
       <div class="flex flex-col md:flex-row justify-end gap-8 pt-6 border-t">
-        <OrderTotals :order="quote" />
+        <OrderTotals :order="quote" :labels="orderTotalsLabels" />
       </div>
     </div>
 
@@ -245,13 +172,13 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import type { Order } from "propeller-sdk-v2";
-import { useOrders } from "@/composables/useOrders";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
-import OrderSummary from "@/components/propeller/OrderSummary.vue";
-import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
-import QuoteActions from "@/components/propeller/QuoteActions.vue";
-import OrderTotals from "@/components/propeller/OrderTotals.vue";
+import { useTranslations } from "@/lib/i18n/composable";
+import AccessErrorView from "@/components/access/AccessErrorView.vue";
+import { classifyApiError } from "@/lib/errors";
+import type { Order } from "@propeller-commerce/propeller-sdk-v2";
+import { useOrders } from "propeller-v2-vue-ui";
+import type { AnyUser } from "propeller-v2-vue-ui";
+import { OrderBonusItems, OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
@@ -260,6 +187,25 @@ const router = useRouter();
 const authStore = useAuthStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
+
+const orderSummaryLabels = useTranslations('OrderSummary');
+const quoteActionsLabels = useTranslations('QuoteActions');
+const orderItemCardLabels = useTranslations('OrderItemCard');
+const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+const orderTotalsLabels = useTranslations('OrderTotals');
+const errorPagesLabels = useTranslations('ErrorPages');
+
+// The router maps both /account/quotes/:id and /account/quote-requests/:id
+// to this view. Detect which list to send the user back to on error.
+const isQuoteRequest = computed(() => route.name === 'account-quote-request-detail');
+const errorBackHref = computed(() =>
+  isQuoteRequest.value ? '/account/quote-requests' : '/account/quotes'
+);
+const errorBackLabel = computed(() =>
+  isQuoteRequest.value
+    ? errorPagesLabels.value.backToQuoteRequests
+    : errorPagesLabels.value.backToQuotes
+);
 
 const quoteId = route.params.id as string;
 
@@ -297,16 +243,6 @@ const childMap = computed(() => {
     });
   return map;
 });
-
-const bonusItems = computed(() =>
-  (quote.value?.items || []).filter(
-    (i: any) => i.class === "product" && i.isBonus === "Y",
-  ),
-);
-
-const surchargeItems = computed(() =>
-  (quote.value?.items || []).filter((i: any) => i.class === "surcharge"),
-);
 
 function handleAfterAccept(acceptedQuote: any) {
   router.push(

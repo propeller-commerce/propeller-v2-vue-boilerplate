@@ -5,9 +5,7 @@
     </div>
     <FavoriteLists
       v-if="authStore.user"
-      :graphqlClient="graphqlClient"
-      :user="authStore.user"
-      :language="languageStore.language"
+      :labels="favoriteListsLabels"
       :showActions="true"
       :allowFavoriteListCreate="true"
       :onListChanged="() => authStore.refreshUser()"
@@ -22,9 +20,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { localizeHref } from '@/lib/config'
-import FavoriteLists from '@/components/propeller/FavoriteLists.vue'
+import { FavoriteLists } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 
 const router = useRouter()
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
+const favoriteListsLabels = useTranslations('FavoriteLists')
 </script>

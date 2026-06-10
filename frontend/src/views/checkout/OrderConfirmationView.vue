@@ -14,17 +14,11 @@
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="container mx-auto px-4 text-center">
-      <h2 class="text-2xl font-bold text-destructive mb-4">
-        Oops! Something went wrong
-      </h2>
-      <p class="text-muted-foreground mb-6">{{ error }}</p>
-      <router-link
-        :to="localizeHref('/', languageStore.language)"
-        class="px-6 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/80"
-        >Return to Home</router-link
-      >
-    </div>
+    <AccessErrorView
+      v-else-if="error"
+      :kind="classifyApiError(error)"
+      class="container mx-auto px-4"
+    />
 
     <!-- Success -->
     <div v-else class="container mx-auto px-4">
@@ -83,6 +77,7 @@
               :showOrderTotal="true"
               :showDeliveryInfo="true"
               :showRemarks="true"
+              :labels="orderSummaryLabels"
             />
           </div>
 
@@ -126,76 +121,13 @@
                   :showSku="true"
                   :showQuantity="true"
                   :showPrice="true"
+                  :labels="orderItemCardLabels"
                 />
               </table>
             </div>
 
             <!-- Bonus Items -->
-            <div v-if="bonusItems.length > 0" class="mb-8">
-              <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-                Bonus Items
-              </h3>
-              <div
-                class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-              >
-                <table class="w-full">
-                  <thead class="bg-surface-hover border-b">
-                    <tr>
-                      <th
-                        class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase"
-                      >
-                        Product
-                      </th>
-                      <th
-                        class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase"
-                      >
-                        Quantity
-                      </th>
-                      <th
-                        class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase"
-                      >
-                        Price
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <OrderItemCard
-                      v-for="item in bonusItems"
-                      :key="item.id"
-                      :orderItem="item"
-                      :titleLinkable="false"
-                      :showImage="true"
-                      :showSku="true"
-                      :showQuantity="true"
-                      :showPrice="true"
-                    />
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Surcharges -->
-            <div v-if="surchargeItems.length > 0" class="mb-8">
-              <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-                Surcharges
-              </h3>
-              <div
-                class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-              >
-                <table class="w-full">
-                  <tbody>
-                    <OrderItemCard
-                      v-for="item in surchargeItems"
-                      :key="item.id"
-                      :orderItem="item"
-                      :titleLinkable="false"
-                      :showImage="false"
-                      :showSku="false"
-                    />
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <OrderBonusItems :order="order" :labels="orderBonusItemsLabels" />
           </div>
 
           <!-- Actions -->
@@ -234,16 +166,22 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import type { OrderItem } from "propeller-sdk-v2";
+import type { OrderItem } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { useOrders } from "@/composables/useOrders";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
-import OrderSummary from "@/components/propeller/OrderSummary.vue";
-import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
+import AccessErrorView from "@/components/access/AccessErrorView.vue";
+import { classifyApiError } from "@/lib/errors";
+import { useOrders } from "propeller-v2-vue-ui";
+import type { AnyUser } from "propeller-v2-vue-ui";
+import { OrderBonusItems, OrderItemCard, OrderSummary } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
+
+const orderSummaryLabels = useTranslations('OrderSummary');
+const orderItemCardLabels = useTranslations('OrderItemCard');
+const orderBonusItemsLabels = useTranslations('OrderBonusItems');
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -287,18 +225,6 @@ const childMap = computed<Map<number, OrderItem[]>>(() => {
     });
   return map;
 });
-
-const bonusItems = computed<OrderItem[]>(
-  () =>
-    order.value?.items?.filter(
-      (i: OrderItem) => i.class === "product" && i.isBonus === "Y",
-    ) || [],
-);
-
-const surchargeItems = computed<OrderItem[]>(
-  () =>
-    order.value?.items?.filter((i: OrderItem) => i.class === "surcharge") || [],
-);
 
 onMounted(async () => {
   if (!orderId.value) return;

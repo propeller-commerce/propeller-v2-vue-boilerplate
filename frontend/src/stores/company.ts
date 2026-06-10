@@ -1,17 +1,37 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Company } from 'propeller-sdk-v2'
-import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
+import type { Company } from '@propeller-commerce/propeller-sdk-v2'
+import { isBrowser, safeStorage } from '@/lib/ssr'
 
 const STORAGE_KEY = 'selected_company'
+/**
+ * Non-httpOnly cookie shadowing the localStorage selection so server-side
+ * fetchers (`src/lib/server.ts`) can scope queries by the active company on
+ * the very first SSR render — without it the server would always use the
+ * user's default company while the client uses the picked one, silently
+ * desynchronising prices, assortment, and filter facets.
+ */
+const COOKIE_KEY = 'selected_company_id'
 
 function loadCompanyFromStorage(): Company | null {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? (stripLeadingUnderscores(JSON.parse(stored)) as Company) : null
+    const stored = safeStorage.getItem(STORAGE_KEY)
+    return stored ? (JSON.parse(stored) as Company) : null
   } catch {
     return null
   }
+}
+
+function writeCompanyCookie(companyId: number | undefined | null): void {
+  if (!isBrowser) return
+  if (companyId === undefined || companyId === null) {
+    document.cookie = `${COOKIE_KEY}=; path=/; max-age=0; samesite=lax`
+    return
+  }
+  // 30-day persistence; matches typical session cookie lifetime — long enough
+  // to survive a tab close, short enough that an abandoned device eventually
+  // drops the selection.
+  document.cookie = `${COOKIE_KEY}=${companyId}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`
 }
 
 export const useCompanyStore = defineStore('company', () => {
@@ -21,23 +41,88 @@ export const useCompanyStore = defineStore('company', () => {
 
   function setSelectedCompany(company: Company) {
     selectedCompany.value = company
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(company))
-    window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }))
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(company))
+    writeCompanyCookie(company.companyId)
+    if (isBrowser) {
+      window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }))
+    }
   }
 
   function clearSelectedCompany() {
     selectedCompany.value = null
-    localStorage.removeItem(STORAGE_KEY)
+    safeStorage.removeItem(STORAGE_KEY)
+    writeCompanyCookie(undefined)
   }
 
-  // Cross-tab sync
-  window.addEventListener('companySwitched', (e) => {
-    const company = (e as CustomEvent<Company>).detail
+  // Client-only re-hydration after SSR state transfer. The server can't read
+  // localStorage, so this store renders with `selectedCompany: null` and that
+  // null is what `entry-client.ts` restores wholesale (`pinia.state.value =
+  // initialState`) — clobbering the value the setup initializer read from
+  // localStorage. Without this, a contact's selected company (and therefore the
+  // dashboard's addresses + company info, which read `activeCompany`) vanishes
+  // on every refresh. localStorage is the source of truth for the *selected*
+  // company; the server seeds the default via `hydrateFromServer` below.
+  function hydrateFromStorage() {
+    if (!isBrowser) return
+    const stored = loadCompanyFromStorage()
+    if (stored) {
+      selectedCompany.value = stored
+      // Cookie may be missing (new device, cookie cleared while localStorage
+      // survived) while localStorage carries the last pick — without this
+      // sync the next SSR render would scope to the user's default company
+      // instead of what the UI is showing.
+      writeCompanyCookie(stored.companyId)
+    }
+  }
+
+  // SSR seed — set the in-memory ref only (no storage write), so the value
+  // serializes into `__INITIAL_STATE__` and the server render already has the
+  // active company. Called from `entry-server.ts` with the viewer's default
+  // company when no explicit selection exists yet.
+  function hydrateFromServer(company: Company | null) {
     selectedCompany.value = company
-  })
+  }
 
-  // Clear on logout
-  window.addEventListener('userLoggedOut', () => clearSelectedCompany())
+  // Re-point the selected company at the FRESH copy carried on a just-refreshed
+  // user. `selectedCompany` holds its own snapshot of the company (the dashboard
+  // reads addresses + company info off it, not off `user.company`), so after an
+  // address mutation + `refreshUser` it would otherwise stay stale — old
+  // addresses on the dashboard. Prefer the fresh copy of the current selection
+  // (multi-company contacts keep their choice); if the current selection isn't
+  // one of THIS user's companies — e.g. a stale `selected_company` from a
+  // previously logged-in identity — fall back to their default, and clear it if
+  // there's none. Leaving a non-member company set makes `fetchActiveCart`
+  // filter `carts` by it → "Unauthorized use of companyIds". Reconcile
+  // localStorage too so a reload doesn't resurrect the stale company.
+  function syncFromUser(user: unknown): void {
+    const u = user as { company?: Company; companies?: { items?: Company[] } } | null
+    if (!u) return
+    const targetId = selectedCompany.value?.companyId
+    const candidates: Company[] = [
+      ...(u.companies?.items ?? []),
+      ...(u.company ? [u.company] : []),
+    ]
+    const next =
+      (targetId != null && candidates.find((c) => c?.companyId === targetId)) ||
+      u.company ||
+      null
+    selectedCompany.value = next
+    if (next) safeStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    else safeStorage.removeItem(STORAGE_KEY)
+    writeCompanyCookie(next?.companyId)
+  }
 
-  return { selectedCompany, companyId, setSelectedCompany, clearSelectedCompany }
+  // Cross-tab sync + logout reset — browser-only.
+  if (isBrowser) {
+    window.addEventListener('companySwitched', (e) => {
+      const company = (e as CustomEvent<Company>).detail
+      selectedCompany.value = company
+    })
+    window.addEventListener('userLoggedOut', () => clearSelectedCompany())
+  }
+
+  return {
+    selectedCompany, companyId,
+    setSelectedCompany, clearSelectedCompany, hydrateFromStorage, hydrateFromServer, syncFromUser,
+  }
 })

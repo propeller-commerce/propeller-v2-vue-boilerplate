@@ -1,26 +1,31 @@
 <template>
   <div class="py-8 bg-background">
     <div class="container-width">
+      <!-- schema.org ItemList of the SSR first-page products. -->
+      <ItemListJsonLd
+        v-if="jsonLdFirstPage.length"
+        :products="jsonLdFirstPage"
+        :context="jsonLdContext"
+      />
       <Breadcrumbs
         v-if="category"
         :categoryPath="(category as any).categoryPath || []"
         :currentCategory="category as Category"
-        :language="languageStore.language"
-        :configuration="configuration"
         :showCurrent="true"
+        :labels="breadcrumbsLabels"
       />
 
-      <GridTitle
-        :title="getCategoryName()"
-        :language="languageStore.language"
-      />
+      <GridTitle :title="getCategoryName()" :labels="gridTitleLabels" />
 
-      <CategoryDescription
-        v-if="category"
-        :category="category as Category"
-        :language="languageStore.language"
-      />
+      <CategoryDescription v-if="category" :category="category as Category" />
 
+      <!-- Hybrid SSR island. The grid is now server-rendered too — when a
+           seed is available we hand the items array to <ProductGrid> via the
+           controlled `products` prop and the component skips its internal
+           fetch. The first paint shows real product cards. As soon as the
+           user changes a filter/sort/page `usingServerData` flips to false,
+           we drop the prop, and the grid resumes its own fetching. Matches
+           propeller-next's CategoryIsland posture exactly. -->
       <div class="flex flex-col lg:flex-row gap-8 mt-4">
         <!-- Filters Sidebar -->
         <aside class="w-full lg:w-64 flex-shrink-0">
@@ -28,7 +33,6 @@
             :filters="gridFilters as AttributeFilter[]"
             :priceMin="priceBoundsMin"
             :priceMax="priceBoundsMax"
-            :language="languageStore.language"
             :onFilterChange="handleFilterChange"
             :onPriceChange="handlePriceChange"
             :onClearFilters="handleClearFilters"
@@ -38,9 +42,8 @@
             :activePriceMax="maxPrice"
             :isLoading="filtersLoading"
             :isMobile="false"
-            portalMode="open"
-            :user="authStore.user as Contact | Customer"
             :collapsed="true"
+            :labels="gridFiltersLabels"
           />
         </aside>
 
@@ -66,17 +69,13 @@
               :onFilterRemove="handleFilterRemove"
               :onPriceFilterRemove="handlePriceFilterRemove"
               :onClearFilters="handleClearFilters"
+              :labels="gridToolbarLabels"
             />
           </div>
 
           <ProductGrid
-            :graphqlClient="graphqlClient"
+            :products="controlledProducts"
             :categoryId="categoryId"
-            :user="authStore.user as Contact | Customer"
-            :companyId="companyStore.selectedCompany?.companyId"
-            :configuration="configuration"
-            :language="languageStore.language"
-            :includeTax="priceStore.includeTax"
             :columns="viewMode === 'list' ? 1 : 3"
             :cartId="cartStore.cartId || undefined"
             :createCart="true"
@@ -131,15 +130,21 @@
                   localizeHref('/checkout?mode=quote', languageStore.language),
                 )
             "
+            :labels="productGridLabels"
+            :productCardLabels="productCardLabels"
+            :clusterCardLabels="clusterCardLabels"
+            :stockLabels="itemStockLabels"
+            :addToCartLabels="addToCartLabels"
+            :priceLabels="productPriceLabels"
           />
-
+          
           <div class="flex justify-center gap-2 mt-12">
             <GridPagination
               v-if="productsResponse"
               :products="productsResponse as ProductsResponse"
-              :language="languageStore.language"
               :onPageChange="handleGridPaginationPageChange"
               variant="full"
+              :labels="gridPaginationLabels"
             />
           </div>
         </div>
@@ -149,35 +154,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  Enums,
-  type Category,
-  type AttributeFilter,
-  type ProductsResponse,
-  type ProductTextFilterInput,
-  Contact,
-  Customer,
-  Cart,
-  Product,
-  Cluster,
-} from "propeller-sdk-v2";
+import { useHead } from "@unhead/vue";
+import { type AttributeFilter, AttributeType, Cart, type Category, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
+import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { resolveSeoTitle, resolveSeoDescription, resolveSeoKeywords, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
 
-import Breadcrumbs from "@/components/propeller/Breadcrumbs.vue";
-import GridFilters from "@/components/propeller/GridFilters.vue";
-import GridTitle from "@/components/propeller/GridTitle.vue";
-import GridToolbar from "@/components/propeller/GridToolbar.vue";
-import GridPagination from "@/components/propeller/GridPagination.vue";
-import ProductGrid from "@/components/propeller/ProductGrid.vue";
-import CategoryDescription from "@/components/propeller/CategoryDescription.vue";
+import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute();
 const router = useRouter();
@@ -187,15 +179,88 @@ const companyStore = useCompanyStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
 
+const breadcrumbsLabels = useTranslations('Breadcrumbs');
+const gridTitleLabels = useTranslations('GridTitle');
+const gridFiltersLabels = useTranslations('GridFilters');
+const gridToolbarLabels = useTranslations('GridToolbar');
+const productGridLabels = useTranslations('ProductGrid');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
+const itemStockLabels = useTranslations('ItemStock');
+const addToCartLabels = useTranslations('AddToCart');
+const productPriceLabels = useTranslations('ProductPrice');
+const gridPaginationLabels = useTranslations('GridPagination');
+
 // Derived from route — ProductGrid fetches internally using this
 const categoryId = computed(() => parseInt(route.params.id as string));
 
-// Populated via ProductGrid callbacks
-const category = ref<Category | null>(null);
-const productsResponse = ref<ProductsResponse | null>(null);
-const gridFilters = ref<AttributeFilter[]>([]);
-const priceBoundsMin = ref<number | undefined>();
-const priceBoundsMax = ref<number | undefined>();
+// SSR seed: the route's `ssrPrefetch` loader fetched the full Category (incl.
+// its first product page + filter facets) and stashed it in the ssrCatalog
+// store. Consuming it here means the breadcrumbs/title/description shell —
+// and the <head> tags below — server-render real content for SEO.
+const ssrCatalog = useSsrCatalogStore();
+// peekSeed (not takeSeed): the SSR render and the client's hydration render
+// must read the same value, or the resulting DOM differs and Vue warns about
+// a hydration mismatch. The post-hydration consumeSeed call below clears the
+// entry so a later client-side navigation back to this route fetches fresh.
+const seed = ssrCatalog.peekSeed(route.fullPath);
+const seededCategory =
+  seed?.kind === "category" ? (seed.data as Category) : null;
+
+// `category` starts from the SSR seed so it is non-null on the server render.
+const category = ref<Category | null>(seededCategory);
+// Seed the products + filters too, from the category the server already
+// fetched, so first paint has data before ProductGrid's client fetch returns.
+const seededProducts =
+  (seededCategory?.products as ProductsResponse | undefined) ?? null;
+const productsResponse = ref<ProductsResponse | null>(seededProducts);
+const gridFilters = ref<AttributeFilter[]>(
+  (seededProducts?.filters as AttributeFilter[] | undefined) ?? [],
+);
+
+// Controlled-mode seam (mirrors React's CategoryIsland `usingServerData`).
+// While true and the SSR seed exists, ProductGrid receives the items array via
+// :products and its internal fetch is skipped — so the SSR HTML renders real
+// product cards. The first user interaction (filter / sort / page) flips this
+// to false, the prop becomes undefined, and the grid resumes its own fetching
+// for every subsequent change.
+const usingServerData = ref(!!seededProducts);
+// Derive from the reactive productsResponse — not a snapshot — so SPA
+// navigation to a different category replaces the items as soon as
+// ProductGrid emits :onProductsResponse.
+const seededItems = computed<(Product | Cluster)[]>(
+  () => (productsResponse.value?.items ?? []) as (Product | Cluster)[]
+);
+
+// schema.org ItemList of the first-page items. Built once from the SSR seed
+// — filter/sort/page navigation does NOT re-emit (crawlers see this snapshot).
+const jsonLdContext = computed(() =>
+  buildJsonLdContext({
+    language: languageStore.language,
+    user: authStore.user as any,
+  }),
+);
+const jsonLdFirstPage = computed(() => seededItems.value as Product[]);
+const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
+  usingServerData.value ? seededItems.value : undefined,
+);
+function markUserInteracted(): void {
+  if (usingServerData.value) usingServerData.value = false;
+}
+function derivePriceBounds(resp: ProductsResponse | null): { min: number; max: number } | null {
+  if (!resp) return null;
+  const aggMax = resp.maxPrice;
+  if (typeof aggMax === 'number' && aggMax > 0) return { min: resp.minPrice ?? 0, max: aggMax };
+  const prices = ((resp.items ?? []) as Product[])
+    .map((p) => p?.price?.gross ?? p?.price?.net)
+    .filter((n): n is number => typeof n === 'number' && n > 0);
+  if (!prices.length) return null;
+  return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
+}
+
+const seededBounds = derivePriceBounds(seededProducts);
+const priceBoundsMin = ref<number | undefined>(seededBounds?.min);
+const priceBoundsMax = ref<number | undefined>(seededBounds?.max);
 const itemsFound = ref(0);
 const filtersLoading = ref(false);
 
@@ -232,10 +297,10 @@ const clearSignal = ref(0);
 const currentPage = ref(readNumberQuery(route.query.page) ?? 1);
 const offset = ref(readNumberQuery(route.query.offset) ?? 12);
 const sortField = ref<string>(
-  (route.query.sortField as string) || Enums.ProductSortField.CATEGORY_ORDER,
+  (route.query.sortField as string) || ProductSortField.CATEGORY_ORDER,
 );
 const sortOrder = ref<string>(
-  (route.query.sortOrder as string) || Enums.SortOrder.DESC,
+  (route.query.sortOrder as string) || SortOrder.DESC,
 );
 const viewMode = ref<"grid" | "list">("list");
 
@@ -243,6 +308,10 @@ const viewMode = ref<"grid" | "list">("list");
 // and the browser back button can restore the filtered view after visiting a product.
 let suppressQuerySync = false;
 function syncStateToUrl() {
+  // First user-driven change → hand control back to ProductGrid's internal
+  // fetcher. From this point on the SSR-seeded items are stale (the URL no
+  // longer matches them) and the grid must re-query.
+  markUserInteracted();
   const query: Record<string, string> = {};
   if (currentPage.value > 1) query.page = String(currentPage.value);
   for (const [key, values] of Object.entries(filters.value)) {
@@ -251,8 +320,8 @@ function syncStateToUrl() {
   if (minPrice.value !== undefined) query.minPrice = String(minPrice.value);
   if (maxPrice.value !== undefined) query.maxPrice = String(maxPrice.value);
   if (offset.value !== 12) query.offset = String(offset.value);
-  if (sortField.value !== Enums.ProductSortField.CATEGORY_ORDER) query.sortField = sortField.value;
-  if (sortOrder.value !== Enums.SortOrder.DESC) query.sortOrder = sortOrder.value;
+  if (sortField.value !== ProductSortField.CATEGORY_ORDER) query.sortField = sortField.value;
+  if (sortOrder.value !== SortOrder.DESC) query.sortOrder = sortOrder.value;
   const currentJson = JSON.stringify(route.query);
   const nextJson = JSON.stringify(query);
   if (currentJson === nextJson) return;
@@ -275,8 +344,38 @@ watch(
     maxPrice.value = readNumberQuery(q.maxPrice);
     currentPage.value = readNumberQuery(q.page) ?? 1;
     offset.value = readNumberQuery(q.offset) ?? 12;
-    sortField.value = (q.sortField as string) || Enums.ProductSortField.CATEGORY_ORDER;
-    sortOrder.value = (q.sortOrder as string) || Enums.SortOrder.DESC;
+    sortField.value = (q.sortField as string) || ProductSortField.CATEGORY_ORDER;
+    sortOrder.value = (q.sortOrder as string) || SortOrder.DESC;
+  },
+);
+
+// SPA-nav between categories. Vue Router reuses the same CategoryView
+// component instance when only :id/:slug change — setup() does not re-run,
+// so the seeded category/products/usingServerData refs would stay frozen
+// at the first-visit values without this. Re-peek the SSR store, reset all
+// dependent state, and re-arm controlled-mode if a new seed exists.
+// Mirrors the propeller-nuxt fix in app/pages/category/[id]/[slug].vue.
+watch(
+  () => route.fullPath,
+  () => {
+    const nextSeed = ssrCatalog.peekSeed(route.fullPath);
+    const nextSeededCategory =
+      nextSeed?.kind === "category" ? (nextSeed.data as Category) : null;
+    category.value = nextSeededCategory;
+    const nextSeededProducts =
+      (nextSeededCategory?.products as ProductsResponse | undefined) ?? null;
+    productsResponse.value = nextSeededProducts;
+    gridFilters.value =
+      (nextSeededProducts?.filters as AttributeFilter[] | undefined) ?? [];
+    itemsFound.value =
+      (nextSeededProducts?.itemsFound as number | undefined) ?? 0;
+    const nextBounds = derivePriceBounds(nextSeededProducts);
+    priceBoundsMin.value = nextBounds?.min;
+    priceBoundsMax.value = nextBounds?.max;
+    // If we have a fresh server-side seed for the new route, re-arm
+    // controlled mode so the grid shows it directly. Otherwise drop the
+    // controlled prop so ProductGrid resumes its own fetch.
+    usingServerData.value = !!nextSeededProducts;
   },
 );
 
@@ -288,7 +387,7 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
       name,
       values,
       exclude: false,
-      type: Enums.AttributeType.TEXT,
+      type: AttributeType.TEXT,
     })),
 );
 
@@ -299,6 +398,59 @@ function getCategoryName(): string {
   const match = nameArr.find((n: any) => n.language === languageStore.language);
   return match?.value || nameArr[0]?.value || "";
 }
+
+// SEO <head> — driven by the (SSR-seeded) category. Reactive: a client-side
+// category switch updates the title without a reload. Server-rendered into
+// the initial HTML so crawlers see the right title/description/canonical/og:*.
+//
+// Title + description are computed once and reused for og:title / og:description
+// so the meta tags can't drift from the visible <title>.
+const seoTitle = computed(
+  () =>
+    resolveSeoTitle(
+      category.value?.metadataTitles,
+      category.value?.name,
+      languageStore.language,
+    ) || getCategoryName() || "Category",
+);
+const seoDescription = computed(
+  () =>
+    resolveSeoDescription(
+      category.value?.metadataDescriptions,
+      [category.value?.shortDescription, category.value?.description],
+      languageStore.language,
+    ) || "",
+);
+const seoKeywords = computed(
+  () =>
+    resolveSeoKeywords(
+      category.value?.metadataKeywords,
+      languageStore.language,
+    ) || "",
+);
+const seoCanonical = computed(() =>
+  resolveCanonicalUrl(category.value?.metadataCanonicalUrls, languageStore.language),
+);
+useHead({
+  title: seoTitle,
+  meta: [
+    { name: "description", content: seoDescription },
+    { name: "keywords", content: seoKeywords },
+    { property: "og:title", content: seoTitle },
+    { property: "og:description", content: seoDescription },
+    { property: "og:type", content: "website" },
+    // Twitter card: `summary` (no image) — categories rarely have a single
+    // representative image, so we don't try to pick one.
+    { name: "twitter:card", content: "summary" },
+    { name: "twitter:title", content: seoTitle },
+    { name: "twitter:description", content: seoDescription },
+  ],
+  link: computed(() =>
+    // Omit the canonical link entirely when there's no curated URL —
+    // a `<link rel="canonical">` with an empty href is worse than no tag.
+    seoCanonical.value ? [{ rel: "canonical", href: seoCanonical.value }] : [],
+  ),
+});
 
 // ── ProductGrid callbacks ─────────────────────────────────────────────────────
 
@@ -406,6 +558,14 @@ function handleGridPaginationPageChange(page: number) {
   syncStateToUrl();
 }
 
+// Post-hydration: discard the seed so a later client-side navigation back to
+// this route falls back to a client fetch (the cached items would be stale by
+// then). This runs only on the client because Vue does not call onMounted
+// during server rendering, which is exactly the contract we want.
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath);
+});
+
 // Reset state when navigating to a different category
 watch(
   () => route.params.id,
@@ -421,6 +581,9 @@ watch(
     maxPrice.value = readNumberQuery(route.query.maxPrice);
     currentPage.value = readNumberQuery(route.query.page) ?? 1;
     clearSignal.value++;
+    // Drop the controlled-products seam — the seeded items belong to the
+    // previous category; the grid must fetch the new one itself.
+    markUserInteracted();
   },
 );
 </script>

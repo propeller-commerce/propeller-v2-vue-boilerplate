@@ -19,20 +19,7 @@
       <div class="h-4 bg-slate-100 rounded w-1/2 mx-auto animate-pulse"></div>
     </div>
 
-    <div
-      v-else-if="error"
-      class="p-8 text-center border rounded-[var(--radius-container)]"
-    >
-      <p class="text-destructive mb-4">{{ error }}</p>
-      <button
-        @click="
-          router.push(localizeHref('/account/orders', languageStore.language))
-        "
-        class="text-primary hover:underline"
-      >
-        Return to Orders
-      </button>
-    </div>
+    <AccessErrorView v-else-if="error" :kind="classifyApiError(error)" />
 
     <div v-else-if="order" class="space-y-8">
       <!-- Order Summary + Actions -->
@@ -40,8 +27,6 @@
         <OrderSummary
           :order="order as Order"
           :countries="COUNTRIES"
-          :includeTax="priceStore.includeTax"
-          :language="languageStore.language"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -52,21 +37,19 @@
           :showOrderTotal="true"
           :showDeliveryInfo="true"
           :showRemarks="true"
+          :labels="orderSummaryLabels"
         />
         <OrderActions
-          :graphqlClient="graphqlClient"
           :order="order as Order"
-          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
-          :companyId="companyStore.companyId ?? undefined"
-          :configuration="configuration"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
           :afterReorder="(cart: Cart) => cartStore.setCart(cart)"
+          :labels="orderActionsLabels"
         />
       </div>
 
       <!-- Shipments -->
-      <OrderShipments :order="order" />
+      <OrderShipments :order="order" :labels="orderShipmentsLabels" />
 
       <!-- Order Overview -->
       <div class="pt-10">
@@ -107,78 +90,13 @@
               :showSku="true"
               :showQuantity="true"
               :showPrice="true"
+              :labels="orderItemCardLabels"
             />
           </table>
         </div>
 
         <!-- Bonus Items -->
-        <div v-if="bonusItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-            Bonus Items
-          </h3>
-          <div
-            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-          >
-            <table class="w-full">
-              <thead class="bg-surface-hover border-b">
-                <tr>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Product
-                  </th>
-                  <th
-                    class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Quantity
-                  </th>
-                  <th
-                    class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase"
-                  >
-                    Price
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <OrderItemCard
-                  v-for="item in bonusItems"
-                  :key="item.id"
-                  :orderItem="item"
-                  :titleLinkable="false"
-                  :showImage="true"
-                  :showSku="true"
-                  :showQuantity="true"
-                  :showPrice="true"
-                />
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Surcharges -->
-        <div v-if="surchargeItems.length > 0" class="mb-8">
-          <h3 class="text-lg font-bold mb-3 text-muted-foreground">
-            Surcharges
-          </h3>
-          <div
-            class="bg-card rounded-[var(--radius-container)] shadow overflow-hidden"
-          >
-            <table class="w-full">
-              <tbody>
-                <OrderItemCard
-                  v-for="item in surchargeItems"
-                  :key="item.id"
-                  :orderItem="item"
-                  :titleLinkable="false"
-                  :showImage="false"
-                  :showSku="false"
-                  :showQuantity="true"
-                  :showPrice="true"
-                />
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <OrderBonusItems :order="order" :labels="orderBonusItemsLabels" />
       </div>
 
       <!-- Bottom Actions + Totals -->
@@ -186,24 +104,21 @@
         class="flex flex-col md:flex-row justify-between gap-8 pt-6 border-t"
       >
         <OrderActions
-          :graphqlClient="graphqlClient"
           :order="order"
-          :user="authStore.user as Contact | Customer"
           :cartId="cartStore.cartId || undefined"
-          :companyId="companyStore.companyId ?? undefined"
-          :configuration="configuration"
           :onCartCreated="(cart: any) => cartStore.setCart(cart)"
           :afterReorder="(cart: any) => cartStore.setCart(cart)"
+          :labels="orderActionsLabels"
         />
         <OrderTotals
           :order="order as Order"
-          :includeTax="priceStore.includeTax"
           :showSubtotal="true"
           :showDiscount="true"
           :showShippingCosts="true"
           :showVATs="true"
           :showTotalExclVat="true"
           :showTotalVat="true"
+          :labels="orderTotalsLabels"
         />
       </div>
     </div>
@@ -220,17 +135,23 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import type { Cart, Contact, Customer, Order } from "propeller-sdk-v2";
-import { useOrders } from "@/composables/useOrders";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
-import OrderSummary from "@/components/propeller/OrderSummary.vue";
-import OrderItemCard from "@/components/propeller/OrderItemCard.vue";
-import OrderActions from "@/components/propeller/OrderActions.vue";
-import OrderShipments from "@/components/propeller/OrderShipments.vue";
-import OrderTotals from "@/components/propeller/OrderTotals.vue";
+import AccessErrorView from "@/components/access/AccessErrorView.vue";
+import { classifyApiError } from "@/lib/errors";
+import type { Cart, Contact, Customer, Order } from "@propeller-commerce/propeller-sdk-v2";
+import { useOrders } from "propeller-v2-vue-ui";
+import type { AnyUser } from "propeller-v2-vue-ui";
+import { OrderActions, OrderBonusItems, OrderItemCard, OrderShipments, OrderSummary, OrderTotals } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
+const orderSummaryLabels = useTranslations('OrderSummary');
+const orderActionsLabels = useTranslations('OrderActions');
+const orderShipmentsLabels = useTranslations('OrderShipments');
+const orderItemCardLabels = useTranslations('OrderItemCard');
+const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+const orderTotalsLabels = useTranslations('OrderTotals');
+
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -273,16 +194,6 @@ const childMap = computed(() => {
     });
   return map;
 });
-
-const bonusItems = computed(() =>
-  (order.value?.items || []).filter(
-    (i: any) => i.class === "product" && i.isBonus === "Y",
-  ),
-);
-
-const surchargeItems = computed(() =>
-  (order.value?.items || []).filter((i: any) => i.class === "surcharge"),
-);
 
 onMounted(async () => {
   await fetchOrder(parseInt(route.params.id as string));

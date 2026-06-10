@@ -2,7 +2,7 @@
   <div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-md">
       <LoginForm
-        :graphqlClient="graphqlClient"
+        :labels="loginFormLabels"
         :cart="cartStore.cart as Cart | null"
         :afterLogin="(user: any, accessToken: any, refreshToken: any, expiresAt: any, anonymousCart: any) => handleLoginSuccess(user, accessToken, refreshToken, expiresAt, anonymousCart)"
         :onForgotPasswordClick="() => router.push(localizeHref('/forgot-password', languageStore.language))"
@@ -17,23 +17,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { CartService } from 'propeller-sdk-v2'
-import type { Cart, Contact, Customer } from 'propeller-sdk-v2'
+import { CartService } from '@propeller-commerce/propeller-sdk-v2'
+import type { Cart, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
-import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
-import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
-import { useCart } from '@/composables/useCart'
-import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import LoginForm from '@/components/propeller/LoginForm.vue'
+import { mergeAnonymousCart } from 'propeller-v2-vue-ui'
+import { useCart } from 'propeller-v2-vue-ui'
+import type { AnyUser } from 'propeller-v2-vue-ui'
+import { LoginForm } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const loginFormLabels = useTranslations('LoginForm')
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const languageStore = useLanguageStore()
@@ -53,7 +54,7 @@ async function handleLoginSuccess(
   expiresAt?: string,
   anonymousCart?: Cart | null,
 ) {
-  const cleanUser = stripLeadingUnderscores(user) as Contact | Customer
+  const cleanUser = user
   authStore.setUser(cleanUser)
   if (accessToken) {
     authStore.setToken(accessToken)

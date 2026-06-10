@@ -13,7 +13,7 @@
           <AddressCard
             v-if="defaultAddresses.invoice"
             :key="`inv-${defaultAddresses.invoice.id}`"
-            :graphqlClient="graphqlClient"
+            :labels="addressCardLabels"
             :address="defaultAddresses.invoice"
             :enableDelete="false"
             :onEdit="handleEditAddress"
@@ -23,7 +23,7 @@
           />
           <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
             <p class="text-sm text-muted-foreground">No default invoice address</p>
-            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(Enums.AddressType.invoice)">Add One</button>
+            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.invoice)">Add One</button>
           </div>
         </div>
         <!-- Default Delivery -->
@@ -32,7 +32,7 @@
           <AddressCard
             v-if="defaultAddresses.delivery"
             :key="`del-${defaultAddresses.delivery.id}`"
-            :graphqlClient="graphqlClient"
+            :labels="addressCardLabels"
             :address="defaultAddresses.delivery"
             :enableDelete="false"
             :onEdit="handleEditAddress"
@@ -42,7 +42,7 @@
           />
           <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
             <p class="text-sm text-muted-foreground">No default delivery address</p>
-            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(Enums.AddressType.delivery)">Add One</button>
+            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.delivery)">Add One</button>
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@
     <div class="space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold">Additional Billing Addresses</h2>
-        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(Enums.AddressType.invoice)">
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(AddressType.invoice)">
           + Add New
         </button>
       </div>
@@ -60,7 +60,7 @@
         <AddressCard
           v-for="address in billingAddresses"
           :key="address.id"
-          :graphqlClient="graphqlClient"
+          :labels="addressCardLabels"
           :address="address"
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
@@ -75,7 +75,7 @@
     <div class="space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold">Additional Delivery Addresses</h2>
-        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(Enums.AddressType.delivery)">
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(AddressType.delivery)">
           + Add New
         </button>
       </div>
@@ -83,7 +83,7 @@
         <AddressCard
           v-for="address in deliveryAddresses"
           :key="address.id"
-          :graphqlClient="graphqlClient"
+          :labels="addressCardLabels"
           :address="address"
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
@@ -97,7 +97,7 @@
     <!-- Add New Address Modal -->
     <AddressCard
       v-if="showAddModal"
-      :graphqlClient="graphqlClient"
+      :labels="addressCardLabels"
       :address="null"
       :addressType="addModalType"
       :isNew="true"
@@ -111,23 +111,25 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { type Address, type Company, Enums } from 'propeller-sdk-v2'
-import type { Contact, Customer } from 'propeller-sdk-v2'
+import { type Address, AddressType, type Company, YesNo } from '@propeller-commerce/propeller-sdk-v2';
+import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
-import { useAddress } from '@/composables/useAddress'
-import type { AddressInput } from '@/composables/useAddress'
-import type { AnyUser } from '@/composables/shared/utils/userIdentity'
-import AddressCard from '@/components/propeller/AddressCard.vue'
+import { useAddress } from 'propeller-v2-vue-ui'
+import type { AddressInput } from 'propeller-v2-vue-ui'
+import type { AnyUser } from 'propeller-v2-vue-ui'
+import { AddressCard } from 'propeller-v2-vue-ui';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { useTranslations } from '@/lib/i18n/composable';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
+const addressCardLabels = useTranslations('AddressCard')
 
 // COUNTRIES imported from shared utils
 const showAddModal = ref(false)
-const addModalType = ref<Enums.AddressType>(Enums.AddressType.invoice)
+const addModalType = ref<AddressType>(AddressType.invoice)
 
 const userRef = computed(() => authStore.user as AnyUser)
 const companyIdRef = computed(() => companyStore.selectedCompany?.companyId)
@@ -175,22 +177,22 @@ function getAllAddresses(): Address[] {
 const defaultAddresses = computed(() => {
   const addresses = getAllAddresses()
   return {
-    invoice: addresses.find((a: Address) => a.type === Enums.AddressType.invoice && a.isDefault === Enums.YesNo.Y),
-    delivery: addresses.find((a: Address) => a.type === Enums.AddressType.delivery && a.isDefault === Enums.YesNo.Y),
+    invoice: addresses.find((a: Address) => a.type === AddressType.invoice && a.isDefault === YesNo.Y),
+    delivery: addresses.find((a: Address) => a.type === AddressType.delivery && a.isDefault === YesNo.Y),
   }
 })
 
 const billingAddresses = computed(() =>
-  getAllAddresses().filter((a: Address) => a.type === Enums.AddressType.invoice && a.isDefault === Enums.YesNo.N)
+  getAllAddresses().filter((a: Address) => a.type === AddressType.invoice && a.isDefault === YesNo.N)
 )
 
 const deliveryAddresses = computed(() =>
-  getAllAddresses().filter((a: Address) => a.type === Enums.AddressType.delivery && a.isDefault === Enums.YesNo.N)
+  getAllAddresses().filter((a: Address) => a.type === AddressType.delivery && a.isDefault === YesNo.N)
 )
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
-function handleAddAddress(type: Enums.AddressType) {
+function handleAddAddress(type: AddressType) {
   addModalType.value = type
   showAddModal.value = true
 }
@@ -226,7 +228,7 @@ async function handleSaveNewAddress(address: any) {
     city: address.city || '',
     country: address.country || 'NL',
     notes: address.notes || undefined,
-    isDefault: (address.isDefault as Enums.YesNo) || Enums.YesNo.N,
+    isDefault: (address.isDefault as YesNo) || YesNo.N,
     type: addModalType.value,
   })
   await authStore.refreshUser()

@@ -6,9 +6,6 @@
     <div class="bg-card shadow-sm">
       <OrderList
         v-if="authStore.isAuthenticated"
-        :graphqlClient="graphqlClient"
-        :user="authStore.user"
-        :companyId="companyStore.companyId ?? undefined"
         :showCompanyOrders="false"
         :onOrderClick="(id) => router.push(localizeHref(`/account/quote-requests/${id}`, languageStore.language))"
         :orderStatus="['REQUEST']"
@@ -29,25 +26,13 @@ import { useLanguageStore } from '@/stores/language'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
 import { channelId, localizeHref } from '@/lib/config'
-import OrderList from '@/components/propeller/OrderList.vue'
+import { useTranslations } from '@/lib/i18n/composable'
+import { OrderList } from 'propeller-v2-vue-ui';
 
 const router = useRouter()
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
 
-const labels = {
-  view: 'Weergave',
-  previous: 'Vorige',
-  next: 'Volgende',
-  showingPage: 'Pagina',
-  of: 'van',
-  noOrders: 'Geen offertes',
-  loading: 'Laden',
-  order: 'Order',
-  date: 'Datum',
-  status: 'Status',
-  total: 'Totaal',
-  action: 'Actie',
-}
+const labels = useTranslations('OrderList')
 </script>

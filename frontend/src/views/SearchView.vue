@@ -1,11 +1,22 @@
 <template>
   <div class="py-8 bg-background">
     <div class="container-width">
+      <!-- schema.org ItemList of the SSR first-page search results. -->
+      <ItemListJsonLd
+        v-if="jsonLdFirstPage.length"
+        :products="jsonLdFirstPage"
+        :context="jsonLdContext"
+      />
       <GridTitle
         :title="searchTerm ? `Search Products: '${searchTerm}'` : 'Search Products'"
-        :language="languageStore.language"
+        :labels="gridTitleLabels"
       />
 
+      <!-- Hybrid SSR island. Mirrors propeller-next's SearchIsland posture:
+           the SSR-seeded first page is handed to <ProductGrid> via the
+           controlled `products` prop so the initial HTML contains real
+           cards. First user interaction drops the seam and the grid resumes
+           its own fetching. -->
       <div class="flex flex-col lg:flex-row gap-8 mt-4">
         <!-- Filters Sidebar — hidden when search returned no results so the
              user isn't presented with a price-range slider that has nothing
@@ -16,7 +27,6 @@
             :filters="gridFilters as AttributeFilter[]"
             :priceMin="priceBoundsMin"
             :priceMax="priceBoundsMax"
-            :language="languageStore.language"
             :onFilterChange="handleFilterChange"
             :onPriceChange="handlePriceChange"
             :onClearFilters="handleClearFilters"
@@ -26,8 +36,8 @@
             :activePriceMax="maxPrice"
             :isLoading="filtersLoading"
             :isMobile="false"
-            portalMode="open"
             :collapsed="true"
+            :labels="gridFiltersLabels"
           />
         </aside>
 
@@ -49,6 +59,7 @@
               :onFilterRemove="handleFilterRemove"
               :onPriceFilterRemove="handlePriceFilterRemove"
               :onClearFilters="handleClearFilters"
+              :labels="gridToolbarLabels"
             />
           </div>
 
@@ -89,14 +100,9 @@
                cycle and reports itemsFound back to the parent. -->
           <ProductGrid
             v-show="!hasNoResults"
-            :graphqlClient="graphqlClient"
+            :products="controlledProducts"
             :term="effectiveTerm"
             :categoryId="effectiveCategoryId"
-            :user="authStore.user as Contact | Customer"
-            :companyId="companyStore.selectedCompany?.companyId"
-            :configuration="configuration"
-            :language="languageStore.language"
-            :includeTax="priceStore.includeTax"
             :columns="viewMode === 'list' ? 1 : 3"
             :cartId="cartStore.cartId || undefined"
             :createCart="true"
@@ -125,15 +131,21 @@
             :onClusterClick="(cluster: Cluster) => router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))"
             :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
             :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+            :labels="productGridLabels"
+            :productCardLabels="productCardLabels"
+            :clusterCardLabels="clusterCardLabels"
+            :stockLabels="itemStockLabels"
+            :addToCartLabels="addToCartLabels"
+            :priceLabels="productPriceLabels"
           />
 
           <div v-if="!hasNoResults" class="flex justify-center gap-2 mt-12">
             <GridPagination
               v-if="productsResponse"
               :products="productsResponse as ProductsResponse"
-              :language="languageStore.language"
               :onPageChange="handleGridPaginationPageChange"
               variant="full"
+              :labels="gridPaginationLabels"
             />
           </div>
         </div>
@@ -143,32 +155,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  Enums,
-  type AttributeFilter,
-  type ProductsResponse,
-  type ProductTextFilterInput,
-  Contact,
-  Customer,
-  Cart,
-  Product,
-  Cluster,
-} from 'propeller-sdk-v2'
+import { useHead } from '@unhead/vue'
+import { type AttributeFilter, AttributeType, Cart, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
+import { useSsrCatalogStore } from '@/stores/ssrCatalog'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
+import { buildJsonLdContext } from '@/lib/seo'
 
-import GridFilters from '@/components/propeller/GridFilters.vue'
-import GridTitle from '@/components/propeller/GridTitle.vue'
-import GridToolbar from '@/components/propeller/GridToolbar.vue'
-import GridPagination from '@/components/propeller/GridPagination.vue'
-import ProductGrid from '@/components/propeller/ProductGrid.vue'
+import { GridFilters, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute()
 const router = useRouter()
@@ -177,6 +179,17 @@ const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
+
+const gridTitleLabels = useTranslations('GridTitle');
+const gridFiltersLabels = useTranslations('GridFilters');
+const gridToolbarLabels = useTranslations('GridToolbar');
+const productGridLabels = useTranslations('ProductGrid');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
+const itemStockLabels = useTranslations('ItemStock');
+const addToCartLabels = useTranslations('AddToCart');
+const productPriceLabels = useTranslations('ProductPrice');
+const gridPaginationLabels = useTranslations('GridPagination');
 
 const searchTerm = computed(() => {
   const term = route.params.term
@@ -192,13 +205,65 @@ const effectiveCategoryId = computed(() =>
   isAllProducts.value ? configuration.baseCategoryId : undefined,
 )
 
-// Populated via ProductGrid callbacks
-const productsResponse = ref<ProductsResponse | null>(null)
-const gridFilters = ref<AttributeFilter[]>([])
-const priceBoundsMin = ref<number | undefined>()
-const priceBoundsMax = ref<number | undefined>()
-const itemsFound = ref(0)
+// SSR seed: the route's prefetch loader ran the search server-side and stashed
+// the first-page ProductsResponse. Seeding here means the grid paints real
+// cards on first client render with no fetch round-trip.
+const ssrCatalog = useSsrCatalogStore()
+// peekSeed (not takeSeed): SSR + hydration must agree, or Vue warns of a
+// mismatch. consumeSeed in onMounted below clears the entry so a later
+// client-side re-navigation fetches fresh.
+const seed = ssrCatalog.peekSeed(route.fullPath)
+const seededResponse =
+  seed?.kind === 'search' ? (seed.data as ProductsResponse) : null
+
+// Populated via ProductGrid callbacks (seeded from SSR for first paint)
+const productsResponse = ref<ProductsResponse | null>(seededResponse)
+const gridFilters = ref<AttributeFilter[]>(
+  (seededResponse?.filters as AttributeFilter[] | undefined) ?? [],
+)
+function derivePriceBounds(resp: ProductsResponse | null): { min: number; max: number } | null {
+  if (!resp) return null
+  const aggMax = resp.maxPrice
+  if (typeof aggMax === 'number' && aggMax > 0) return { min: resp.minPrice ?? 0, max: aggMax }
+  const prices = ((resp.items ?? []) as Product[])
+    .map((p) => p?.price?.gross ?? p?.price?.net)
+    .filter((n): n is number => typeof n === 'number' && n > 0)
+  if (!prices.length) return null
+  return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) }
+}
+
+const seededBounds = derivePriceBounds(seededResponse)
+const priceBoundsMin = ref<number | undefined>(seededBounds?.min)
+const priceBoundsMax = ref<number | undefined>(seededBounds?.max)
+const itemsFound = ref(seededResponse?.itemsFound ?? 0)
 const filtersLoading = ref(false)
+
+// Controlled-products seam (see CategoryView for the full explanation): while
+// `usingServerData` is true the SSR-seeded items array is handed to the grid
+// and its internal fetch is a no-op. The first interaction (or a term change)
+// flips it and the grid resumes its own fetching.
+const usingServerData = ref(!!seededResponse)
+// Derive from the reactive productsResponse — SPA navigation to a new term
+// will replace the items as ProductGrid emits :onProductsResponse.
+const seededItems = computed<(Product | Cluster)[]>(
+  () => (productsResponse.value?.items ?? []) as (Product | Cluster)[],
+)
+
+// schema.org ItemList of the SSR first-page results. Crawlers see this
+// snapshot only; client-side filter/sort/page navigation does NOT re-emit.
+const jsonLdContext = computed(() =>
+  buildJsonLdContext({
+    language: languageStore.language,
+    user: authStore.user as any,
+  }),
+)
+const jsonLdFirstPage = computed(() => seededItems.value as Product[])
+const controlledProducts = computed<(Product | Cluster)[] | undefined>(() =>
+  usingServerData.value ? seededItems.value : undefined,
+)
+function markUserInteracted(): void {
+  if (usingServerData.value) usingServerData.value = false
+}
 
 const RESERVED_QUERY_KEYS = ['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder']
 
@@ -232,12 +297,14 @@ const maxPrice = ref<number | undefined>(readNumberQuery(route.query.maxPrice))
 const clearSignal = ref(0)
 const currentPage = ref(readNumberQuery(route.query.page) ?? 1)
 const offset = ref(readNumberQuery(route.query.offset) ?? 12)
-const sortField = ref<string>((route.query.sortField as string) || Enums.ProductSortField.RELEVANCE)
-const sortOrder = ref<string>((route.query.sortOrder as string) || Enums.SortOrder.DESC)
+const sortField = ref<string>((route.query.sortField as string) || ProductSortField.RELEVANCE)
+const sortOrder = ref<string>((route.query.sortOrder as string) || SortOrder.DESC)
 const viewMode = ref<'grid' | 'list'>('list')
 
 let suppressQuerySync = false
 function syncStateToUrl() {
+  // First user-driven change → drop the SSR seed so the grid re-fetches.
+  markUserInteracted()
   const query: Record<string, string> = {}
   if (currentPage.value > 1) query.page = String(currentPage.value)
   for (const [key, values] of Object.entries(filters.value)) {
@@ -246,8 +313,8 @@ function syncStateToUrl() {
   if (minPrice.value !== undefined) query.minPrice = String(minPrice.value)
   if (maxPrice.value !== undefined) query.maxPrice = String(maxPrice.value)
   if (offset.value !== 12) query.offset = String(offset.value)
-  if (sortField.value !== Enums.ProductSortField.RELEVANCE) query.sortField = sortField.value
-  if (sortOrder.value !== Enums.SortOrder.DESC) query.sortOrder = sortOrder.value
+  if (sortField.value !== ProductSortField.RELEVANCE) query.sortField = sortField.value
+  if (sortOrder.value !== SortOrder.DESC) query.sortOrder = sortOrder.value
   if (JSON.stringify(route.query) === JSON.stringify(query)) return
   suppressQuerySync = true
   router.push({ path: route.path, query }).finally(() => {
@@ -267,8 +334,29 @@ watch(
     maxPrice.value = readNumberQuery(q.maxPrice)
     currentPage.value = readNumberQuery(q.page) ?? 1
     offset.value = readNumberQuery(q.offset) ?? 12
-    sortField.value = (q.sortField as string) || Enums.ProductSortField.RELEVANCE
-    sortOrder.value = (q.sortOrder as string) || Enums.SortOrder.DESC
+    sortField.value = (q.sortField as string) || ProductSortField.RELEVANCE
+    sortOrder.value = (q.sortOrder as string) || SortOrder.DESC
+  },
+)
+
+// SPA-nav between search terms. Same instance-reuse issue as CategoryView:
+// when only `:term` changes, setup() doesn't re-run, so re-peek the seed
+// and reset state. Mirrors the propeller-nuxt search page fix.
+watch(
+  () => route.fullPath,
+  () => {
+    const nextSeed = ssrCatalog.peekSeed(route.fullPath)
+    const nextSeededResponse =
+      nextSeed?.kind === 'search' ? (nextSeed.data as ProductsResponse) : null
+    productsResponse.value = nextSeededResponse
+    gridFilters.value =
+      (nextSeededResponse?.filters as AttributeFilter[] | undefined) ?? []
+    itemsFound.value =
+      (nextSeededResponse?.itemsFound as number | undefined) ?? 0
+    const nextBounds = derivePriceBounds(nextSeededResponse)
+    priceBoundsMin.value = nextBounds?.min
+    priceBoundsMax.value = nextBounds?.max
+    usingServerData.value = !!nextSeededResponse
   },
 )
 
@@ -289,9 +377,20 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
       name,
       values,
       exclude: false,
-      type: Enums.AttributeType.TEXT,
+      type: AttributeType.TEXT,
     }))
 )
+
+// SEO <head> — server-rendered. Search result pages are noindex by convention
+// (thin, query-driven content) but still carry a descriptive title.
+useHead({
+  title: computed(() =>
+    searchTerm.value
+      ? `Search: "${searchTerm.value}"`
+      : 'Search Products',
+  ),
+  meta: [{ name: 'robots', content: 'noindex, follow' }],
+})
 
 // ── ProductGrid callbacks ─────────────────────────────────────────────────────
 
@@ -385,6 +484,12 @@ function handleGridPaginationPageChange(page: number) {
   syncStateToUrl()
 }
 
+// Post-hydration: discard the seed so a later same-route navigation fetches
+// fresh. Runs only on the client (onMounted is a no-op during SSR).
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath)
+})
+
 // Reset filter/page state when search term changes
 watch(searchTerm, (newTerm, oldTerm) => {
   if (newTerm === oldTerm) return
@@ -396,5 +501,7 @@ watch(searchTerm, (newTerm, oldTerm) => {
   maxPrice.value = readNumberQuery(route.query.maxPrice)
   currentPage.value = readNumberQuery(route.query.page) ?? 1
   clearSignal.value++
+  // Seeded items are for the previous term — drop the seam.
+  markUserInteracted()
 })
 </script>

@@ -2,8 +2,7 @@
   <div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-5xl">
       <RegisterForm
-        :graphqlClient="graphqlClient"
-        :language="languageStore.language"
+        :labels="registerFormLabels"
         :countries="COUNTRIES_MAP"
         :cart="cartStore.cart as Cart | null"
         :afterRegistration="
@@ -31,23 +30,24 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { CartService } from "propeller-sdk-v2";
-import type { Cart, Contact, Customer } from "propeller-sdk-v2";
+import { CartService } from "@propeller-commerce/propeller-sdk-v2";
+import type { Cart, Contact, Customer } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { stripLeadingUnderscores } from "@/composables/shared/utils/userUtils";
-import { mergeAnonymousCart } from "@/composables/shared/utils/mergeAnonymousCart";
-import { useCart } from "@/composables/useCart";
-import type { AnyUser } from "@/composables/shared/utils/userIdentity";
-import RegisterForm from "@/components/propeller/RegisterForm.vue";
+import { mergeAnonymousCart } from "propeller-v2-vue-ui";
+import { useCart } from "propeller-v2-vue-ui";
+import type { AnyUser } from "propeller-v2-vue-ui";
+import { RegisterForm } from 'propeller-v2-vue-ui';
 import { COUNTRIES_MAP } from "@/composables/shared/utils/countries";
+import { useTranslations } from '@/lib/i18n/composable';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const registerFormLabels = useTranslations('RegisterForm');
 const cartStore = useCartStore();
 const companyStore = useCompanyStore();
 const languageStore = useLanguageStore();
@@ -76,7 +76,7 @@ async function handleAfterRegistration(
     return;
   }
 
-  const cleanUser = stripLeadingUnderscores(user) as Contact | Customer;
+  const cleanUser = user;
   authStore.setUser(cleanUser);
   authStore.setToken(accessToken);
   localStorage.setItem("accessToken", accessToken);

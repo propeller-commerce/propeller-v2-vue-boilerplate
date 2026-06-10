@@ -26,11 +26,9 @@
           <!-- Company Switcher — Contact users with multiple companies only -->
           <CompanySwitcher
             v-if="isContactWithMultipleCompanies"
-            :graphqlClient="graphqlClient"
-            :user="(authStore.user as Contact)"
             :selectedCompanyId="companyStore.companyId ?? undefined"
-            :language="languageStore.language"
             :onCompanyChange="handleCompanyChange"
+            :labels="companySwitcherLabels"
           />
 
           <PriceToggle
@@ -39,6 +37,7 @@
             :onToggle="(val: boolean) => { priceStore.includeTax = val }"
             :inclExclVatSwitched="(val: boolean) => { priceStore.includeTax = val }"
             :language="languageStore.language"
+            :labels="priceToggleLabels"
           />
 
           <div v-if="showLanguageSwitcher && availableLanguages.length > 1" ref="langMenuRef" class="relative">
@@ -114,13 +113,11 @@
           <!-- Search Bar (desktop only) -->
           <div v-if="showSearch" class="hidden lg:block flex-1 max-w-2xl">
             <SearchBar
-              :graphqlClient="graphqlClient"
-              :language="languageStore.language"
               :onSubmit="handleSearch"
               :onViewAllClick="handleSearch"
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
-              :configuration="configuration"
               :clearSignal="searchClearSignal"
+              :labels="searchBarLabels"
             />
           </div>
 
@@ -128,10 +125,7 @@
           <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <AccountIconAndMenu
               v-if="showAccount"
-              :graphqlClient="graphqlClient"
-              :user="authStore.user as Contact | Customer"
               :cart="cartStore.cart as Cart"
-              :language="languageStore.language"
               :afterLogin="handleAfterLogin"
               :onMenuItemClick="(href: string) => router.push(href)"
               :onLogoutClick="handleLogout"
@@ -140,16 +134,13 @@
               :accountHeaderLoginForm="true"
               :menuLinks="accountMenuLinks"
               iconClassName="text-white hover:text-white hover:bg-white/10"
+              :labels="accountIconAndMenuLabels"
+              :loginFormLabels="loginFormLabels"
             />
 
             <CartIconAndSidebar
               v-if="showCart"
-              :graphqlClient="graphqlClient"
-              :user="authStore.user as Contact | Customer"
               :cart="cartStore.cart as Cart"
-              :language="languageStore.language"
-              :includeTax="priceStore.includeTax"
-              :companyId="companyStore.companyId || undefined"
               :cartCheckoutButton="true"
               :onCheckoutButtonClick="() => router.push(localizeHref('/checkout', languageStore.language))"
               :onCartPageButtonClick="() => router.push(localizeHref('/cart', languageStore.language))"
@@ -157,8 +148,8 @@
               :afterRequestAuthorization="handleAfterRequestAuthorization"
               :onError="(err: Error) => console.error('Authorization request failed:', err)"
               :showTotals="true"
-              :configuration="configuration"
               iconClassName="text-white hover:text-white hover:bg-white/10"
+              :labels="cartIconAndSidebarLabels"
             />
           </div>
         </div>
@@ -187,14 +178,18 @@
             <div
               :class="['absolute left-0 top-full z-50', showMainMenu ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none h-0 overflow-hidden']"
             >
+              <!-- Pre-fetched tree from `entry-server.ts`'s menu prefetch
+                   (lives in `useMenuStore`). When present, `<PropellerMenu>`
+                   skips its internal `useMenu` fetch — anonymous menu HTML
+                   is in the initial response, no loading flash, no client
+                   roundtrip on hydration. -->
               <PropellerMenu
-                :graphqlClient="graphqlClient"
                 :categoryId="configuration.baseCategoryId"
                 :depth="configuration.menuDepth"
-                :language="languageStore.language"
+                :tree="menuTreeProp"
                 :onMenuItemClick="handleCategoryClick"
-                :configuration="configuration"
                 menuStyle="dropdown-vertical"
+                :labels="menuLabels"
               />
             </div>
           </div>
@@ -219,26 +214,24 @@
       <!-- Mobile search -->
       <div v-if="showSearch" class="p-4 border-b border-border">
         <SearchBar
-          :graphqlClient="graphqlClient"
-          :language="languageStore.language"
           :onSubmit="(term: string) => { showMobileMenu = false; handleSearch(term) }"
           :onViewAllClick="(term: string) => { showMobileMenu = false; handleSearch(term) }"
           :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
-          :configuration="configuration"
           :clearSignal="searchClearSignal"
+          :labels="searchBarLabels"
         />
       </div>
 
-      <!-- Mobile categories -->
+      <!-- Mobile categories — same pre-fetched tree as the desktop instance.
+           Both `<PropellerMenu>` mounts share one fetch via `useMenuStore`. -->
       <PropellerMenu
         v-if="showCategoriesMenu"
-        :graphqlClient="graphqlClient"
         :categoryId="configuration.baseCategoryId"
         :depth="configuration.menuDepth"
-        :language="languageStore.language"
+        :tree="menuTreeProp"
         :onMenuItemClick="handleCategoryClick"
-        :configuration="configuration"
         menuStyle="dropdown-vertical"
+        :labels="menuLabels"
       />
 
       <!-- Mobile nav links -->
@@ -261,28 +254,31 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-vue-next'
-import { CartService, Enums } from 'propeller-sdk-v2'
-import type { Cart, Category, Company, Contact, Customer } from 'propeller-sdk-v2'
+import { CartService, PurchaseRole } from '@propeller-commerce/propeller-sdk-v2';
+import type { Cart, Category, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { useLanguageStore } from '@/stores/language'
+import { useMenuStore } from '@/stores/menu'
 import { graphqlClient } from '@/lib/api'
-import { useCart } from '@/composables/useCart'
-import type { AnyUser } from '@/composables/shared/utils/userIdentity'
+import { useCart } from 'propeller-v2-vue-ui'
+import type { AnyUser } from 'propeller-v2-vue-ui'
 import { configuration, localizeHref, stripLanguagePrefix, detectLanguageFromPath } from '@/lib/config'
-import { stripLeadingUnderscores } from '@/composables/shared/utils/userUtils'
-import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart'
-import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart'
-import { initCart } from '@/composables/shared/utils/cartInit'
+import { restoreManagerCart } from '@/lib/cartHelpers'
+import { mergeAnonymousCart, fetchActiveCart as fetchActiveCartShared, initCart } from 'propeller-v2-vue-ui'
 
-import SearchBar from '@/components/propeller/SearchBar.vue'
-import PropellerMenu from '@/components/propeller/Menu.vue'
-import PriceToggle from '@/components/propeller/PriceToggle.vue'
-import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar.vue'
-import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu.vue'
-import CompanySwitcher from '@/components/propeller/CompanySwitcher.vue'
+import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const companySwitcherLabels = useTranslations('CompanySwitcher');
+const priceToggleLabels = useTranslations('PriceToggle');
+const searchBarLabels = useTranslations('SearchBar');
+const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
+const loginFormLabels = useTranslations('LoginForm');
+const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+const menuLabels = useTranslations('Menu');
 
 const router = useRouter()
 const route = useRoute()
@@ -291,6 +287,15 @@ const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
+// Server-seeded category tree (set in `entry-server.ts`'s always-on
+// prefetch). Passed to both `<PropellerMenu>` instances as `:tree` so the
+// package component skips its internal `useMenu` fetch — anonymous menu
+// HTML lands in the initial response and there is no client-side
+// roundtrip on hydration. `null` on a stale-state seed → the package's
+// `tree` prop is omitted (passing `null` would short-circuit it to an
+// empty render), and the legacy client-side fetch kicks in as fallback.
+const menuStore = useMenuStore()
+const menuTreeProp = computed(() => menuStore.tree ?? undefined)
 
 // `fetchActiveCart` here is the composable-bound version still used by
 // handleCompanyChange (which fires AFTER login and relies on the reactive
@@ -392,7 +397,7 @@ const isAuthManagerForCurrentCompany = computed(() => {
     const pacCompanyId =
       pac.company?.companyId ?? pac.company?._companyId ??
       pac._company?.companyId ?? pac._company?._companyId
-    return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
+    return role === PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
   })
 })
 
@@ -422,7 +427,7 @@ async function handleAfterLogin(
   expiresAt?: string,
   anonymousCart?: Cart | null
 ) {
-  const cleanUser = stripLeadingUnderscores(user) as Contact | Customer
+  const cleanUser = user
   authStore.setUser(cleanUser)
   if (accessToken) {
     authStore.setToken(accessToken)
@@ -500,7 +505,10 @@ async function handleCompanyChange(company: Company) {
 }
 
 function handleAfterRequestAuthorization(cart: Cart) {
-  cartStore.setCart(null)
+  // If a manager parked their own cart to act on this request, hand it back;
+  // otherwise clear.
+  const parked = restoreManagerCart()
+  cartStore.setCart(parked)
   router.push(localizeHref(`/authorization-request-sent/${cart.cartId}`, languageStore.language))
 }
 
@@ -549,6 +557,10 @@ onMounted(() => {
   if (localStorage.getItem('price_include_tax') === null) {
     priceStore.setIncludeTax(import.meta.env.VITE_INCLUDE_VAT === 'true')
   }
+  // NOTE: the authenticated mount-time cart reconcile lives in `entry-client.ts`
+  // (after the company store is restored from localStorage), NOT here — doing it
+  // in onMounted fetched the cart before the SELECTED company was restored, so a
+  // refresh showed the default company's cart. See entry-client's post-mount block.
 })
 
 onUnmounted(() => {

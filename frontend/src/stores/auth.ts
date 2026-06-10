@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { Enums, UserService, type Contact, type Customer } from 'propeller-sdk-v2'
+import { type Contact, type Customer, PurchaseRole, UserService } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api'
+import { isBrowser, safeStorage, setCookie, deleteCookie } from '@/lib/ssr'
 
 type User = Contact | Customer
 
@@ -23,7 +24,7 @@ function sanitizeUser(data: any): User {
 
 function loadUserFromStorage(): User | null {
   try {
-    const stored = localStorage.getItem('user') || localStorage.getItem('auth_user')
+    const stored = safeStorage.getItem('user') || safeStorage.getItem('auth_user')
     if (!stored) return null
     return sanitizeUser(JSON.parse(stored))
   } catch {
@@ -32,8 +33,10 @@ function loadUserFromStorage(): User | null {
 }
 
 export const useAuthStore = defineStore('auth', () => {
+  // On the server `safeStorage` returns null → the store starts anonymous and
+  // the client reconciles real auth state from localStorage during hydration.
   const user = ref<User | null>(loadUserFromStorage())
-  const token = ref<string | null>(localStorage.getItem('accessToken') || localStorage.getItem('auth_token'))
+  const token = ref<string | null>(safeStorage.getItem('accessToken') || safeStorage.getItem('auth_token'))
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -59,7 +62,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   const handleActivity = () => resetSessionTimer()
 
+  // Inactivity tracking is a browser-only concern — skip the listener wiring
+  // entirely under SSR (no `window`), the client re-runs this after hydration.
   watch(isAuthenticated, (authenticated) => {
+    if (!isBrowser) return
     if (authenticated) {
       activityEvents.forEach(e => window.addEventListener(e, handleActivity))
       resetSessionTimer()
@@ -78,19 +84,23 @@ export const useAuthStore = defineStore('auth', () => {
     // returns true for users who actually need authorization.
     const clean = u ? sanitizeUser(u) : null
     user.value = clean
-    if (clean) localStorage.setItem('user', JSON.stringify(clean))
-    else localStorage.removeItem('user')
-    localStorage.removeItem('auth_user')
+    if (clean) safeStorage.setItem('user', JSON.stringify(clean))
+    else safeStorage.removeItem('user')
+    safeStorage.removeItem('auth_user')
   }
 
   function setToken(t: string | null) {
     token.value = t
     if (t) {
-      localStorage.setItem('accessToken', t)
+      safeStorage.setItem('accessToken', t)
       graphqlClient.setAccessToken(t)
+      // Mirror the token into a cookie so the SSR server can read it on the
+      // next navigation and render personalised, contact-priced HTML.
+      setCookie('access_token', t)
     } else {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('auth_token')
+      safeStorage.removeItem('accessToken')
+      safeStorage.removeItem('auth_token')
+      deleteCookie('access_token')
     }
   }
 
@@ -101,7 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
   function updateUser(userData: Partial<User>) {
     if (!user.value) return
     user.value = { ...user.value, ...userData } as User
-    localStorage.setItem('user', JSON.stringify(user.value))
+    safeStorage.setItem('user', JSON.stringify(user.value))
   }
 
   function logout() {
@@ -110,15 +120,20 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     // Clear localStorage except menuData
-    const menuData = localStorage.getItem('menuData')
-    localStorage.clear()
-    if (menuData) localStorage.setItem('menuData', menuData)
+    const menuData = safeStorage.getItem('menuData')
+    safeStorage.clear()
+    if (menuData) safeStorage.setItem('menuData', menuData)
 
-    window.dispatchEvent(new CustomEvent('userLoggedOut'))
+    // Drop the SSR auth cookie too — `safeStorage.clear()` only touches
+    // localStorage, so without this the server would still render as the
+    // logged-in user after a logout.
+    deleteCookie('access_token')
+
+    if (isBrowser) window.dispatchEvent(new CustomEvent('userLoggedOut'))
   }
 
   async function refreshUser(): Promise<void> {
-    const storedToken = localStorage.getItem('accessToken')
+    const storedToken = safeStorage.getItem('accessToken')
     if (!storedToken) return
     try {
       graphqlClient.setAccessToken(storedToken)
@@ -126,9 +141,16 @@ export const useAuthStore = defineStore('auth', () => {
       const viewerData = await userService.getViewer({})
       if (viewerData) {
         const plain = sanitizeUser(JSON.parse(JSON.stringify(viewerData, (_k, v) => v)))
-        localStorage.setItem('user', JSON.stringify(plain))
+        safeStorage.setItem('user', JSON.stringify(plain))
         user.value = plain
         if (!token.value) token.value = storedToken
+        // Re-point the company store at the fresh company copy. The dashboard
+        // reads addresses + company info off `companyStore.selectedCompany`, a
+        // separate snapshot — without this, an address edit (which calls
+        // refreshUser) updates `user` but leaves the dashboard showing the old
+        // addresses. Lazy import avoids a store-module cycle.
+        const { useCompanyStore } = await import('@/stores/company')
+        useCompanyStore().syncFromUser(plain)
       }
     } catch (e) {
       console.error('refreshUser failed', e)
@@ -144,31 +166,49 @@ export const useAuthStore = defineStore('auth', () => {
       const pacCompanyId =
         pac.company?.companyId ?? pac.company?._companyId ??
         pac._company?.companyId ?? pac._company?._companyId
-      return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
+      return role === PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId
     })
   }
 
-  // Sync with other tabs / components via custom events
-  window.addEventListener('userLoggedIn', () => {
-    const storedToken = localStorage.getItem('accessToken')
-    const storedUser = localStorage.getItem('user')
-    if (storedToken && storedUser) {
-      try {
-        user.value = sanitizeUser(JSON.parse(storedUser))
-        token.value = storedToken
-      } catch (e) {
-        console.error('Failed to parse stored user on userLoggedIn event:', e)
+  // Sync with other tabs / components via custom events. Browser-only —
+  // there are no other tabs, and no `window`, during a server render.
+  if (isBrowser) {
+    window.addEventListener('userLoggedIn', () => {
+      const storedToken = safeStorage.getItem('accessToken')
+      const storedUser = safeStorage.getItem('user')
+      if (storedToken && storedUser) {
+        try {
+          user.value = sanitizeUser(JSON.parse(storedUser))
+          token.value = storedToken
+        } catch (e) {
+          console.error('Failed to parse stored user on userLoggedIn event:', e)
+        }
       }
-    }
-  })
+    })
 
-  window.addEventListener('userLoggedOut', () => {
-    user.value = null
-    token.value = null
-  })
+    window.addEventListener('userLoggedOut', () => {
+      user.value = null
+      token.value = null
+    })
+  }
+
+  /**
+   * Seed the store from the SSR-resolved viewer. Called only by the server
+   * prefetch loaders: the server reads the `access_token` cookie and resolves
+   * the user via the SDK's `getViewer`, then hands the result here so the
+   * server render of the catalog shell is already personalised (contact
+   * pricing, account menu state). Unlike `setUser`/`setToken` this writes NO
+   * storage/cookie — it only sets the in-memory refs, which then serialize
+   * into `__INITIAL_STATE__` and hydrate the client identically.
+   */
+  function hydrateFromServer(u: User | null, t: string | null) {
+    user.value = u ? sanitizeUser(u) : null
+    token.value = t
+  }
 
   return {
     user, token, isLoading, error, isAuthenticated,
-    setUser, setToken, clearError, updateUser, logout, refreshUser, isAuthManagerForCompany,
+    setUser, setToken, clearError, updateUser, logout, refreshUser,
+    isAuthManagerForCompany, hydrateFromServer,
   }
 })

@@ -1,14 +1,16 @@
 <template>
   <div class="py-12 bg-background">
     <div class="container-width">
+      <!-- schema.org structured data for Google Rich Results. Emits Product
+           (schema.org has no Cluster type). Hidden in the DOM as a <script>. -->
+      <ClusterJsonLd v-if="cluster" :cluster="cluster" :context="jsonLdContext" />
       <!-- Breadcrumbs -->
       <div class="mb-6">
         <Breadcrumbs
           :categoryPath="(selectedProduct as any)?.categoryPath || []"
           :currentCategory="(selectedProduct as any)?.category || undefined"
-          :language="languageStore.language"
-          :configuration="configuration"
           :showCurrent="true"
+          :labels="breadcrumbsLabels"
         />
       </div>
 
@@ -16,19 +18,21 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
         <!-- Gallery -->
         <div class="bg-card rounded-[var(--radius-container)] shadow p-6">
-          <ProductGallery :images="displayImages" />
+          <ProductGallery :images="displayImages" :labels="productGalleryLabels" />
         </div>
 
         <!-- Info -->
         <div class="flex flex-col">
           <div class="mb-6">
+            <!-- Pass the seeded cluster in so ClusterInfo skips its internal
+                 re-fetch on hydration. Without this the client refetch
+                 overwrites the SSR cluster and the configurator's attribute
+                 values reset (textValues bucket order differs across runs;
+                 attributeDescription.type may also be dropped). -->
             <ClusterInfo
-              :user="authStore.user"
+              :cluster="cluster ?? undefined"
               :clusterId="clusterId"
-              :graphqlClient="graphqlClient"
               :onClusterLoaded="handleClusterLoaded"
-              :language="languageStore.language"
-              :configuration="configuration"
               :imageSearchFilters="configuration.imageSearchFilters"
               :imageVariantFilters="configuration.imageVariantFiltersLarge"
             />
@@ -39,21 +43,19 @@
                   selectedProduct?.price ??
                   (cluster as any).defaultProduct?.price
                 "
-                :includeTax="priceStore.includeTax"
                 :options="(cluster as any).options"
                 :selectedOptionProducts="Object.values(selectedOptionProducts)"
+                :labels="productPriceLabels"
               />
 
               <ProductBulkPrices
                 :product="selectedProduct || (cluster as any).defaultProduct"
-                :includeTax="priceStore.includeTax"
-                :language="languageStore.language"
+                :labels="productBulkPricesLabels"
               />
 
               <div class="mt-6">
                 <ProductShortDescription
                   :product="selectedProduct || (cluster as any).defaultProduct"
-                  :language="languageStore.language"
                 />
               </div>
 
@@ -61,6 +63,7 @@
                 <ItemStock
                   :inventory="(selectedProduct as any).inventory"
                   :showAvailability="false"
+                  :labels="itemStockLabels"
                 />
               </div>
 
@@ -82,6 +85,7 @@
                       selectedProduct = product;
                     }
                   "
+                  :labels="clusterConfiguratorLabels"
                 />
               </div>
 
@@ -93,14 +97,13 @@
                   :onOptionSelect="handleOptionSelect"
                   :onOptionClear="handleOptionClear"
                   :showErrors="showClusterErrors"
+                  :labels="clusterOptionsLabels"
                 />
               </div>
             </template>
 
             <div class="flex items-center gap-2">
               <AddToCart
-                :graphqlClient="graphqlClient"
-                :user="authStore.user"
                 :product="selectedProduct"
                 :cluster="cluster as any"
                 :beforeAddToCart="validateClusterOptions"
@@ -110,23 +113,20 @@
                   )
                 "
                 :cartId="cartStore.cartId || undefined"
-                :language="languageStore.language"
-                :companyId="companyStore.companyId || undefined"
                 :className="'flex items-center w-full gap-2'"
                 :createCart="true"
                 :showModal="true"
-                :configuration="configuration"
                 :onCartCreated="(cart: any) => cartStore.setCart(cart)"
                 :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
                 :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
                 :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
+                :labels="addToCartLabels"
               />
               <AddToFavorite
                 v-if="authStore.user"
-                :graphqlClient="graphqlClient"
-                :user="authStore.user"
                 :clusterId="clusterId"
                 :onFavoriteChanged="() => authStore.refreshUser()"
+                :labels="addToFavoriteLabels"
               />
             </div>
           </div>
@@ -136,27 +136,19 @@
       <!-- Product Tabs -->
       <ProductTabs
         v-if="displayProduct"
-        :graphqlClient="graphqlClient"
         :product="displayProduct"
         :productId="displayProduct.productId"
-        :language="languageStore.language"
-        :includeTax="priceStore.includeTax"
         class="pb-8"
+        :labels="productTabsLabels"
       />
 
       <!-- 5 ProductSliders -->
       <ProductSlider
         v-for="crossType in crossUpsellSliders"
         :key="crossType"
-        :graphqlClient="graphqlClient"
         :crossUpsellTypes="[crossType]"
         :clusterId="clusterId"
-        :language="languageStore.language"
-        :includeTax="priceStore.includeTax"
-        :user="authStore.user"
-        :companyId="companyStore.companyId || undefined"
         :cartId="cartStore.cartId || undefined"
-        :configuration="configuration"
         :showAvailability="false"
         :showStock="true"
         :showModal="true"
@@ -177,36 +169,50 @@
               configuration.urls.getClusterUrl(c, languageStore.language),
             )
         "
+        :labels="productSliderLabels"
+        :productCardLabels="productCardLabels"
+        :clusterCardLabels="clusterCardLabels"
+        :stockLabels="itemStockLabels"
+        :addToCartLabels="addToCartLabels"
+        :priceLabels="productPriceLabels"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Enums } from "propeller-sdk-v2";
+import { useHead } from "@unhead/vue";
+import { CrossupsellType } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
+import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { getLanguageString } from "propeller-v2-vue-ui";
+import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
+import { stripHtml } from "propeller-v2-vue-ui/shared";
 
-import Breadcrumbs from "@/components/propeller/Breadcrumbs.vue";
-import ProductGallery from "@/components/propeller/ProductGallery.vue";
-import ClusterInfo from "@/components/propeller/ClusterInfo.vue";
-import ClusterOptions from "@/components/propeller/ClusterOptions.vue";
-import ClusterConfigurator from "@/components/propeller/ClusterConfigurator.vue";
-import ProductPrice from "@/components/propeller/ProductPrice.vue";
-import ProductBulkPrices from "@/components/propeller/ProductBulkPrices.vue";
-import ProductShortDescription from "@/components/propeller/ProductShortDescription.vue";
-import ItemStock from "@/components/propeller/ItemStock.vue";
-import ProductTabs from "@/components/propeller/ProductTabs.vue";
-import ProductSlider from "@/components/propeller/ProductSlider.vue";
-import AddToCart from "@/components/propeller/AddToCart.vue";
-import AddToFavorite from "@/components/propeller/AddToFavorite.vue";
+import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterJsonLd, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const breadcrumbsLabels = useTranslations('Breadcrumbs');
+const productGalleryLabels = useTranslations('ProductGallery');
+const productPriceLabels = useTranslations('ProductPrice');
+const productBulkPricesLabels = useTranslations('ProductBulkPrices');
+const itemStockLabels = useTranslations('ItemStock');
+const clusterConfiguratorLabels = useTranslations('ClusterConfigurator');
+const clusterOptionsLabels = useTranslations('ClusterOptions');
+const addToCartLabels = useTranslations('AddToCart');
+const addToFavoriteLabels = useTranslations('AddToFavorite');
+const productTabsLabels = useTranslations('ProductTabs');
+const productSliderLabels = useTranslations('ProductSlider');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
 
 const route = useRoute();
 const router = useRouter();
@@ -217,17 +223,30 @@ const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
 
 const clusterId = computed(() => parseInt(route.params.clusterId as string));
-const cluster = ref<any>(null);
-const selectedProduct = ref<any>(null);
+
+// SSR seed: the route's prefetch loader fetched the cluster server-side.
+// Seeding `cluster` + `selectedProduct` (from its default product) means the
+// breadcrumbs / gallery / price shell and the <head> tags server-render real
+// content. `ClusterInfo` still runs on the client and re-confirms via
+// `onClusterLoaded`.
+const ssrCatalog = useSsrCatalogStore();
+// peekSeed (not takeSeed): SSR + hydration must agree, or Vue warns of a
+// mismatch. consumeSeed in onMounted below clears the entry so a later
+// client-side re-navigation fetches fresh.
+const seed = ssrCatalog.peekSeed(route.fullPath);
+const seededCluster = seed?.kind === "cluster" ? (seed.data as any) : null;
+
+const cluster = ref<any>(seededCluster);
+const selectedProduct = ref<any>(seededCluster?.defaultProduct ?? null);
 const selectedOptionProducts = ref<Record<number, any>>({});
 const showClusterErrors = ref(false);
 
 const crossUpsellSliders = [
-  Enums.CrossupsellType.ACCESSORIES,
-  Enums.CrossupsellType.ALTERNATIVES,
-  Enums.CrossupsellType.RELATED,
-  Enums.CrossupsellType.OPTIONS,
-  Enums.CrossupsellType.PARTS,
+  CrossupsellType.ACCESSORIES,
+  CrossupsellType.ALTERNATIVES,
+  CrossupsellType.RELATED,
+  CrossupsellType.OPTIONS,
+  CrossupsellType.PARTS,
 ];
 
 const displayProduct = computed(
@@ -240,6 +259,67 @@ const displayImages = computed(
       ?.map((img: any) => img.imageVariants?.[0]?.url)
       .filter((url: any): url is string => !!url) ?? [],
 );
+
+// SEO <head> — server-rendered from the seeded cluster. Mirrors React's
+// cluster `generateMetadata`: curated metadata wins, falling back to the
+// cluster's own names, then to the default product's name. Title + description
+// are shared into og:title / og:description so the meta tags can't drift.
+const seoTitle = computed(() => {
+  const fromMetadata = resolveSeoTitle(
+    (cluster.value as any)?.metadataTitles,
+    (cluster.value as any)?.names,
+    languageStore.language,
+  );
+  if (fromMetadata) return fromMetadata;
+  const productNames = displayProduct.value?.names;
+  return productNames
+    ? getLanguageString(productNames, languageStore.language, "") || "Product"
+    : "Product";
+});
+const seoDescription = computed(() => {
+  const resolved = resolveSeoDescription(
+    (cluster.value as any)?.metadataDescriptions,
+    [
+      (cluster.value as any)?.shortDescriptions,
+      (cluster.value as any)?.descriptions,
+    ],
+    languageStore.language,
+  );
+  return resolved ? stripHtml(resolved) : "";
+});
+const seoCanonical = computed(() =>
+  resolveCanonicalUrl(
+    (cluster.value as any)?.metadataCanonicalUrls,
+    languageStore.language,
+  ),
+);
+// First gallery image, used for og:image + twitter:image when present.
+const seoImage = computed(() => displayImages.value[0] ?? "");
+
+// schema.org JSON-LD context — Cluster renders as `@type: "Product"`.
+const jsonLdContext = computed(() =>
+  buildJsonLdContext({
+    language: languageStore.language,
+    user: authStore.user as any,
+  }),
+);
+useHead({
+  title: seoTitle,
+  meta: [
+    { name: "description", content: seoDescription },
+    { property: "og:title", content: seoTitle },
+    { property: "og:description", content: seoDescription },
+    { property: "og:type", content: "product" },
+    { property: "og:image", content: seoImage },
+    { name: "twitter:card", content: computed(() => seoImage.value ? "summary_large_image" : "summary") },
+    { name: "twitter:title", content: seoTitle },
+    { name: "twitter:description", content: seoDescription },
+    { name: "twitter:image", content: seoImage },
+  ],
+  link: computed(() =>
+    seoCanonical.value ? [{ rel: "canonical", href: seoCanonical.value }] : [],
+  ),
+});
 
 function handleClusterLoaded(loadedCluster: any) {
   cluster.value = loadedCluster;
@@ -281,6 +361,12 @@ function validateClusterOptions(): boolean {
   }
   return true;
 }
+
+// Post-hydration: discard the seed so a later same-route navigation fetches
+// fresh. Runs only on the client (onMounted is a no-op during SSR).
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath);
+});
 
 watch(
   () => route.params.clusterId,

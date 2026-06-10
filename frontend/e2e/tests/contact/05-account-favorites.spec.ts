@@ -8,6 +8,20 @@ test.describe('Contact — Account favorites', () => {
     await expect(page.locator('main')).toBeVisible({ timeout: 10_000 });
   });
 
+  test('refreshing /account/favorites stays on the page (no SSR login redirect)', async ({ page }) => {
+    // Regression: on a hard refresh the router's requiresAuth guard runs
+    // server-side, where the auth store must be seeded from the access_token
+    // cookie — otherwise the server 302-redirects a logged-in user to /login.
+    await page.goto('/account/favorites');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page).not.toHaveURL(/\/login/);
+
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page).not.toHaveURL(/\/login/);
+    await expect(page.locator('main')).toBeVisible({ timeout: 10_000 });
+  });
+
   test('favorite lists render or empty state shown', async ({ page }) => {
     await page.goto('/account/favorites');
     await page.waitForLoadState('domcontentloaded');

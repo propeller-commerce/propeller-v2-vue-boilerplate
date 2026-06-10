@@ -19,17 +19,11 @@
       </div>
 
       <ProductSlider
-        :graphqlClient="graphqlClient"
-        :user="authStore.user as Contact | Customer"
-        :companyId="companyStore.selectedCompany?.companyId"
         :productIds="[140, 64, 1382, 142, 146, 145]"
         :taxZone="configuration.taxZone"
         :cartId="cartStore.cartId || undefined"
         :createCart="true"
         :showModal="true"
-        :language="languageStore.language"
-        :includeTax="priceStore.includeTax"
-        :configuration="configuration"
         :showStock="true"
         :showAvailability="false"
         :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
@@ -56,6 +50,12 @@
               localizeHref('/checkout?mode=quote', languageStore.language),
             )
         "
+        :labels="productSliderLabels"
+        :productCardLabels="productCardLabels"
+        :clusterCardLabels="clusterCardLabels"
+        :stockLabels="itemStockLabels"
+        :addToCartLabels="addToCartLabels"
+        :priceLabels="productPriceLabels"
       />
     </div>
   </div>
@@ -71,14 +71,22 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient, productService } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import ProductSlider from "@/components/propeller/ProductSlider.vue";
+import { ProductSlider } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const productSliderLabels = useTranslations('ProductSlider');
+const productCardLabels = useTranslations('ProductCard');
+const clusterCardLabels = useTranslations('ClusterCard');
+const itemStockLabels = useTranslations('ItemStock');
+const addToCartLabels = useTranslations('AddToCart');
+const productPriceLabels = useTranslations('ProductPrice');
 import type {
   Cart,
   Cluster,
   Contact,
   Customer,
   Product,
-} from "propeller-sdk-v2";
+} from "@propeller-commerce/propeller-sdk-v2";
 
 const router = useRouter();
 const authStore = useAuthStore();

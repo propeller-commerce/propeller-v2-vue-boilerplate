@@ -10,10 +10,11 @@
             <AccountIconAndMenu
               variant="sidebar"
               :currentPath="currentPath"
-              :user="authStore.user ?? null"
               :onMenuItemClick="handleMenuItemClick"
               :onLogoutClick="handleLogout"
               :menuLinks="menuLinks"
+              :labels="accountIconAndMenuLabels"
+              :loginFormLabels="loginFormLabels"
             />
           </div>
         </aside>
@@ -34,7 +35,11 @@ import { useAuthStore } from "@/stores/auth";
 import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { localizeHref } from "@/lib/config";
-import AccountIconAndMenu from "@/components/propeller/AccountIconAndMenu.vue";
+import { AccountIconAndMenu } from 'propeller-v2-vue-ui';
+import { useTranslations } from '@/lib/i18n/composable';
+
+const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
+const loginFormLabels = useTranslations('LoginForm');
 
 const authStore = useAuthStore();
 const companyStore = useCompanyStore();

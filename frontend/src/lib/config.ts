@@ -1,5 +1,5 @@
-import { Enums } from 'propeller-sdk-v2'
-import type { Category, Cluster, Product } from 'propeller-sdk-v2'
+import type { Category, Cluster, Product } from '@propeller-commerce/propeller-sdk-v2'
+import { Fit, Format } from '@propeller-commerce/propeller-sdk-v2';
 
 // Offset 1 = "first image only" — used in product cards / grids where a single
 // thumbnail is enough.
@@ -11,15 +11,15 @@ export const imageSearchFiltersGrid = { page: 1, offset: 1 }
 export const imageSearchFilters = { page: 1, offset: 20 }
 
 export const imageVariantFiltersSmall = {
-  transformations: [{ name: 'thumb', transformation: { format: Enums.Format.WEBP, height: 100, width: 100, fit: Enums.Fit.BOUNDS } }],
+  transformations: [{ name: 'thumb', transformation: { format: Format.WEBP, height: 100, width: 100, fit: Fit.BOUNDS } }],
 }
 
 export const imageVariantFiltersMedium = {
-  transformations: [{ name: 'grid', transformation: { format: Enums.Format.WEBP, height: 300, width: 300, fit: Enums.Fit.BOUNDS } }],
+  transformations: [{ name: 'grid', transformation: { format: Format.WEBP, height: 300, width: 300, fit: Fit.BOUNDS } }],
 }
 
 export const imageVariantFiltersLarge = {
-  transformations: [{ name: 'large', transformation: { format: Enums.Format.WEBP, height: 800, width: 800, fit: Enums.Fit.BOUNDS } }],
+  transformations: [{ name: 'large', transformation: { format: Format.WEBP, height: 800, width: 800, fit: Fit.BOUNDS } }],
 }
 
 const URL_PATTERN = import.meta.env.VITE_URL_PATTERN || 'page/id/slug'
@@ -51,7 +51,28 @@ function buildEntityUrl(page: string, id?: number | string, slug?: string, patte
 
 export const baseCategoryId = parseInt(import.meta.env.VITE_BASE_CATEGORY_ID || '17', 10)
 export const menuDepth = parseInt(import.meta.env.VITE_MENU_DEPTH || '3', 10)
+// Set VITE_CHANNEL_ID per environment to the channel orders/quotes are placed
+// on. The account order/quote lists filter by `channelIds: [channelId]`, so a
+// wrong value silently returns zero results.
 export const channelId = parseInt(import.meta.env.VITE_CHANNEL_ID || '1', 10)
+
+/**
+ * Portal access mode — kebab-case `'open'` | `'semi-closed'` | `'closed'`.
+ * Mirrors the React app's `BOILERPLATE_PORTAL_MODE`. The package's
+ * `isContentHidden(portalMode, user)` matches on these exact strings; using
+ * any other casing leaves the semi-closed gate as a no-op.
+ */
+export const portalMode = (
+  import.meta.env.VITE_PORTAL_MODE || 'open'
+).trim().toLowerCase() === 'semiclosed' ? 'semi-closed' :
+  (import.meta.env.VITE_PORTAL_MODE || 'open').trim().toLowerCase()
+
+/**
+ * Absolute origin of this site (no trailing slash). Used to build absolute
+ * URLs in schema.org / JSON-LD payloads emitted by ProductJsonLd / ClusterJsonLd
+ * / ItemListJsonLd. When unset, JSON-LD emits path-only URLs.
+ */
+export const siteUrl = (import.meta.env.VITE_SITE_URL || '').replace(/\/$/, '')
 
 /**
  * Prepends `/<lang>` to a path when `language` is non-default. Idempotent —
@@ -101,6 +122,9 @@ export const configuration = {
   urlPattern: URL_PATTERN,
   taxZone: 'NL',
   currency: '€',
+  /** ISO 4217 currency code — used by JSON-LD / schema.org payloads (`priceCurrency`).
+   *  Distinct from `currency` above, which is the display symbol shown to humans. */
+  currencyCode: 'EUR',
   baseCategoryId,
   menuDepth,
   urls: {
