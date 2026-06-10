@@ -1,7 +1,7 @@
 {
   "name": "propeller-vue",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",
