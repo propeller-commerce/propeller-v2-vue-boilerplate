@@ -138,9 +138,9 @@ import { configuration, localizeHref } from "@/lib/config";
 import AccessErrorView from "@/components/access/AccessErrorView.vue";
 import { classifyApiError } from "@/lib/errors";
 import type { Cart, Contact, Customer, Order } from "@propeller-commerce/propeller-sdk-v2";
-import { useOrders } from "propeller-v2-vue-ui";
-import type { AnyUser } from "propeller-v2-vue-ui";
-import { OrderActions, OrderBonusItems, OrderItemCard, OrderShipments, OrderSummary, OrderTotals } from 'propeller-v2-vue-ui';
+import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
+import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
+import { OrderActions, OrderBonusItems, OrderItemCard, OrderShipments, OrderSummary, OrderTotals } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 

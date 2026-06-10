@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useHead } from '@unhead/vue'
-import { PropellerProvider } from 'propeller-v2-vue-ui'
+import { PropellerProvider } from '@propeller-commerce/propeller-v2-vue-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { usePriceStore } from '@/stores/price'

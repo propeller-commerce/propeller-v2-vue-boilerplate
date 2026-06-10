@@ -33,9 +33,9 @@ import { useCartStore } from '@/stores/cart'
 import { usePriceStore } from '@/stores/price'
 import { graphqlClient } from '@/lib/api'
 import { configuration } from '@/lib/config'
-import { useFavorites } from 'propeller-v2-vue-ui'
-import type { AnyUser } from 'propeller-v2-vue-ui'
-import { FavoriteListDetails } from 'propeller-v2-vue-ui';
+import { useFavorites } from '@propeller-commerce/propeller-v2-vue-ui'
+import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
+import { FavoriteListDetails } from '@propeller-commerce/propeller-v2-vue-ui';
 import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useTranslations } from '@/lib/i18n/composable';
 

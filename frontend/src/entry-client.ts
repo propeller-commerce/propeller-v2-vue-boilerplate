@@ -7,13 +7,13 @@
  * mismatch-free, the Pinia state must be restored from `window.__INITIAL_STATE__`
  * (what the server serialized) BEFORE mount, and the router must be `isReady()`.
  */
-import 'propeller-v2-vue-ui/styles.css'
+import '@propeller-commerce/propeller-v2-vue-ui/styles.css'
 import './style.css'
 import { createApp } from './app'
 import { graphqlClient } from './lib/api'
 import { setCookie } from './lib/ssr'
 import { configuration } from './lib/config'
-import { fetchActiveCart } from 'propeller-v2-vue-ui'
+import { fetchActiveCart } from '@propeller-commerce/propeller-v2-vue-ui'
 import { useCartStore } from './stores/cart'
 import { useCompanyStore } from './stores/company'
 import { useAuthStore } from './stores/auth'

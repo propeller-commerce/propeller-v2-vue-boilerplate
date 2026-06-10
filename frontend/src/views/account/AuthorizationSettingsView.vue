@@ -16,7 +16,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { orderEditorGraphqlClient } from '@/lib/api'
 import { useTranslations } from '@/lib/i18n/composable'
-import { PurchaseAuthorizationConfigurator } from 'propeller-v2-vue-ui';
+import { PurchaseAuthorizationConfigurator } from '@propeller-commerce/propeller-v2-vue-ui';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()

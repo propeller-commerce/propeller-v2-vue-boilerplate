@@ -23,7 +23,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { useCompanyStore } from '@/stores/company'
 import { graphqlClient } from '@/lib/api'
-import { UserDetails } from 'propeller-v2-vue-ui';
+import { UserDetails } from '@propeller-commerce/propeller-v2-vue-ui';
 import type { Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { COUNTRIES } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';

@@ -38,10 +38,10 @@ import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { mergeAnonymousCart } from "propeller-v2-vue-ui";
-import { useCart } from "propeller-v2-vue-ui";
-import type { AnyUser } from "propeller-v2-vue-ui";
-import { RegisterForm } from 'propeller-v2-vue-ui';
+import { mergeAnonymousCart } from "@propeller-commerce/propeller-v2-vue-ui";
+import { useCart } from "@propeller-commerce/propeller-v2-vue-ui";
+import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
+import { RegisterForm } from '@propeller-commerce/propeller-v2-vue-ui';
 import { COUNTRIES_MAP } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';
 

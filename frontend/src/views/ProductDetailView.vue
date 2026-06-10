@@ -188,9 +188,9 @@ import {
   imageSearchFilters,
   localizeHref,
 } from "@/lib/config";
-import { getLanguageString } from "propeller-v2-vue-ui";
+import { getLanguageString } from "@propeller-commerce/propeller-v2-vue-ui";
 import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
-import { stripHtml } from "propeller-v2-vue-ui/shared";
+import { stripHtml } from "@propeller-commerce/propeller-v2-vue-ui/shared";
 import {
   ProductPrice as SDKProductPrice,
   type Category,
@@ -200,7 +200,7 @@ import {
   type Product,
 } from "@propeller-commerce/propeller-sdk-v2";
 
-import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from 'propeller-v2-vue-ui';
+import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const breadcrumbsLabels = useTranslations('Breadcrumbs');
