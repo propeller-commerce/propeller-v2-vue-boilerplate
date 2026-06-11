@@ -45,11 +45,13 @@
                 "
                 :options="(cluster as any).options"
                 :selectedOptionProducts="Object.values(selectedOptionProducts)"
+                :includeTax="priceStore.includeTax"
                 :labels="productPriceLabels"
               />
 
               <ProductBulkPrices
                 :product="selectedProduct || (cluster as any).defaultProduct"
+                :includeTax="priceStore.includeTax"
                 :labels="productBulkPricesLabels"
               />
 

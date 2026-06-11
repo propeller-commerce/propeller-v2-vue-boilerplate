@@ -33,9 +33,8 @@
 
           <PriceToggle
             v-if="showVatToggle"
-            :includeTax="priceStore.includeTax"
-            :onToggle="(val: boolean) => { priceStore.includeTax = val }"
-            :inclExclVatSwitched="(val: boolean) => { priceStore.includeTax = val }"
+            :initialState="priceStore.includeTax"
+            :inclExclVatSwitched="(val: boolean) => priceStore.setIncludeTax(val)"
             :language="languageStore.language"
             :labels="priceToggleLabels"
           />
@@ -554,7 +553,14 @@ function handleLogout() {
 }
 
 onMounted(() => {
-  if (localStorage.getItem('price_include_tax') === null) {
+  // Apply the configured VAT default ONLY on a visitor's first visit — i.e.
+  // when no `price_include_tax` preference has been persisted yet. The store
+  // persists this choice to a COOKIE (so the SSR server can read it), not to
+  // localStorage, so the first-visit guard must inspect the cookie too.
+  // Guarding on localStorage was always-null, which re-applied the env default
+  // on every mount and silently discarded the user's toggle on each navigation.
+  const hasStoredPref = /(?:^|;\s*)price_include_tax=/.test(document.cookie)
+  if (!hasStoredPref) {
     priceStore.setIncludeTax(import.meta.env.VITE_INCLUDE_VAT === 'true')
   }
   // NOTE: the authenticated mount-time cart reconcile lives in `entry-client.ts`
