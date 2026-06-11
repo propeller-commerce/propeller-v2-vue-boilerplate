@@ -42,11 +42,15 @@
 
           <!-- Info -->
           <div class="flex flex-col gap-4">
-            <ProductInfo :product="product as Product" />
+            <ProductInfo
+              :product="product as Product"
+              :includeTax="priceStore.includeTax"
+            />
 
             <ProductPrice
               :product="product as Product"
               :price="product.price as SDKProductPrice"
+              :includeTax="priceStore.includeTax"
               :labels="productPriceLabels"
             />
 
@@ -70,6 +74,7 @@
               v-if="product.price"
               :product="product as Product"
               :bulkPrices="product.bulkPrices as SDKProductPrice[]"
+              :includeTax="priceStore.includeTax"
               :labels="productBulkPricesLabels"
             />
 
