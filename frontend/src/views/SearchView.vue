@@ -18,28 +18,27 @@
            cards. First user interaction drops the seam and the grid resumes
            its own fetching. -->
       <div class="flex flex-col lg:flex-row gap-8 mt-4">
-        <!-- Filters Sidebar — hidden when search returned no results so the
-             user isn't presented with a price-range slider that has nothing
-             to filter (and the price bounds default to 0–9999, which is
-             misleading when the result set is empty). -->
-        <aside v-if="!hasNoResults" class="w-full lg:w-64 flex-shrink-0">
-          <GridFilters
-            :filters="gridFilters as AttributeFilter[]"
-            :priceMin="priceBoundsMin"
-            :priceMax="priceBoundsMax"
-            :onFilterChange="handleFilterChange"
-            :onPriceChange="handlePriceChange"
-            :onClearFilters="handleClearFilters"
-            :clearSignal="clearSignal"
-            :activeTextFilters="filters"
-            :activePriceMin="minPrice"
-            :activePriceMax="maxPrice"
-            :isLoading="filtersLoading"
-            :isMobile="false"
-            :collapsed="true"
-            :labels="gridFiltersLabels"
-          />
-        </aside>
+        <!-- Filters: inline sidebar at lg+, slide-in drawer below lg. Hidden
+             when search returned no results so the user isn't presented with a
+             price-range slider that has nothing to filter (and the price
+             bounds default to 0–9999, which is misleading when the result set
+             is empty). -->
+        <GridFiltersPanel
+          v-if="!hasNoResults"
+          :filters="gridFilters as AttributeFilter[]"
+          :priceMin="priceBoundsMin"
+          :priceMax="priceBoundsMax"
+          :onFilterChange="handleFilterChange"
+          :onPriceChange="handlePriceChange"
+          :onClearFilters="handleClearFilters"
+          :clearSignal="clearSignal"
+          :activeTextFilters="filters"
+          :activePriceMin="minPrice"
+          :activePriceMax="maxPrice"
+          :isLoading="filtersLoading"
+          :collapsed="true"
+          :labels="gridFiltersLabels"
+        />
 
         <!-- Products Area -->
         <div class="flex-1 w-full min-w-0">
@@ -169,7 +168,7 @@ import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { buildJsonLdContext } from '@/lib/seo'
 
-import { GridFilters, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
+import { GridFiltersPanel, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute()

@@ -27,25 +27,22 @@
            we drop the prop, and the grid resumes its own fetching. Matches
            propeller-next's CategoryIsland posture exactly. -->
       <div class="flex flex-col lg:flex-row gap-8 mt-4">
-        <!-- Filters Sidebar -->
-        <aside class="w-full lg:w-64 flex-shrink-0">
-          <GridFilters
-            :filters="gridFilters as AttributeFilter[]"
-            :priceMin="priceBoundsMin"
-            :priceMax="priceBoundsMax"
-            :onFilterChange="handleFilterChange"
-            :onPriceChange="handlePriceChange"
-            :onClearFilters="handleClearFilters"
-            :clearSignal="clearSignal"
-            :activeTextFilters="filters"
-            :activePriceMin="minPrice"
-            :activePriceMax="maxPrice"
-            :isLoading="filtersLoading"
-            :isMobile="false"
-            :collapsed="true"
-            :labels="gridFiltersLabels"
-          />
-        </aside>
+        <!-- Filters: inline sidebar at lg+, slide-in drawer below lg -->
+        <GridFiltersPanel
+          :filters="gridFilters as AttributeFilter[]"
+          :priceMin="priceBoundsMin"
+          :priceMax="priceBoundsMax"
+          :onFilterChange="handleFilterChange"
+          :onPriceChange="handlePriceChange"
+          :onClearFilters="handleClearFilters"
+          :clearSignal="clearSignal"
+          :activeTextFilters="filters"
+          :activePriceMin="minPrice"
+          :activePriceMax="maxPrice"
+          :isLoading="filtersLoading"
+          :collapsed="true"
+          :labels="gridFiltersLabels"
+        />
 
         <!-- Products Area -->
         <div class="flex-1 w-full min-w-0">
@@ -168,7 +165,7 @@ import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { resolveSeoTitle, resolveSeoDescription, resolveSeoKeywords, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
 
-import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
+import { Breadcrumbs, CategoryDescription, GridFiltersPanel, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const route = useRoute();
