@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@propeller-commerce/propeller-sdk-v2": "^0.11.1",
-    "@propeller-commerce/propeller-v2-vue-ui": "^0.3.15",
+    "@propeller-commerce/propeller-v2-vue-ui": "^0.3.18",
     "@unhead/vue": "^2.1.15",
     "@vueuse/core": "^14.2.1",
     "class-variance-authority": "^0.7.1",
