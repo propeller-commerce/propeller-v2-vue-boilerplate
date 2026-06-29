@@ -674,8 +674,24 @@ async function createServer() {
 
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite')
+    // Vite enforces a Host-header allowlist on its dev server (even in
+    // middleware mode). A public dev tunnel (cloudflared / ngrok) sends its own
+    // hostname, which Vite rejects with "This host (...) is not allowed" — and
+    // Mollie needs a public tunnel to reach the webhook in dev. Allow the common
+    // tunnel providers' wildcard subdomains, plus anything in DEV_ALLOWED_HOSTS
+    // (comma-separated) for other tunnels. Dev-only — never reached in prod.
+    const allowedHosts = [
+      '.trycloudflare.com',
+      '.ngrok-free.app',
+      '.ngrok.io',
+      '.loca.lt',
+      ...(process.env.DEV_ALLOWED_HOSTS || '')
+        .split(',')
+        .map((h) => h.trim())
+        .filter(Boolean),
+    ]
     vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, allowedHosts },
       appType: 'custom',
     })
     app.use(vite.middlewares)
