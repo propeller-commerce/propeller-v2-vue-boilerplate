@@ -399,6 +399,13 @@
                 </div>
               </template>
               <template v-else>
+                <p
+                  v-if="paymentStartError"
+                  class="mb-4 rounded-[var(--radius-container)] border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                  role="alert"
+                >
+                  {{ paymentStartError }}
+                </p>
                 <CartOverview
                   v-if="cart"
                   :cart="cart as Cart"
@@ -475,6 +482,7 @@ import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { useTranslations } from "@/lib/i18n/composable";
 import { restoreManagerCart } from "@/lib/cartHelpers";
+import { isOnAccountMethod, isMollieEnabled } from "@/lib/payments";
 import { useCheckout } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 
@@ -487,6 +495,7 @@ const cartCarriersLabels = useTranslations('CartCarriers');
 const cartOverviewLabels = useTranslations('CartOverview');
 const cartPaymethodsLabels = useTranslations('CartPaymethods');
 const cartSummaryLabels = useTranslations('CartSummary');
+const molliePaymentLabels = useTranslations('MolliePayment');
 const deliveryDateLabels = useTranslations('DeliveryDate');
 const itemsOverviewLabels = useTranslations('ItemsOverview');
 
@@ -532,6 +541,9 @@ const step3Submitted = ref(false);
 const quoteReference = ref("");
 const quoteNotes = ref("");
 const orderPlaced = ref(false);
+// Surfaced when starting the Mollie payment fails after the order was placed —
+// the order stays UNFINISHED and the cart is kept, so the shopper can retry.
+const paymentStartError = ref("");
 
 // COUNTRIES imported from shared utils
 let lastInitCart: any = null;
@@ -730,28 +742,119 @@ async function handleStep3Continue() {
 
 async function handlePlaceOrder(reference?: string, notes?: string) {
   orderPlaced.value = true;
+  paymentStartError.value = "";
+
+  const quote = isQuoteMode.value;
+  const onAccount = isOnAccountMethod(selectedPayment.value);
+  // PSP path only when Mollie is on, it's a real sale, and the method isn't
+  // settled on account.
+  const goesThroughMollie = !quote && !onAccount && isMollieEnabled();
+
+  // quote → REQUEST · via Mollie → UNFINISHED (the webhook finalizes it on
+  // `paid`) · everything else → NEW (settled immediately, no PSP).
+  const orderStatus = quote ? "REQUEST" : goesThroughMollie ? "UNFINISHED" : "NEW";
+
   const result = await placeOrder((cart.value as any).cartId, {
-    isQuoteMode: isQuoteMode.value,
+    isQuoteMode: quote,
     reference,
     notes,
+    orderStatus,
+    // A Mollie order is finalized later by the payment webhook (on paid): don't
+    // send the confirmation email / clear the backend cart at placement.
+    ...(goesThroughMollie ? { finalizeOrder: false } : {}),
   });
 
-  if (result.ok) {
-    // Restore the manager's parked cart if they were acting on a requester's
-    // authorization cart; otherwise clear.
-    cartStore.setCart(restoreManagerCart());
-    const thankYouUrl = isQuoteMode.value
-      ? localizeHref(
-          `/checkout/thank-you/${result.data.orderId}`,
-          languageStore.language,
-        ) + "?mode=quote"
-      : localizeHref(
-          `/checkout/thank-you/${result.data.orderId}`,
-          languageStore.language,
-        );
-    router.push(thankYouUrl);
-  } else {
+  if (!result.ok) {
     orderPlaced.value = false;
+    return;
+  }
+
+  const orderId = result.data.orderId;
+
+  // PSP step: hand off to Mollie's hosted checkout.
+  if (goesThroughMollie) {
+    const checkoutUrl = await startMolliePayment(orderId);
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl; // hard redirect off-site
+      return;
+    }
+    // Start failed: keep the cart, surface the error, let them retry. The order
+    // stays UNFINISHED — Mollie can still be retried, or it ages out.
+    orderPlaced.value = false;
+    paymentStartError.value =
+      molliePaymentLabels.value.startFailed ??
+      "Could not start the payment. Please try again.";
+    return;
+  }
+
+  // Non-PSP path (on-account / quote / Mollie off): unchanged behaviour.
+  // Restore the manager's parked cart if they were acting on a requester's
+  // authorization cart; otherwise clear.
+  cartStore.setCart(restoreManagerCart());
+  const thankYouUrl =
+    localizeHref(`/checkout/thank-you/${orderId}`, languageStore.language) +
+    (quote ? "?mode=quote" : "");
+  router.push(thankYouUrl);
+}
+
+/**
+ * Create the Mollie payment for a just-placed order and return its hosted
+ * checkout URL (or null on failure). Stashes the Mollie payment id in
+ * sessionStorage so the return page can resolve the real outcome — Mollie sends
+ * every outcome back to the same redirect URL.
+ */
+async function startMolliePayment(orderId: number): Promise<string | null> {
+  try {
+    const total = (cart.value as any)?.total;
+    // Mollie collects the gross (incl. VAT) amount the shopper pays.
+    const amount = total?.totalGross ?? total?.totalNet;
+    if (amount === undefined || amount === null) return null;
+
+    const origin = (
+      import.meta.env.VITE_SITE_URL || window.location.origin
+    ).replace(/\/$/, "");
+    // `psp=mollie` marks this as a PSP return so the thank-you page resolves the
+    // real payment outcome instead of assuming success.
+    const redirectUrl =
+      origin +
+      localizeHref(`/checkout/thank-you/${orderId}`, languageStore.language) +
+      "?psp=mollie";
+
+    const res = await fetch("/api/mollie/create-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId,
+        amount,
+        currency: import.meta.env.VITE_CURRENCY_CODE || "EUR",
+        method: selectedPayment.value,
+        description: `Order ${orderId}`,
+        redirectUrl,
+        ...(authStore.user?.userId
+          ? { userId: Number(authStore.user.userId) }
+          : {}),
+      }),
+    });
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as {
+      checkoutUrl?: string;
+      paymentId?: string;
+    };
+    if (data.paymentId && typeof window !== "undefined") {
+      try {
+        window.sessionStorage.setItem(
+          `mollie_payment_${orderId}`,
+          data.paymentId,
+        );
+      } catch {
+        /* sessionStorage unavailable — the return page falls back to order status */
+      }
+    }
+    return data.checkoutUrl ?? null;
+  } catch (e) {
+    console.error("startMolliePayment failed", e);
+    return null;
   }
 }
 
