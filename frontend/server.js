@@ -20,6 +20,11 @@ import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { createProxyMiddleware } from 'http-proxy-middleware'
+import {
+  getMollieProvider,
+  isMollieEnabled,
+  isOnAccountMethod,
+} from './src/server/mollie.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -478,6 +483,117 @@ async function createServer() {
       invalidated: { proxy: proxyInvalidated, ssr: ssrInvalidated },
     })
   })
+
+  // ── /api/mollie/* — Mollie PSP host endpoints ─────────────────────────────
+  //
+  // The Mollie package is server-side + framework-agnostic; these three routes
+  // are the host HTTP layer (the Next mirror is app/api/mollie/*). They must be
+  // registered BEFORE the `*all` SSR catch-all below. Body parsers are scoped
+  // per-route so they never intercept the `/api/graphql` proxy body. The Mollie
+  // provider talks DIRECTLY to upstream (not via the proxy above), carrying the
+  // order-editor key itself — see src/server/mollie.js.
+
+  // POST /api/mollie/create-payment — start a payment for a placed order.
+  app.post(
+    '/api/mollie/create-payment',
+    express.json({ limit: '8kb' }),
+    async (req, res) => {
+      if (!isMollieEnabled()) {
+        res.status(503).json({ error: 'mollie not configured' })
+        return
+      }
+      const b = req.body || {}
+      const valid =
+        typeof b.orderId === 'number' &&
+        (typeof b.amount === 'number' || typeof b.amount === 'string') &&
+        typeof b.currency === 'string' &&
+        typeof b.method === 'string' &&
+        typeof b.description === 'string' &&
+        typeof b.redirectUrl === 'string'
+      if (!valid) {
+        res.status(400).json({ error: 'missing or invalid fields' })
+        return
+      }
+      // Defense in depth: on-account methods must never reach the PSP. The
+      // client already skips Mollie for these, but guard server-side too.
+      if (isOnAccountMethod(b.method)) {
+        res.status(400).json({ error: 'on-account method does not use a PSP' })
+        return
+      }
+      try {
+        const result = await getMollieProvider().createPayment({
+          orderId: b.orderId,
+          amount: b.amount,
+          currency: b.currency,
+          method: b.method,
+          description: b.description,
+          redirectUrl: b.redirectUrl,
+          ...(b.userId !== undefined ? { userId: b.userId } : {}),
+          ...(b.anonymousId !== undefined ? { anonymousId: b.anonymousId } : {}),
+        })
+        res.json({ ok: true, ...result })
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'payment creation failed'
+        console.error('[mollie] create-payment failed:', message)
+        res.status(500).json({ error: 'payment creation failed' })
+      }
+    },
+  )
+
+  // GET /api/mollie/payment-status?paymentId=tr_xxx — live status for return page.
+  // Read-only; does not touch Propeller. A non-ok body means "unknown" so the
+  // caller can retry.
+  app.get('/api/mollie/payment-status', async (req, res) => {
+    if (!isMollieEnabled()) {
+      res.status(503).json({ error: 'mollie not configured' })
+      return
+    }
+    const paymentId = String(req.query.paymentId || '').trim()
+    if (!paymentId) {
+      res.status(400).json({ error: 'missing paymentId' })
+      return
+    }
+    try {
+      const result = await getMollieProvider().getPaymentStatus(paymentId)
+      res.json(result) // { ok, paymentId, status?, settled?, orderId?, error? }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'status lookup failed'
+      console.error('[mollie] payment-status failed:', message)
+      res.json({ ok: false, paymentId, error: 'status lookup failed' })
+    }
+  })
+
+  // POST /api/mollie/webhook — Mollie posts form-encoded `id=tr_xxx`. The
+  // provider re-fetches from Mollie (body never trusted beyond the id),
+  // classifies, and updates Propeller. ALWAYS 200 so Mollie never retry-storms.
+  app.post(
+    '/api/mollie/webhook',
+    express.urlencoded({ extended: false, limit: '8kb' }),
+    async (req, res) => {
+      if (!isMollieEnabled()) {
+        res.status(200).end()
+        return
+      }
+      const id = req.body && req.body.id ? String(req.body.id) : ''
+      try {
+        const result = await getMollieProvider().handleWebhook(id)
+        if (!result.ok) {
+          console.warn(
+            '[mollie] webhook not processed:',
+            result.error,
+            'payment:',
+            id,
+          )
+        }
+      } catch (e) {
+        console.error(
+          '[mollie] webhook handler error:',
+          e instanceof Error ? e.message : e,
+        )
+      }
+      res.status(200).end() // unconditional ack
+    },
+  )
 
   // ── /api/graphql proxy with anonymous-query response cache ────────────────
   //
