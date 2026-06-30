@@ -745,7 +745,16 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
   paymentStartError.value = "";
 
   const quote = isQuoteMode.value;
-  const onAccount = isOnAccountMethod(selectedPayment.value);
+  // Source of truth for the payment method is the cart's PERSISTED method
+  // (`paymentData.method`), not the local `selectedPayment` ref — the ref can
+  // drift out of sync with the cart (e.g. the cart is reloaded after selection,
+  // or the user navigates back), but the order is placed against whatever is on
+  // the cart. Reading the ref instead would mis-route a PSP method (IDEAL) as
+  // on-account → NEW + finalized, skipping Mollie and clearing the cart. Fall
+  // back to the ref only if the cart somehow has no method yet.
+  const paymentMethod =
+    (cart.value as any)?.paymentData?.method || selectedPayment.value;
+  const onAccount = isOnAccountMethod(paymentMethod);
   // PSP path only when Mollie is on, it's a real sale, and the method isn't
   // settled on account.
   const goesThroughMollie = !quote && !onAccount && isMollieEnabled();
@@ -773,7 +782,7 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
 
   // PSP step: hand off to Mollie's hosted checkout.
   if (goesThroughMollie) {
-    const checkoutUrl = await startMolliePayment(orderId);
+    const checkoutUrl = await startMolliePayment(orderId, paymentMethod);
     if (checkoutUrl) {
       window.location.href = checkoutUrl; // hard redirect off-site
       return;
@@ -803,7 +812,10 @@ async function handlePlaceOrder(reference?: string, notes?: string) {
  * sessionStorage so the return page can resolve the real outcome — Mollie sends
  * every outcome back to the same redirect URL.
  */
-async function startMolliePayment(orderId: number): Promise<string | null> {
+async function startMolliePayment(
+  orderId: number,
+  paymentMethod: string,
+): Promise<string | null> {
   try {
     const total = (cart.value as any)?.total;
     // Mollie collects the gross (incl. VAT) amount the shopper pays.
@@ -827,7 +839,7 @@ async function startMolliePayment(orderId: number): Promise<string | null> {
         orderId,
         amount,
         currency: import.meta.env.VITE_CURRENCY_CODE || "EUR",
-        method: selectedPayment.value,
+        method: paymentMethod,
         description: `Order ${orderId}`,
         redirectUrl,
         ...(authStore.user?.userId
