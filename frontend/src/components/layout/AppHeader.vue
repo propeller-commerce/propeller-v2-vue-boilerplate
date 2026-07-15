@@ -44,7 +44,7 @@
               type="button"
               :aria-haspopup="'listbox'"
               :aria-expanded="showLangMenu"
-              aria-label="Select language"
+              :aria-label="headerLabels.selectLanguage"
               class="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-control)] text-xs font-medium hover:bg-white/10 transition-colors"
               @click="toggleLangMenu"
             >
@@ -117,6 +117,7 @@
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
               :clearSignal="searchClearSignal"
               :labels="searchBarLabels"
+              :placeholder="searchBarLabels.placeholder"
             />
           </div>
 
@@ -218,6 +219,7 @@
           :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
           :clearSignal="searchClearSignal"
           :labels="searchBarLabels"
+          :placeholder="searchBarLabels.placeholder"
         />
       </div>
 
@@ -279,6 +281,7 @@ const loginFormLabels = useTranslations('LoginForm');
 const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
 const menuLabels = useTranslations('Menu');
 const accountLabels = useTranslations('Account');
+const headerLabels = useTranslations('Header');
 
 const router = useRouter()
 const route = useRoute()
@@ -365,11 +368,11 @@ const showSearch = ref(true)
 const showAccount = ref(true)
 const showCart = ref(true)
 const showCategoriesMenu = ref(true)
-const categoriesMenuLabel = ref('Browse Categories')
-const navLinks = ref([
-  { label: 'New Arrivals', url: '/new-arrivals', highlight: false },
-  { label: 'Best Sellers', url: '/best-sellers', highlight: false },
-  { label: 'Sale', url: '/sale', highlight: true },
+const categoriesMenuLabel = computed(() => headerLabels.value.browseCategories)
+const navLinks = computed(() => [
+  { label: headerLabels.value.newArrivals, url: '/new-arrivals', highlight: false },
+  { label: headerLabels.value.bestSellers, url: '/best-sellers', highlight: false },
+  { label: headerLabels.value.sale, url: '/sale', highlight: true },
 ])
 
 // Logo: env var or fallback
