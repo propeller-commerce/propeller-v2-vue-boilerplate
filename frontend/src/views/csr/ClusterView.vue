@@ -40,7 +40,7 @@
               />
 
               <ProductBulkPrices
-                :product="selectedProduct || (cluster as any).defaultProduct"
+                :bulkPrices="(selectedProduct || (cluster as any).defaultProduct)?.bulkPrices || []"
                 :labels="productBulkPricesLabels"
               />
 

@@ -1,15 +1,15 @@
 <template>
   <div class="py-8 bg-surface-hover/20 min-h-[70vh]">
     <div class="container-width max-w-7xl">
-      <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
+      <h1 class="text-3xl font-bold mb-8">{{ t.title }}</h1>
 
       <div v-if="!cartItems.length" class="text-center py-12">
-        <p class="text-xl text-muted-foreground mb-4">Your cart is empty</p>
+        <p class="text-xl text-muted-foreground mb-4">{{ t.empty }}</p>
         <router-link
           :to="localizeHref('/', languageStore.language)"
           class="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-[var(--radius-container)] hover:bg-primary/90 transition"
         >
-          Continue Shopping
+          {{ t.continueShopping }}
         </router-link>
       </div>
 
@@ -88,6 +88,7 @@ import { restoreManagerCart } from "@/lib/cartHelpers";
 import { ActionCode, CartBonusItems, CartItem, CartSummary } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
+const t = useTranslations('CartPage');
 const cartItemLabels = useTranslations('CartItem');
 const cartBonusItemsLabels = useTranslations('CartBonusItems');
 const cartSummaryLabels = useTranslations('CartSummary');

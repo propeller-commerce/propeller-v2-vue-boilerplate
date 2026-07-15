@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold tracking-tight">Authorization Requests</h1>
+      <h1 class="text-3xl font-bold tracking-tight">{{ t.authorizationRequestsTitle }}</h1>
     </div>
     <PurchaseAuthorizationRequests
       v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
@@ -29,6 +29,7 @@ const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const languageStore = useLanguageStore()
 const purchaseAuthorizationRequestsLabels = useTranslations('PurchaseAuthorizationRequests')
+const t = useTranslations('Account')
 
 function isContact(u: Contact | Customer | null): u is Contact {
   return u !== null && 'contactId' in u

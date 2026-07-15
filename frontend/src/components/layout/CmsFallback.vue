@@ -6,36 +6,38 @@
     once the CMS returns confirmed misses.
   -->
   <div class="text-center py-16">
-    <h1 class="text-4xl font-bold text-foreground mb-4">{{ title }}</h1>
+    <h1 class="text-4xl font-bold text-foreground mb-4">{{ displayTitle }}</h1>
     <p class="text-muted-foreground text-lg max-w-xl mx-auto mb-6">
-      {{ subtitle }}
+      {{ displaySubtitle }}
     </p>
     <router-link
       :to="localizeHref('/', languageStore.language)"
       class="inline-block bg-primary text-primary-foreground px-8 py-3 rounded-[var(--radius-container)] font-medium hover:bg-primary/90 transition"
     >
-      {{ ctaLabel }}
+      {{ displayCtaLabel }}
     </router-link>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { localizeHref } from '@/lib/config'
 import { useLanguageStore } from '@/stores/language'
+import { useTranslations } from '@/lib/i18n/composable'
 
-withDefaults(
-  defineProps<{
-    title?: string
-    subtitle?: string
-    ctaLabel?: string
-  }>(),
-  {
-    title: 'Welcome to Propeller',
-    subtitle:
-      'Discover our full catalog of products — quality, selection, and fast delivery.',
-    ctaLabel: 'Browse Products',
-  },
-)
+// Props override the translated defaults when a CMS-driven caller supplies
+// them; otherwise fall back to the Home namespace so the fallback text
+// follows the active language.
+const props = defineProps<{
+  title?: string
+  subtitle?: string
+  ctaLabel?: string
+}>()
 
 const languageStore = useLanguageStore()
+const t = useTranslations('Home')
+
+const displayTitle = computed(() => props.title ?? t.value.welcomeTitle)
+const displaySubtitle = computed(() => props.subtitle ?? t.value.welcomeSubtitle)
+const displayCtaLabel = computed(() => props.ctaLabel ?? t.value.browseProducts)
 </script>

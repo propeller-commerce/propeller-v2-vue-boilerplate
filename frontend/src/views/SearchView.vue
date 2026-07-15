@@ -8,7 +8,7 @@
         :context="jsonLdContext"
       />
       <GridTitle
-        :title="searchTerm ? `Search Products: '${searchTerm}'` : 'Search Products'"
+        :title="searchTerm ? t.searchTitleWithTerm.replace('{term}', searchTerm) : t.searchTitle"
         :labels="gridTitleLabels"
       />
 
@@ -80,17 +80,17 @@
                 />
               </svg>
               <h2 class="text-xl font-semibold text-foreground mb-2">
-                No products found for &quot;{{ searchTerm }}&quot;
+                {{ t.noResultsFor.replace('{term}', searchTerm) }}
               </h2>
               <p class="text-sm text-muted-foreground mb-6 max-w-md">
-                Try adjusting your search term, or browse our products from the homepage.
+                {{ t.tryAdjusting }}
               </p>
               <button
                 type="button"
                 class="inline-flex items-center justify-center px-4 py-2 rounded-[var(--radius-control)] bg-primary text-primary-foreground hover:bg-primary/90 transition font-medium text-sm"
                 @click="() => router.push(localizeHref('/', languageStore.language))"
               >
-                Go to homepage
+                {{ t.goToHomepage }}
               </button>
             </div>
           </template>
@@ -179,6 +179,7 @@ const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 
+const t = useTranslations('SearchPage');
 const gridTitleLabels = useTranslations('GridTitle');
 const gridFiltersLabels = useTranslations('GridFilters');
 const gridToolbarLabels = useTranslations('GridToolbar');
@@ -385,8 +386,8 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
 useHead({
   title: computed(() =>
     searchTerm.value
-      ? `Search: "${searchTerm.value}"`
-      : 'Search Products',
+      ? t.value.seoTitleWithTerm.replace('{term}', searchTerm.value)
+      : t.value.seoTitle,
   ),
   meta: [{ name: 'robots', content: 'noindex, follow' }],
 })

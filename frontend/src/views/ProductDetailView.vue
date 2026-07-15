@@ -15,7 +15,7 @@
           @click="router.back()"
           class="mt-4 text-primary hover:underline"
         >
-          Go back
+          {{ t.goBack }}
         </button>
       </div>
 
@@ -208,6 +208,7 @@ import {
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
+const t = useTranslations('ProductDetail');
 const breadcrumbsLabels = useTranslations('Breadcrumbs');
 const productGalleryLabels = useTranslations('ProductGallery');
 const productPriceLabels = useTranslations('ProductPrice');

@@ -40,6 +40,7 @@ import { useTranslations } from '@/lib/i18n/composable';
 
 const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
 const loginFormLabels = useTranslations('LoginForm');
+const t = useTranslations('Account');
 
 const authStore = useAuthStore();
 const companyStore = useCompanyStore();
@@ -66,20 +67,20 @@ const isAuthManagerForCompany = computed(() =>
 const menuLinks = computed(() => {
   const lang = languageStore.language;
   return [
-    { label: "Dashboard", href: localizeHref("/account", lang) },
-    { label: "Addresses", href: localizeHref("/account/addresses", lang) },
-    { label: "Orders", href: localizeHref("/account/orders", lang) },
-    { label: "Quotes", href: localizeHref("/account/quotes", lang) },
-    { label: "Quote requests", href: localizeHref("/account/quote-requests", lang) },
-    { label: "Favorites", href: localizeHref("/account/favorites", lang) },
+    { label: t.value.navDashboard, href: localizeHref("/account", lang) },
+    { label: t.value.navAddresses, href: localizeHref("/account/addresses", lang) },
+    { label: t.value.navOrders, href: localizeHref("/account/orders", lang) },
+    { label: t.value.navQuotes, href: localizeHref("/account/quotes", lang) },
+    { label: t.value.navQuoteRequests, href: localizeHref("/account/quote-requests", lang) },
+    { label: t.value.navFavorites, href: localizeHref("/account/favorites", lang) },
     ...(isAuthManagerForCompany.value
       ? [
           {
-            label: "Authorization settings",
+            label: t.value.navAuthorizationSettings,
             href: localizeHref("/account/authorization-settings", lang),
           },
           {
-            label: "Authorization requests",
+            label: t.value.navAuthorizationRequests,
             href: localizeHref("/account/authorization-requests", lang),
           },
         ]

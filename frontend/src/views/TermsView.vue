@@ -1,6 +1,6 @@
 <template>
   <div class="container-width py-12">
-    <h1 class="text-3xl font-bold mb-8">Terms & Conditions</h1>
+    <h1 class="text-3xl font-bold mb-8">{{ t.termsTitle }}</h1>
     <div class="prose max-w-none text-muted-foreground space-y-4">
       <p>Please read these terms and conditions carefully before using our service.</p>
       <h2 class="text-xl font-semibold mt-6">1. Acceptance of Terms</h2>
@@ -10,3 +10,9 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useTranslations } from '@/lib/i18n/composable';
+
+const t = useTranslations('StaticPages');
+</script>

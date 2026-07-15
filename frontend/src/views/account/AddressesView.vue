@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
-      <h1 class="text-3xl font-bold tracking-tight">Addresses</h1>
+      <h1 class="text-3xl font-bold tracking-tight">{{ t.addressesTitle }}</h1>
     </div>
 
     <!-- Default Addresses -->
@@ -9,7 +9,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Default Billing -->
         <div class="space-y-2">
-          <h2 class="font-semibold text-md">Default Billing Address</h2>
+          <h2 class="font-semibold text-md">{{ t.defaultBillingAddress }}</h2>
           <AddressCard
             v-if="defaultAddresses.invoice"
             :key="`inv-${defaultAddresses.invoice.id}`"
@@ -22,13 +22,13 @@
             :countries="COUNTRIES"
           />
           <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
-            <p class="text-sm text-muted-foreground">No default invoice address</p>
-            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.invoice)">Add One</button>
+            <p class="text-sm text-muted-foreground">{{ t.noDefaultInvoiceAddress }}</p>
+            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.invoice)">{{ t.addOne }}</button>
           </div>
         </div>
         <!-- Default Delivery -->
         <div class="space-y-2">
-          <h2 class="font-semibold text-md">Default Delivery Address</h2>
+          <h2 class="font-semibold text-md">{{ t.defaultDeliveryAddress }}</h2>
           <AddressCard
             v-if="defaultAddresses.delivery"
             :key="`del-${defaultAddresses.delivery.id}`"
@@ -41,8 +41,8 @@
             :countries="COUNTRIES"
           />
           <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
-            <p class="text-sm text-muted-foreground">No default delivery address</p>
-            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.delivery)">Add One</button>
+            <p class="text-sm text-muted-foreground">{{ t.noDefaultDeliveryAddress }}</p>
+            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.delivery)">{{ t.addOne }}</button>
           </div>
         </div>
       </div>
@@ -51,9 +51,9 @@
     <!-- Additional Billing Addresses -->
     <div class="space-y-5">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Additional Billing Addresses</h2>
+        <h2 class="text-xl font-semibold">{{ t.additionalBillingAddresses }}</h2>
         <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(AddressType.invoice)">
-          + Add New
+          + {{ t.addNew }}
         </button>
       </div>
       <div v-if="billingAddresses.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -68,15 +68,15 @@
           :countries="COUNTRIES"
         />
       </div>
-      <p v-else class="text-muted-foreground italic text-sm">No additional billing addresses.</p>
+      <p v-else class="text-muted-foreground italic text-sm">{{ t.noAdditionalBillingAddresses }}</p>
     </div>
 
     <!-- Additional Delivery Addresses -->
     <div class="space-y-5">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Additional Delivery Addresses</h2>
+        <h2 class="text-xl font-semibold">{{ t.additionalDeliveryAddresses }}</h2>
         <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(AddressType.delivery)">
-          + Add New
+          + {{ t.addNew }}
         </button>
       </div>
       <div v-if="deliveryAddresses.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -91,7 +91,7 @@
           :countries="COUNTRIES"
         />
       </div>
-      <p v-else class="text-muted-foreground italic text-sm">No additional delivery addresses.</p>
+      <p v-else class="text-muted-foreground italic text-sm">{{ t.noAdditionalDeliveryAddresses }}</p>
     </div>
 
     <!-- Add New Address Modal -->
@@ -126,6 +126,7 @@ import { useTranslations } from '@/lib/i18n/composable';
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const addressCardLabels = useTranslations('AddressCard')
+const t = useTranslations('Account')
 
 // COUNTRIES imported from shared utils
 const showAddModal = ref(false)

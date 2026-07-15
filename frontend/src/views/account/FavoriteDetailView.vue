@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-4">
-      <button @click="router.back()" class="text-primary hover:underline text-sm">← Back to Favorites</button>
-      <h1 class="text-3xl font-bold tracking-tight">{{ listName || 'Loading...' }}</h1>
+      <button @click="router.back()" class="text-primary hover:underline text-sm">← {{ t.backToLists }}</button>
+      <h1 class="text-3xl font-bold tracking-tight">{{ listName || t.loading }}</h1>
     </div>
     <FavoriteListDetails
       v-if="authStore.user"
@@ -45,6 +45,7 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const priceStore = usePriceStore()
 const favoriteListDetailsLabels = useTranslations('FavoriteListDetails')
+const t = useTranslations('Account')
 
 const listName = ref('')
 
