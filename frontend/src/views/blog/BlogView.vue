@@ -1,6 +1,6 @@
 <template>
   <div class="container-width py-12">
-    <h1 class="text-3xl font-bold mb-8">Blog</h1>
+    <h1 class="text-3xl font-bold mb-8">{{ t.title }}</h1>
     <div v-if="loading" class="flex justify-center py-12">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
     </div>
@@ -28,10 +28,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLanguageStore } from '@/stores/language'
 import { localizeHref } from '@/lib/config'
+import { useTranslations } from '@/lib/i18n/composable'
 import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const router = useRouter()
 const languageStore = useLanguageStore()
+const t = useTranslations('Blog')
 const posts = ref<any[]>([])
 const loading = ref(true)
 

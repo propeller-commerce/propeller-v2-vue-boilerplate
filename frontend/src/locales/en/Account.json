@@ -43,5 +43,7 @@
   "noAdditionalBillingAddresses": "No additional billing addresses.",
   "noAdditionalDeliveryAddresses": "No additional delivery addresses.",
   "pdfDownloaded": "PDF downloaded successfully",
-  "pdfDownloadFailed": "Failed to download PDF"
+  "pdfDownloadFailed": "Failed to download PDF",
+  "authorizationSettingsTitle": "Authorization Settings",
+  "authorizationRequestsTitle": "Authorization Requests"
 }

@@ -4,7 +4,7 @@
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
     </div>
     <article v-else-if="post">
-      <button @click="router.back()" class="text-primary hover:underline text-sm mb-6 block">← Back to Blog</button>
+      <button @click="router.back()" class="text-primary hover:underline text-sm mb-6 block">← {{ t.backToBlog }}</button>
       <img v-if="post.cover?.url" :src="post.cover.url" :alt="post.title" class="w-full h-64 object-cover rounded-[var(--radius-container)] mb-8" />
       <h1 class="text-4xl font-bold mb-4">{{ post.title }}</h1>
       <p class="text-sm text-muted-foreground mb-8">{{ post.publishedAt }}</p>
@@ -18,10 +18,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import { useTranslations } from '@/lib/i18n/composable'
 import CmsFallback from '@/components/layout/CmsFallback.vue'
 
 const route = useRoute()
 const router = useRouter()
+const t = useTranslations('Blog')
 const post = ref<any>(null)
 const loading = ref(true)
 

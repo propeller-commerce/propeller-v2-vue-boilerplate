@@ -43,5 +43,7 @@
   "noAdditionalBillingAddresses": "Geen extra factuuradressen.",
   "noAdditionalDeliveryAddresses": "Geen extra bezorgadressen.",
   "pdfDownloaded": "PDF succesvol gedownload",
-  "pdfDownloadFailed": "PDF downloaden mislukt"
+  "pdfDownloadFailed": "PDF downloaden mislukt",
+  "authorizationSettingsTitle": "Autorisatie-instellingen",
+  "authorizationRequestsTitle": "Autorisatieaanvragen"
 }
