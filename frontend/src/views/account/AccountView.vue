@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <h1 class="text-3xl font-bold tracking-tight">{{ t.dashboardTitle }}</h1>
     </div>
 
     <UserDetails
@@ -32,6 +32,7 @@ const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
 const userDetailsLabels = useTranslations('UserDetails')
+const t = useTranslations('Account')
 
 // COUNTRIES imported from shared utils
 </script>

@@ -278,6 +278,7 @@ const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
 const loginFormLabels = useTranslations('LoginForm');
 const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
 const menuLabels = useTranslations('Menu');
+const accountLabels = useTranslations('Account');
 
 const router = useRouter()
 const route = useRoute()
@@ -403,17 +404,17 @@ const isAuthManagerForCurrentCompany = computed(() => {
 const accountMenuLinks = computed(() => {
   const lang = languageStore.language
   const links = [
-    { label: 'Dashboard', href: localizeHref('/account', lang) },
-    { label: 'Addresses', href: localizeHref('/account/addresses', lang) },
-    { label: 'Orders', href: localizeHref('/account/orders', lang) },
-    { label: 'Quotes', href: localizeHref('/account/quotes', lang) },
-    { label: 'Quote requests', href: localizeHref('/account/quote-requests', lang) },
-    { label: 'Favorites', href: localizeHref('/account/favorites', lang) },
+    { label: accountLabels.value.navDashboard, href: localizeHref('/account', lang) },
+    { label: accountLabels.value.navAddresses, href: localizeHref('/account/addresses', lang) },
+    { label: accountLabels.value.navOrders, href: localizeHref('/account/orders', lang) },
+    { label: accountLabels.value.navQuotes, href: localizeHref('/account/quotes', lang) },
+    { label: accountLabels.value.navQuoteRequests, href: localizeHref('/account/quote-requests', lang) },
+    { label: accountLabels.value.navFavorites, href: localizeHref('/account/favorites', lang) },
   ]
   if (isAuthManagerForCurrentCompany.value) {
     links.push(
-      { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', lang) },
-      { label: 'Authorization requests', href: localizeHref('/account/authorization-requests', lang) },
+      { label: accountLabels.value.navAuthorizationSettings, href: localizeHref('/account/authorization-settings', lang) },
+      { label: accountLabels.value.navAuthorizationRequests, href: localizeHref('/account/authorization-requests', lang) },
     )
   }
   return links

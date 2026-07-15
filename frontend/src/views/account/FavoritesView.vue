@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold tracking-tight">Favorites</h1>
+      <h1 class="text-3xl font-bold tracking-tight">{{ t.favoritesTitle }}</h1>
     </div>
     <FavoriteLists
       v-if="authStore.user"
@@ -9,7 +9,7 @@
       :showActions="true"
       :allowFavoriteListCreate="true"
       :onListChanged="() => authStore.refreshUser()"
-      :onListClick="(id: string) => router.push(localizeHref(`/account/favorites/${id}`, languageStore.language))"
+      :onListClick="(id: string | number) => { router.push(localizeHref(`/account/favorites/${id}`, languageStore.language)) }"
     />
   </div>
 </template>
@@ -27,4 +27,5 @@ const router = useRouter()
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const favoriteListsLabels = useTranslations('FavoriteLists')
+const t = useTranslations('Account')
 </script>

@@ -41,7 +41,7 @@ function buildEntityUrl(page: string, id?: number | string, slug?: string, patte
   const prefix = language && language.toUpperCase() !== DEFAULT_LANGUAGE
     ? `/${language.toLowerCase()}` : ''
   const parts: string[] = []
-  p.split('/').forEach(token => {
+  p.split('/').forEach((token: string) => {
     if (token === 'page') parts.push(page)
     else if (token === 'id' && id) parts.push(String(id))
     else if (token === 'slug' && slug) parts.push(slug)

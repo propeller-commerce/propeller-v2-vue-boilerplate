@@ -177,7 +177,7 @@ const languageStore = useLanguageStore();
 
 const cartItems = computed(
   () =>
-    (cartStore.cart as any)?.items || cartStore.cart?.mainItems?.items || [],
+    (cartStore.cart as any)?.items || (cartStore.cart as any)?.mainItems?.items || [],
 );
 const total = computed(() => (cartStore.cart as any)?.total?.totalNet ?? 0);
 const totalExclVat = computed(
