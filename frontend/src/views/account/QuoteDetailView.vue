@@ -281,13 +281,13 @@ async function handleDownloadPDF() {
   try {
     const result = await downloadQuotePdf(Number(quoteId));
     if (result?.success) {
-      showDownloadToast("PDF downloaded successfully", "success");
+      showDownloadToast(t.value.pdfDownloaded, "success");
     } else {
-      showDownloadToast(result?.error || "Failed to download PDF", "error");
+      showDownloadToast(result?.error || t.value.pdfDownloadFailed, "error");
     }
   } catch (e) {
     console.error("Error downloading quote PDF:", e);
-    showDownloadToast("Failed to download PDF", "error");
+    showDownloadToast(t.value.pdfDownloadFailed, "error");
   } finally {
     downloading.value = false;
   }

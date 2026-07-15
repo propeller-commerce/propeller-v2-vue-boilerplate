@@ -41,5 +41,7 @@
   "additionalDeliveryAddresses": "Extra bezorgadressen",
   "addNew": "Nieuw toevoegen",
   "noAdditionalBillingAddresses": "Geen extra factuuradressen.",
-  "noAdditionalDeliveryAddresses": "Geen extra bezorgadressen."
+  "noAdditionalDeliveryAddresses": "Geen extra bezorgadressen.",
+  "pdfDownloaded": "PDF succesvol gedownload",
+  "pdfDownloadFailed": "PDF downloaden mislukt"
 }
