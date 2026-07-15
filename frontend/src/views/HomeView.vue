@@ -4,17 +4,16 @@
     <div class="container-width py-16">
       <div class="text-center mb-12">
         <h1 class="text-4xl font-bold text-foreground mb-4">
-          Welcome to Propeller
+          {{ t.welcomeTitle }}
         </h1>
         <p class="text-muted-foreground text-lg max-w-xl mx-auto">
-          Discover our full catalog of products — quality, selection, and fast
-          delivery.
+          {{ t.welcomeSubtitle }}
         </p>
         <router-link
           :to="localizeHref('/search', languageStore.language)"
           class="inline-block mt-6 bg-primary text-primary-foreground px-8 py-3 rounded-[var(--radius-container)] font-medium hover:bg-primary/90 transition"
         >
-          Browse Products
+          {{ t.browseProducts }}
         </router-link>
       </div>
 
@@ -28,7 +27,7 @@
         :showAvailability="false"
         :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
         :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-        :title="'Featured Products'"
+        :title="t.featuredProducts"
         :onProductClick="
           (product: Product) =>
             router.push(
@@ -74,6 +73,7 @@ import { configuration, localizeHref } from "@/lib/config";
 import { ProductSlider } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
+const t = useTranslations('Home');
 const productSliderLabels = useTranslations('ProductSlider');
 const productCardLabels = useTranslations('ProductCard');
 const clusterCardLabels = useTranslations('ClusterCard');

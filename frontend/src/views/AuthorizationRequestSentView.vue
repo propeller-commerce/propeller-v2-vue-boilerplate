@@ -21,17 +21,16 @@
           </svg>
         </div>
         <h1 class="text-4xl font-bold text-foreground mb-4">
-          Authorization Request Sent!
+          {{ t.title }}
         </h1>
         <p class="text-lg text-muted-foreground">
-          Your request has been submitted. An authorization manager will review
-          it shortly.
+          {{ t.description }}
         </p>
         <p
           v-if="route.params.cartId"
           class="text-sm text-foreground-subtle mt-2"
         >
-          Reference: {{ route.params.cartId }}
+          {{ t.reference }} {{ route.params.cartId }}
         </p>
       </div>
 
@@ -41,7 +40,7 @@
           class="bg-card rounded-[var(--radius-container)] shadow-sm border border-border overflow-hidden"
         >
           <div class="px-6 py-4 border-b border-border-subtle">
-            <h2 class="text-xl font-bold text-foreground">Cart Summary</h2>
+            <h2 class="text-xl font-bold text-foreground">{{ t.cartSummary }}</h2>
           </div>
           <table class="w-full">
             <thead class="bg-surface-hover border-b border-border-subtle">
@@ -49,17 +48,17 @@
                 <th
                   class="px-6 py-3 text-left text-sm font-medium text-muted-foreground w-2/3"
                 >
-                  Product
+                  {{ t.colProduct }}
                 </th>
                 <th
                   class="px-6 py-3 text-center text-sm font-medium text-muted-foreground"
                 >
-                  Qty
+                  {{ t.colQty }}
                 </th>
                 <th
                   class="px-6 py-3 text-right text-sm font-medium text-muted-foreground"
                 >
-                  Total
+                  {{ t.colTotal }}
                 </th>
               </tr>
             </thead>
@@ -125,20 +124,20 @@
             class="px-6 py-4 bg-surface-hover border-t border-border-subtle space-y-2"
           >
             <div class="flex justify-between text-sm text-muted-foreground">
-              <span>Total excl. VAT:</span>
+              <span>{{ t.totalExclVat }}</span>
               <span>{{ formatPrice(totalExclVat) }}</span>
             </div>
             <div
               v-if="totalVat > 0"
               class="flex justify-between text-sm text-muted-foreground"
             >
-              <span>VAT:</span>
+              <span>{{ t.vat }}</span>
               <span>{{ formatPrice(totalVat) }}</span>
             </div>
             <div
               class="flex justify-between text-base font-bold text-foreground pt-2 border-t border-border"
             >
-              <span>Total:</span>
+              <span>{{ t.total }}</span>
               <span>{{ formatPrice(total) }}</span>
             </div>
           </div>
@@ -151,13 +150,12 @@
           :to="localizeHref('/', languageStore.language)"
           class="px-8 py-3 bg-primary text-primary-foreground rounded-[var(--radius-container)] font-semibold hover:bg-primary/80 transition text-center"
         >
-          Continue Shopping
+          {{ t.continueShopping }}
         </router-link>
       </div>
       <div class="text-center text-muted-foreground pt-6 text-sm">
         <p>
-          You will be notified once your authorization request has been
-          reviewed.
+          {{ t.notified }}
         </p>
       </div>
     </div>
@@ -170,10 +168,12 @@ import { useRoute } from "vue-router";
 import { useCartStore } from "@/stores/cart";
 import { useLanguageStore } from "@/stores/language";
 import { localizeHref } from "@/lib/config";
+import { useTranslations } from "@/lib/i18n/composable";
 
 const route = useRoute();
 const cartStore = useCartStore();
 const languageStore = useLanguageStore();
+const t = useTranslations("AuthorizationRequestSent");
 
 const cartItems = computed(
   () =>
@@ -190,7 +190,7 @@ function formatPrice(price: number) {
 }
 
 function getItemName(item: any) {
-  return item.product?.names?.[0]?.value || "Product";
+  return item.product?.names?.[0]?.value || t.value.colProduct;
 }
 
 function getItemImageUrl(item: any) {
