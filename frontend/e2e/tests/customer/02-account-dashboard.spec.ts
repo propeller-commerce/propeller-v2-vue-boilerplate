@@ -36,11 +36,4 @@ test.describe('Customer — Account dashboard', () => {
     await expect(page).not.toHaveURL(/\/login/);
     await expect(page.locator('main')).toBeVisible({ timeout: 10_000 });
   });
-
-  test('/account/invoices loads for customer (empty state)', async ({ page }) => {
-    await page.goto('/account/invoices');
-    await page.waitForLoadState('domcontentloaded');
-    await expect(page).not.toHaveURL(/\/login/);
-    await expect(page.locator('main')).toBeVisible({ timeout: 10_000 });
-  });
 });

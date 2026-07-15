@@ -109,8 +109,6 @@ function buildRoutes() {
             { path: 'quote-requests/:id', name: 'account-quote-request-detail', component: () => import('@/views/account/QuoteDetailView.vue') },
             { path: 'favorites', name: 'account-favorites', component: () => import('@/views/account/FavoritesView.vue') },
             { path: 'favorites/:id', name: 'account-favorite-detail', component: () => import('@/views/account/FavoriteDetailView.vue') },
-            { path: 'invoices', name: 'account-invoices', component: () => import('@/views/account/InvoicesView.vue') },
-            { path: 'price-requests', name: 'account-price-requests', component: () => import('@/views/account/PriceRequestsView.vue') },
             { path: 'authorization-requests', name: 'account-authorization-requests', component: () => import('@/views/account/AuthorizationRequestsView.vue') },
             { path: 'authorization-settings', name: 'account-authorization-settings', component: () => import('@/views/account/AuthorizationSettingsView.vue') },
           ],
