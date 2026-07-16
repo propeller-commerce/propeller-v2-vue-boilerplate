@@ -2,7 +2,7 @@
   <div class="min-h-[70vh] py-8 bg-surface-hover/20">
     <div class="container-width max-w-7xl">
       <h1 class="text-3xl font-bold mb-8">
-        {{ isQuoteMode ? "Quote Request" : "Checkout" }}
+        {{ isQuoteMode ? t.quotePageTitle : t.pageTitle }}
       </h1>
 
       <!-- Step indicator -->
@@ -76,7 +76,7 @@
               @click="currentStep > 1 && (currentStep = 1)"
             >
               <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold">1. Invoice Address</h2>
+                <h2 class="text-lg font-semibold">{{ t.step1Title }}</h2>
                 <span
                   v-if="currentStep > 1 && cart?.invoiceAddress?.street"
                   class="text-sm text-muted-foreground border border-muted rounded px-2 py-0.5"
@@ -130,7 +130,7 @@
                     v-model="sameAsInvoice"
                     class="rounded border-input text-primary focus:ring-primary"
                   />
-                  Delivery address same as invoice address
+                  {{ t.deliverySameAsInvoice }}
                 </label>
               </template>
               <button
@@ -138,7 +138,7 @@
                 @click="currentStep = 2"
                 class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] hover:bg-primary/90 transition"
               >
-                Confirm Invoice Address
+                {{ t.confirmInvoiceAddress }}
               </button>
             </div>
           </div>
@@ -157,7 +157,7 @@
               @click="currentStep > 2 && (currentStep = 2)"
             >
               <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold">2. Shipping Address</h2>
+                <h2 class="text-lg font-semibold">{{ t.step2Title }}</h2>
                 <span
                   v-if="currentStep > 2 && cart?.deliveryAddress?.street"
                   class="text-sm text-muted-foreground border border-muted rounded px-2 py-0.5"
@@ -193,13 +193,13 @@
                     @click="currentStep = 1"
                     class="px-6 py-2 border rounded-[var(--radius-container)] hover:bg-surface-hover transition"
                   >
-                    Back
+                    {{ t.back }}
                   </button>
                   <button
                     @click="currentStep = 3"
                     class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] hover:bg-primary/90 transition"
                   >
-                    Confirm Delivery Address
+                    {{ t.confirmDeliveryAddress }}
                   </button>
                   <AddressSelector
                     v-if="authStore.isAuthenticated"
@@ -248,7 +248,7 @@
               class="p-6 cursor-pointer"
               @click="currentStep > 3 && (currentStep = 3)"
             >
-              <h2 class="text-lg font-semibold">3. Payment &amp; Delivery</h2>
+              <h2 class="text-lg font-semibold">{{ t.step3PaymentTitle }}</h2>
             </div>
             <div v-if="currentStep === 3" class="px-6 pb-6 space-y-8">
               <!-- Payment Method -->
@@ -256,13 +256,13 @@
                 <h3
                   class="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"
                 >
-                  Payment Method
+                  {{ t.paymentMethodHeading }}
                 </h3>
                 <p
                   v-if="step3Submitted && !selectedPayment"
                   class="text-sm text-destructive"
                 >
-                  Please select a payment method
+                  {{ t.selectPaymentError }}
                 </p>
                 <CartPaymethods
                   v-if="cart"
@@ -274,13 +274,13 @@
               <!-- Carrier -->
               <div class="space-y-3">
                 <h3 class="font-semibold text-sm uppercase tracking-wide">
-                  Carrier
+                  {{ t.carrierHeading }}
                 </h3>
                 <p
                   v-if="step3Submitted && ((cart as any)?.carriers?.length ?? 0) > 0 && !selectedCarrier"
                   class="text-sm text-destructive"
                 >
-                  Please select a carrier
+                  {{ t.selectCarrierError }}
                 </p>
                 <CartCarriers
                   v-if="cart"
@@ -293,13 +293,13 @@
               <!-- Delivery Date -->
               <div class="space-y-3">
                 <h3 class="font-semibold text-sm uppercase tracking-wide">
-                  Delivery Date
+                  {{ t.deliveryDateHeading }}
                 </h3>
                 <p
                   v-if="step3Submitted && !selectedDeliveryDate"
                   class="text-sm text-destructive"
                 >
-                  Please select a delivery date
+                  {{ t.selectDeliveryDateError }}
                 </p>
                 <DeliveryDate
                   v-if="cart"
@@ -317,14 +317,14 @@
                   @click="currentStep = 2"
                   class="px-6 py-2 border rounded-[var(--radius-container)] hover:bg-surface-hover transition"
                 >
-                  Back
+                  {{ t.back }}
                 </button>
                 <button
                   @click="handleStep3Continue"
                   :disabled="loading"
                   class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] disabled:opacity-50 hover:bg-primary/90 transition"
                 >
-                  {{ loading ? "Saving..." : "Continue to Review" }}
+                  {{ loading ? t.saving : t.continueToReview }}
                 </button>
               </div>
             </div>
@@ -342,7 +342,7 @@
             <div class="p-6">
               <h2 class="text-lg font-semibold">
                 {{ reviewStep }}.
-                {{ isQuoteMode ? "Quote Details" : "Review & Place Order" }}
+                {{ isQuoteMode ? t.quoteDetailsTitle : t.reviewTitle }}
               </h2>
             </div>
             <div v-if="currentStep === reviewStep" class="px-6 pb-6 space-y-6">
@@ -351,13 +351,13 @@
                   <label
                     class="text-sm font-medium text-muted-foreground"
                     for="quote-reference"
-                    >Reference</label
+                    >{{ t.reference }}</label
                   >
                   <input
                     id="quote-reference"
                     type="text"
                     v-model="quoteReference"
-                    placeholder="Your reference (optional)"
+                    :placeholder="t.referencePlaceholder"
                     maxlength="255"
                     class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
@@ -366,12 +366,12 @@
                   <label
                     class="text-sm font-medium text-muted-foreground"
                     for="quote-notes"
-                    >Notes</label
+                    >{{ t.notes }}</label
                   >
                   <textarea
                     id="quote-notes"
                     v-model="quoteNotes"
-                    placeholder="Additional notes for your quote request (optional)"
+                    :placeholder="t.notesPlaceholder"
                     rows="4"
                     maxlength="255"
                     class="w-full border border-input rounded-[var(--radius-control)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
@@ -382,7 +382,7 @@
                     @click="currentStep = 2"
                     class="px-6 py-2 border rounded-[var(--radius-container)] hover:bg-surface-hover transition"
                   >
-                    Back
+                    {{ t.back }}
                   </button>
                   <button
                     @click="
@@ -394,7 +394,7 @@
                     :disabled="loading"
                     class="bg-primary text-primary-foreground px-6 py-2 rounded-[var(--radius-container)] disabled:opacity-50 hover:bg-primary/90 transition"
                   >
-                    {{ loading ? "Submitting..." : "Place Quote Request" }}
+                    {{ loading ? t.submitting : t.placeQuoteRequest }}
                   </button>
                 </div>
               </template>
@@ -431,7 +431,7 @@
             <div
               class="bg-card rounded-[var(--radius-container)] shadow border p-6"
             >
-              <h3 class="text-lg font-semibold mb-4">Cart Items</h3>
+              <h3 class="text-lg font-semibold mb-4">{{ t.cartItemsTitle }}</h3>
               <ItemsOverview
                 v-if="cart"
                 :cart="cart as Cart"
@@ -452,7 +452,7 @@
               <CartSummary
                 v-if="cart"
                 :cart="cart as Cart"
-                title="Order Summary"
+                :title="t.orderSummaryTitle"
                 :showCheckoutButton="false"
                 :afterRequestAuthorization="handleAfterRequestAuthorization"
                 :onError="
@@ -498,6 +498,7 @@ const cartSummaryLabels = useTranslations('CartSummary');
 const molliePaymentLabels = useTranslations('MolliePayment');
 const deliveryDateLabels = useTranslations('DeliveryDate');
 const itemsOverviewLabels = useTranslations('ItemsOverview');
+const t = useTranslations('CheckoutPage');
 
 const router = useRouter();
 const route = useRoute();
@@ -527,8 +528,8 @@ const isQuoteMode = computed(() => route.query.mode === "quote");
 const reviewStep = computed(() => (isQuoteMode.value ? 3 : 4));
 const stepLabels = computed(() =>
   isQuoteMode.value
-    ? ["Details", "Shipping", "Review"]
-    : ["Details", "Shipping", "Payment", "Review"],
+    ? [t.value.stepDetails, t.value.stepShipping, t.value.stepReview]
+    : [t.value.stepDetails, t.value.stepShipping, t.value.stepPayment, t.value.stepReview],
 );
 
 const cart = computed(() => cartStore.cart);

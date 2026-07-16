@@ -157,18 +157,10 @@
             </svg>
           </div>
           <h1 class="text-4xl font-bold text-foreground mb-4">
-            {{
-              isQuoteMode
-                ? "Thank You for Your Quote Request!"
-                : "Thank You for Your Order!"
-            }}
+            {{ isQuoteMode ? t.thankYouQuoteTitle : t.thankYouOrderTitle }}
           </h1>
           <p class="text-lg text-muted-foreground">
-            {{
-              isQuoteMode
-                ? "Your quote request has been successfully submitted. We will get back to you shortly."
-                : "Your order has been successfully placed and is being processed."
-            }}
+            {{ isQuoteMode ? t.thankYouQuoteText : t.thankYouOrderText }}
           </p>
         </div>
 
@@ -180,7 +172,7 @@
             <OrderSummary
               :order="order"
               :countries="COUNTRIES"
-              title="Order Summary"
+              :title="t.orderSummaryTitle"
               :showReference="true"
               :showNotes="true"
               :showDeliveryAddress="true"
@@ -197,7 +189,7 @@
 
           <!-- Order Overview -->
           <div class="pt-10">
-            <h2 class="text-2xl font-bold mb-6">Order Overview</h2>
+            <h2 class="text-2xl font-bold mb-6">{{ t.orderOverviewTitle }}</h2>
 
             <!-- Regular Products -->
             <div
@@ -210,17 +202,17 @@
                     <th
                       class="px-6 py-4 text-left text-sm font-medium text-muted-foreground w-2/3"
                     >
-                      Product
+                      {{ t.colProduct }}
                     </th>
                     <th
                       class="px-6 py-4 text-center text-sm font-medium text-muted-foreground"
                     >
-                      Quantity
+                      {{ t.colQuantity }}
                     </th>
                     <th
                       class="px-6 py-4 text-right text-sm font-medium text-muted-foreground"
                     >
-                      Price
+                      {{ t.colPrice }}
                     </th>
                   </tr>
                 </thead>
@@ -251,23 +243,23 @@
               :to="localizeHref('/account/orders', languageStore.language)"
               class="px-8 py-3 bg-card border-2 border-primary text-primary rounded-[var(--radius-container)] font-semibold hover:bg-primary/5 transition text-center"
             >
-              View Order History
+              {{ t.viewOrderHistory }}
             </router-link>
             <router-link
               :to="localizeHref('/', languageStore.language)"
               class="px-8 py-3 bg-primary text-primary-foreground rounded-[var(--radius-container)] font-semibold hover:bg-primary/80 transition text-center"
             >
-              Continue Shopping
+              {{ t.continueShopping }}
             </router-link>
           </div>
 
           <div class="text-center text-muted-foreground pt-4">
             <p>
-              If you have any questions, please
+              {{ t.questionsBefore }}
               <router-link
                 :to="localizeHref('/contact', languageStore.language)"
                 class="text-primary hover:underline"
-                >contact our customer service team</router-link
+                >{{ t.contactLink }}</router-link
               >.
             </p>
           </div>
@@ -299,6 +291,7 @@ const orderSummaryLabels = useTranslations('OrderSummary');
 const orderItemCardLabels = useTranslations('OrderItemCard');
 const orderBonusItemsLabels = useTranslations('OrderBonusItems');
 const molliePaymentLabels = useTranslations('MolliePayment');
+const t = useTranslations('CheckoutThankYou');
 
 const route = useRoute();
 const authStore = useAuthStore();

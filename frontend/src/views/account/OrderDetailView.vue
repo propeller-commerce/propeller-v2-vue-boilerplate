@@ -6,9 +6,9 @@
           @click="router.back()"
           class="text-sm text-primary hover:underline"
         >
-          ← Back
+          ← {{ t.back }}
         </button>
-        <h1 class="text-3xl font-bold tracking-tight">Order Details</h1>
+        <h1 class="text-3xl font-bold tracking-tight">{{ t.orderDetailsTitle }}</h1>
       </div>
     </div>
 
@@ -53,7 +53,7 @@
 
       <!-- Order Overview -->
       <div class="pt-10">
-        <h2 class="text-2xl font-bold mb-6">Order Overview</h2>
+        <h2 class="text-2xl font-bold mb-6">{{ t.orderOverviewTitle }}</h2>
 
         <!-- Parent/child product items -->
         <div
@@ -66,17 +66,17 @@
                 <th
                   class="px-6 py-4 text-left text-sm font-medium text-muted-foreground w-2/3"
                 >
-                  Product
+                  {{ t.colProduct }}
                 </th>
                 <th
                   class="px-6 py-4 text-center text-sm font-medium text-muted-foreground"
                 >
-                  Quantity
+                  {{ t.colQuantity }}
                 </th>
                 <th
                   class="px-6 py-4 text-right text-sm font-medium text-muted-foreground"
                 >
-                  Price
+                  {{ t.colPrice }}
                 </th>
               </tr>
             </thead>
@@ -151,6 +151,7 @@ const orderShipmentsLabels = useTranslations('OrderShipments');
 const orderItemCardLabels = useTranslations('OrderItemCard');
 const orderBonusItemsLabels = useTranslations('OrderBonusItems');
 const orderTotalsLabels = useTranslations('OrderTotals');
+const t = useTranslations('Account');
 
 const route = useRoute();
 const router = useRouter();

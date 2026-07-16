@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold tracking-tight">Quote History</h1>
+      <h1 class="text-3xl font-bold tracking-tight">{{ t.quotesTitle }}</h1>
     </div>
     <div class="bg-card shadow-sm">
       <OrderList
@@ -12,7 +12,7 @@
         :labels="labels"
         :rowsClickable="true"
         :searchFields="['term', 'createdAt', 'price']"
-        :columnConfig="{ id: '#', date: 'Datum', status: 'Status', validUntil: 'Geldig tot', total: 'Totaal' }"
+        :columnConfig="{ id: '#', date: t.colDate, status: t.colStatus, validUntil: t.colValidUntil, total: t.colTotal }"
         :columns="['id', 'date', 'status', 'validUntil', 'total']"
         :enableSearch="true"
         :channelIds="[channelId]"
@@ -37,4 +37,5 @@ const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
 
 const labels = useTranslations('OrderList')
+const t = useTranslations('Account')
 </script>

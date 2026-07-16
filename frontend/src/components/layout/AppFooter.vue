@@ -23,27 +23,27 @@
 
         <template v-else>
           <div>
-            <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Shop</h4>
+            <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">{{ t.shopTitle }}</h4>
             <ul class="space-y-3 text-sm text-slate-400">
-              <li><router-link :to="localizeHref('/', languageStore.language)" class="hover:text-white transition-colors">All Products</router-link></li>
-              <li><router-link :to="localizeHref('/', languageStore.language)" class="hover:text-white transition-colors">Featured</router-link></li>
-              <li><router-link :to="localizeHref('/new-arrivals', languageStore.language)" class="hover:text-white transition-colors">New Arrivals</router-link></li>
+              <li><router-link :to="localizeHref('/', languageStore.language)" class="hover:text-white transition-colors">{{ t.allProducts }}</router-link></li>
+              <li><router-link :to="localizeHref('/', languageStore.language)" class="hover:text-white transition-colors">{{ t.featured }}</router-link></li>
+              <li><router-link :to="localizeHref('/new-arrivals', languageStore.language)" class="hover:text-white transition-colors">{{ t.newArrivals }}</router-link></li>
             </ul>
           </div>
 
           <div>
-            <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Support</h4>
+            <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">{{ t.supportTitle }}</h4>
             <ul class="space-y-3 text-sm text-slate-400">
-              <li><router-link :to="localizeHref('/account', languageStore.language)" class="hover:text-white transition-colors">My Account</router-link></li>
-              <li><router-link :to="localizeHref('/terms-conditions', languageStore.language)" class="hover:text-white transition-colors">Terms &amp; Conditions</router-link></li>
-              <li><router-link :to="localizeHref('/privacy', languageStore.language)" class="hover:text-white transition-colors">Privacy Policy</router-link></li>
-              <li><router-link :to="localizeHref('/returns', languageStore.language)" class="hover:text-white transition-colors">Returns</router-link></li>
+              <li><router-link :to="localizeHref('/account', languageStore.language)" class="hover:text-white transition-colors">{{ t.myAccount }}</router-link></li>
+              <li><router-link :to="localizeHref('/terms-conditions', languageStore.language)" class="hover:text-white transition-colors">{{ t.termsConditions }}</router-link></li>
+              <li><router-link :to="localizeHref('/privacy', languageStore.language)" class="hover:text-white transition-colors">{{ t.privacyPolicy }}</router-link></li>
+              <li><router-link :to="localizeHref('/returns', languageStore.language)" class="hover:text-white transition-colors">{{ t.returns }}</router-link></li>
             </ul>
           </div>
         </template>
 
         <div>
-          <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Contact</h4>
+          <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">{{ t.contactTitle }}</h4>
           <ul class="space-y-3 text-sm text-slate-400">
             <li class="flex items-start gap-2">
               <svg class="w-5 h-5 mt-0.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,13 +75,16 @@
 import { computed } from 'vue'
 import { useLanguageStore } from '@/stores/language'
 import { localizeHref } from '@/lib/config'
+import { useTranslations } from '@/lib/i18n/composable'
 
 const languageStore = useLanguageStore()
+const t = useTranslations('Footer')
 
 // CMS settings — replace with a global store when CMS integration is added
 const siteName = import.meta.env.VITE_SITE_NAME || 'Propeller'
-const description = import.meta.env.VITE_FOOTER_DESCRIPTION ||
-  'Your trusted destination for premium electronics. Quality products, fast shipping, and exceptional support.'
+const description = computed(() =>
+  import.meta.env.VITE_FOOTER_DESCRIPTION || t.value.description
+)
 const email = import.meta.env.VITE_FOOTER_EMAIL || 'info@propeller.com'
 const phone = import.meta.env.VITE_FOOTER_PHONE || '+1 234 567 890'
 const copyright = computed(() =>

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold tracking-tight">Authorization Settings</h1>
+      <h1 class="text-3xl font-bold tracking-tight">{{ t.authorizationSettingsTitle }}</h1>
     </div>
     <PurchaseAuthorizationConfigurator
       v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
@@ -21,6 +21,7 @@ import { PurchaseAuthorizationConfigurator } from '@propeller-commerce/propeller
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const purchaseAuthorizationConfiguratorLabels = useTranslations('PurchaseAuthorizationConfigurator')
+const t = useTranslations('Account')
 
 function isContact(u: Contact | Customer | null): u is Contact {
   return u !== null && 'contactId' in u

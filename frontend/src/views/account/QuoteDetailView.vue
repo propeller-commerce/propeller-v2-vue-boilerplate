@@ -6,9 +6,11 @@
           @click="router.back()"
           class="text-sm text-primary hover:underline"
         >
-          ← Back
+          ← {{ t.back }}
         </button>
-        <h1 class="text-3xl font-bold tracking-tight">Quote Details</h1>
+        <h1 class="text-3xl font-bold tracking-tight">
+          {{ isQuoteRequest ? t.requestDetailsTitle : t.quoteDetailsTitle }}
+        </h1>
       </div>
     </div>
 
@@ -50,9 +52,7 @@
             :afterAccept="handleAfterAccept"
             :labels="quoteActionsLabels"
             :showTermsAndConditions="true"
-            :onTermsAndConditionsClick="
-              () => window.open(localizeHref('/terms-conditions', languageStore.language), '_blank')
-            "
+            :onTermsAndConditionsClick="handleTermsAndConditionsClick"
           />
           <button
             type="button"
@@ -60,15 +60,15 @@
             @click="handleDownloadPDF"
             :disabled="downloading"
           >
-            <template v-if="downloading">Downloading...</template>
-            <template v-else>Download Quote (PDF)</template>
+            <template v-if="downloading">{{ t.downloading }}</template>
+            <template v-else>{{ t.downloadQuotePdf }}</template>
           </button>
         </div>
       </div>
 
       <!-- Quote Overview -->
       <div class="pt-10">
-        <h2 class="text-2xl font-bold mb-6 mt-6">Quote Overview</h2>
+        <h2 class="text-2xl font-bold mb-6 mt-6">{{ t.quoteOverviewTitle }}</h2>
 
         <!-- Parent/child product items -->
         <div
@@ -81,22 +81,22 @@
                 <th
                   class="px-6 py-4 text-left text-sm font-medium text-muted-foreground"
                 >
-                  Products
+                  {{ t.colProducts }}
                 </th>
                 <th
                   class="px-6 py-4 text-center text-sm font-medium text-muted-foreground"
                 >
-                  Quantity
+                  {{ t.colQuantity }}
                 </th>
                 <th
                   class="px-6 py-4 text-right text-sm font-medium text-muted-foreground"
                 >
-                  Discount
+                  {{ t.colDiscount }}
                 </th>
                 <th
                   class="px-6 py-4 text-right text-sm font-medium text-muted-foreground"
                 >
-                  Price
+                  {{ t.colPrice }}
                 </th>
               </tr>
             </thead>
@@ -194,6 +194,7 @@ const orderItemCardLabels = useTranslations('OrderItemCard');
 const orderBonusItemsLabels = useTranslations('OrderBonusItems');
 const orderTotalsLabels = useTranslations('OrderTotals');
 const errorPagesLabels = useTranslations('ErrorPages');
+const t = useTranslations('Account');
 
 // The router maps both /account/quotes/:id and /account/quote-requests/:id
 // to this view. Detect which list to send the user back to on error.
@@ -244,6 +245,10 @@ const childMap = computed(() => {
   return map;
 });
 
+function handleTermsAndConditionsClick() {
+  window.open(localizeHref('/terms-conditions', languageStore.language), '_blank');
+}
+
 function handleAfterAccept(acceptedQuote: any) {
   router.push(
     localizeHref(
@@ -276,13 +281,13 @@ async function handleDownloadPDF() {
   try {
     const result = await downloadQuotePdf(Number(quoteId));
     if (result?.success) {
-      showDownloadToast("PDF downloaded successfully", "success");
+      showDownloadToast(t.value.pdfDownloaded, "success");
     } else {
-      showDownloadToast(result?.error || "Failed to download PDF", "error");
+      showDownloadToast(result?.error || t.value.pdfDownloadFailed, "error");
     }
   } catch (e) {
     console.error("Error downloading quote PDF:", e);
-    showDownloadToast("Failed to download PDF", "error");
+    showDownloadToast(t.value.pdfDownloadFailed, "error");
   } finally {
     downloading.value = false;
   }
