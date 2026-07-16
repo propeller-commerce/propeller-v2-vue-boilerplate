@@ -22,6 +22,15 @@ function sanitizeUser(data: any): User {
   return strip(data) as User
 }
 
+// Cross-tab auth signal. A same-document CustomEvent never crosses tabs, so
+// logging out (or in) in one tab left others showing stale auth UI until their
+// next 401. BroadcastChannel reaches every same-origin tab. Null under SSR /
+// older browsers; every use is optional-chained.
+const authChannel: BroadcastChannel | null =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel('auth')
+    : null
+
 function loadUserFromStorage(): User | null {
   try {
     const stored = safeStorage.getItem('user') || safeStorage.getItem('auth_user')
@@ -129,7 +138,11 @@ export const useAuthStore = defineStore('auth', () => {
     // logged-in user after a logout.
     deleteCookie('access_token')
 
-    if (isBrowser) window.dispatchEvent(new CustomEvent('userLoggedOut'))
+    if (isBrowser) {
+      window.dispatchEvent(new CustomEvent('userLoggedOut'))
+      // Cross-tab: reaches other tabs, which the same-document event does not.
+      authChannel?.postMessage('logout')
+    }
   }
 
   async function refreshUser(): Promise<void> {
@@ -154,6 +167,16 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (e) {
       console.error('refreshUser failed', e)
+      // If getViewer() failed with an auth error, the session is dead (token
+      // present but no longer valid). Swallowing it would leave the app
+      // painting logged-in from stored user/token while every data call 401s,
+      // with no recovery. Fall back to a clean logged-out state. Non-auth
+      // failures (network blip) are left alone so a transient error doesn't
+      // sign the user out.
+      const msg = (e instanceof Error ? e.message : String(e)).toLowerCase()
+      if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('403')) {
+        logout()
+      }
     }
   }
 
@@ -173,7 +196,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Sync with other tabs / components via custom events. Browser-only —
   // there are no other tabs, and no `window`, during a server render.
   if (isBrowser) {
-    window.addEventListener('userLoggedIn', () => {
+    const onLoggedIn = () => {
       const storedToken = safeStorage.getItem('accessToken')
       const storedUser = safeStorage.getItem('user')
       if (storedToken && storedUser) {
@@ -184,11 +207,28 @@ export const useAuthStore = defineStore('auth', () => {
           console.error('Failed to parse stored user on userLoggedIn event:', e)
         }
       }
-    })
-
-    window.addEventListener('userLoggedOut', () => {
+    }
+    const onLoggedOut = () => {
       user.value = null
       token.value = null
+    }
+
+    // The same-document `userLoggedIn` event fires only in the tab that logged
+    // in — rehydrate here AND broadcast to other tabs. The channel receiver
+    // below calls onLoggedIn directly (not via this event), so it never
+    // re-broadcasts: no loop.
+    window.addEventListener('userLoggedIn', () => {
+      onLoggedIn()
+      authChannel?.postMessage('login')
+    })
+    window.addEventListener('userLoggedOut', onLoggedOut)
+
+    // Cross-tab: another tab logged in/out. Route to the same handlers. The
+    // logged-in tab reads freshly-written localStorage (login/register persist
+    // token+user before broadcasting), so onLoggedIn rehydrates here.
+    authChannel?.addEventListener('message', (e: MessageEvent) => {
+      if (e.data === 'logout') onLoggedOut()
+      else if (e.data === 'login') onLoggedIn()
     })
   }
 

@@ -283,6 +283,7 @@ import { useRoute } from "vue-router";
 import type { OrderItem } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
+import { restoreManagerCart } from "@/lib/cartHelpers";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
@@ -477,12 +478,15 @@ async function recheckStatus() {
   }
 }
 
-// Clear the LOCAL cart ONLY on success (paid/authorized).
+// Clear the LOCAL cart ONLY on success (paid/authorized). Mirror every
+// non-PSP completion path: if a manager paid a requester's authorization cart
+// by card, their own cart was parked in `manager_cart` — restore it instead of
+// clearing, else it's orphaned. setCart(null) when nothing was parked == clear.
 watch(paymentState, (s) => {
   if (!isPspReturn.value || cartCleared) return;
   if (s === "success") {
     cartCleared = true;
-    cartStore.clearCart();
+    cartStore.setCart(restoreManagerCart());
   }
 });
 
