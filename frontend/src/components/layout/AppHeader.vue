@@ -117,6 +117,7 @@
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
               :clearSignal="searchClearSignal"
               :labels="searchBarLabels"
+              :priceLabels="productPriceLabels"
               :placeholder="searchBarLabels.placeholder"
             />
           </div>
@@ -219,6 +220,7 @@
           :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
           :clearSignal="searchClearSignal"
           :labels="searchBarLabels"
+          :priceLabels="productPriceLabels"
           :placeholder="searchBarLabels.placeholder"
         />
       </div>
@@ -276,6 +278,9 @@ import { useTranslations } from '@/lib/i18n/composable';
 const companySwitcherLabels = useTranslations('CompanySwitcher');
 const priceToggleLabels = useTranslations('PriceToggle');
 const searchBarLabels = useTranslations('SearchBar');
+// Reuse the ProductPrice namespace for the autosuggest's incl./excl. VAT
+// suffix, so the dropdown labels match the PLP/PDP price labels exactly.
+const productPriceLabels = useTranslations('ProductPrice');
 const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
 const loginFormLabels = useTranslations('LoginForm');
 const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
