@@ -166,6 +166,7 @@ import { useLanguageStore } from '@/stores/language'
 import { useSsrCatalogStore } from '@/stores/ssrCatalog'
 import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
+import { parseFiltersFromQuery } from '@/lib/listingParams'
 import { buildJsonLdContext } from '@/lib/seo'
 
 import { GridFiltersPanel, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
@@ -265,23 +266,6 @@ function markUserInteracted(): void {
   if (usingServerData.value) usingServerData.value = false
 }
 
-const RESERVED_QUERY_KEYS = ['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder']
-
-function parseFiltersFromQuery(query: Record<string, any>): Record<string, string[]> {
-  const result: Record<string, string[]> = {}
-  for (const [key, value] of Object.entries(query)) {
-    if (RESERVED_QUERY_KEYS.includes(key)) continue
-    const raw = Array.isArray(value) ? value[0] : value
-    if (typeof raw !== 'string') continue
-    try {
-      const parsed = JSON.parse(raw)
-      result[key] = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)]
-    } catch {
-      result[key] = [raw]
-    }
-  }
-  return result
-}
 
 function readNumberQuery(value: any): number | undefined {
   const raw = Array.isArray(value) ? value[0] : value
