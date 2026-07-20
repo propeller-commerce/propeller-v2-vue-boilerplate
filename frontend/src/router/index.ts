@@ -116,7 +116,7 @@ function buildRoutes() {
 
         // CMS catch-all (must be last child so it doesn't shadow named routes).
         // Lives inside the :lang group, so /en/<slug> also resolves to a CMS page.
-        { path: ':slug+', name: 'cms-page', component: () => import('@/views/CmsPageView.vue') },
+        { path: ':slug+', name: 'cms-page', meta: { ssrKey: 'cms' }, component: () => import('@/views/CmsPageView.vue') },
       ],
     },
   ]

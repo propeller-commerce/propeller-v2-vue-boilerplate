@@ -178,6 +178,25 @@ export async function prefetchSearch(
   }
 }
 
+/**
+ * CMS catch-all (`:slug+`) — resolve the slug to a CMS page. The CMS backend
+ * isn't wired server-side yet, so there is no page to resolve: every path that
+ * falls through to this route is a genuine miss and must carry a 404 (so
+ * crawlers deindex dead/typo URLs instead of keeping a 200'd fallback). The
+ * body still renders `<CmsFallback>` — branded, with a link home — only the
+ * HTTP status changes.
+ *
+ * When a server-side `getPage` seam is added, fetch here and only set 404 when
+ * it returns null; a real page keeps the 200 (leave `ctx.status` unset).
+ */
+export async function prefetchCmsPage(
+  _route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  // No server CMS seam → treat as not found.
+  ctx.status = 404
+}
+
 /** Cluster detail page — fetch the cluster (config-scoped attributes). */
 export async function prefetchCluster(
   route: RouteLocationNormalized,
