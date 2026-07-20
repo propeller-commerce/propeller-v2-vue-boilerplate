@@ -110,7 +110,7 @@
           </router-link>
 
           <!-- Search Bar (desktop only) -->
-          <div v-if="showSearch" class="hidden lg:block flex-1 max-w-2xl">
+          <div v-if="showSearch" class="hidden md:block flex-1 max-w-2xl">
             <SearchBar
               :onSubmit="handleSearch"
               :onViewAllClick="handleSearch"
@@ -124,6 +124,21 @@
 
           <!-- Right Section -->
           <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <!-- Mobile search toggle — icon only below md; expands the bar as
+                 an overlay row (see below). The full bar is always visible from
+                 md up, so this is hidden there. -->
+            <button
+              v-if="showSearch"
+              type="button"
+              class="md:hidden text-white p-2"
+              :aria-label="searchBarLabels.placeholder || 'Search'"
+              :aria-expanded="showMobileSearch"
+              @click="showMobileSearch = !showMobileSearch"
+            >
+              <XIcon v-if="showMobileSearch" class="w-6 h-6" />
+              <SearchIcon v-else class="w-6 h-6" />
+            </button>
+
             <AccountIconAndMenu
               v-if="showAccount"
               :cart="cartStore.cart as Cart"
@@ -154,6 +169,30 @@
               :cartItemLabels="cartItemLabels"
             />
           </div>
+        </div>
+
+        <!-- Mobile expanding search — revealed by the icon toggle above.
+             Below md only; from md up the always-visible bar handles search.
+             Fades + slides in via an opacity/translate transition that flips
+             on the frame after mount (mobileSearchIn). No height clipping, so
+             the autosuggest dropdown (absolute top-full) is never cut off. -->
+        <div
+          v-if="showSearch && showMobileSearch"
+          ref="mobileSearchRef"
+          :class="[
+            'md:hidden pb-4 transition-all duration-300 ease-out motion-reduce:transition-none',
+            mobileSearchIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
+          ]"
+        >
+          <SearchBar
+            :onSubmit="(term: string) => { showMobileSearch = false; handleSearch(term) }"
+            :onViewAllClick="(term: string) => { showMobileSearch = false; handleSearch(term) }"
+            :onResultClick="(result) => { showMobileSearch = false; if (result.url) router.push(result.url) }"
+            :clearSignal="searchClearSignal"
+            :labels="searchBarLabels"
+            :priceLabels="productPriceLabels"
+            :placeholder="searchBarLabels.placeholder"
+          />
         </div>
       </div>
     </div>
@@ -213,18 +252,8 @@
 
     <!-- Mobile slide-down menu -->
     <div v-if="showMobileMenu" class="md:hidden bg-background border-t border-border overflow-y-auto max-h-[calc(100vh-64px)]">
-      <!-- Mobile search -->
-      <div v-if="showSearch" class="p-4 border-b border-border">
-        <SearchBar
-          :onSubmit="(term: string) => { showMobileMenu = false; handleSearch(term) }"
-          :onViewAllClick="(term: string) => { showMobileMenu = false; handleSearch(term) }"
-          :onResultClick="(result) => { showMobileMenu = false; if (result.url) router.push(result.url) }"
-          :clearSignal="searchClearSignal"
-          :labels="searchBarLabels"
-          :priceLabels="productPriceLabels"
-          :placeholder="searchBarLabels.placeholder"
-        />
-      </div>
+      <!-- Search moved out of the hamburger — it now lives behind the dedicated
+           search icon in the header row (see showMobileSearch). -->
 
       <!-- Mobile categories — same pre-fetched tree as the desktop instance.
            Both `<PropellerMenu>` mounts share one fetch via `useMenuStore`. -->
@@ -255,9 +284,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-vue-next'
+import { Menu as MenuIcon, ChevronDown, Check, Globe, Search as SearchIcon, X as XIcon } from 'lucide-vue-next'
 import { CartService, PurchaseRole } from '@propeller-commerce/propeller-sdk-v2';
 import type { Cart, Category, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
@@ -326,6 +355,11 @@ const showMainMenu = ref(false)
 const showMobileMenu = ref(false)
 const langMenuRef = ref<HTMLDivElement | null>(null)
 const showLangMenu = ref(false)
+// Mobile (< md): search collapses to an icon that expands the bar.
+const showMobileSearch = ref(false)
+// Drives the fade/slide-in: flipped true on the frame after the panel opens.
+const mobileSearchIn = ref(false)
+const mobileSearchRef = ref<HTMLDivElement | null>(null)
 
 // The selected language displayed by the switcher is derived from the URL
 // path (mirrors the React/Next behaviour where `language` is computed from
@@ -360,6 +394,37 @@ watch(showLangMenu, (open) => {
   } else {
     document.removeEventListener('mousedown', handleLangClickOutside)
     document.removeEventListener('keydown', handleLangKeydown)
+  }
+})
+
+// Mobile search (< md): expand/collapse behaviour. On open, focus the
+// SearchBar's internal input (by its package class, so we don't need an
+// autoFocus prop) and flip `mobileSearchIn` on the next frame so the
+// fade/slide transition runs. Close on outside click / Escape.
+let mobileSearchRaf = 0
+function handleMobileSearchClickOutside(event: MouseEvent) {
+  if (mobileSearchRef.value && !mobileSearchRef.value.contains(event.target as Node)) {
+    showMobileSearch.value = false
+  }
+}
+function handleMobileSearchKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') showMobileSearch.value = false
+}
+watch(showMobileSearch, async (open) => {
+  if (open) {
+    await nextTick()
+    mobileSearchRaf = requestAnimationFrame(() => { mobileSearchIn.value = true })
+    const input = mobileSearchRef.value?.querySelector<HTMLInputElement>(
+      'input.propeller-search-bar__input',
+    )
+    input?.focus()
+    document.addEventListener('mousedown', handleMobileSearchClickOutside)
+    document.addEventListener('keydown', handleMobileSearchKeydown)
+  } else {
+    cancelAnimationFrame(mobileSearchRaf)
+    mobileSearchIn.value = false
+    document.removeEventListener('mousedown', handleMobileSearchClickOutside)
+    document.removeEventListener('keydown', handleMobileSearchKeydown)
   }
 })
 
@@ -563,7 +628,17 @@ function handleLogout() {
   router.push(localizeHref('/', languageStore.language))
 }
 
+// Collapse the mobile search once the viewport reaches md (where the full bar
+// is always visible), so it can't get stuck open after resizing up.
+let mobileSearchMq: MediaQueryList | null = null
+function handleMobileSearchMq() {
+  showMobileSearch.value = false
+}
+
 onMounted(() => {
+  mobileSearchMq = window.matchMedia('(min-width: 768px)')
+  mobileSearchMq.addEventListener('change', handleMobileSearchMq)
+
   // Apply the configured VAT default ONLY on a visitor's first visit — i.e.
   // when no `price_include_tax` preference has been persisted yet. The store
   // persists this choice to a COOKIE (so the SSR server can read it), not to
@@ -581,6 +656,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  // cleanup if needed
+  mobileSearchMq?.removeEventListener('change', handleMobileSearchMq)
+  cancelAnimationFrame(mobileSearchRaf)
+  document.removeEventListener('mousedown', handleMobileSearchClickOutside)
+  document.removeEventListener('keydown', handleMobileSearchKeydown)
 })
 </script>
