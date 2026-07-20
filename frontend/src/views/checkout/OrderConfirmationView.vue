@@ -172,7 +172,7 @@
             <OrderSummary
               :order="order"
               :countries="getCountries(languageStore.language)"
-              :title="t.orderSummaryTitle"
+              :title="isQuoteMode ? t.quoteSummaryTitle : t.orderSummaryTitle"
               :showReference="true"
               :showNotes="true"
               :showDeliveryAddress="true"
@@ -183,7 +183,7 @@
               :showOrderTotal="true"
               :showDeliveryInfo="true"
               :showRemarks="true"
-              :labels="orderSummaryLabels"
+              :labels="summaryLabels"
               :statusLabels="orderStatusLabels"
               :paymethodLabels="paymethodNames"
             />
@@ -191,7 +191,7 @@
 
           <!-- Order Overview -->
           <div class="pt-10">
-            <h2 class="text-2xl font-bold mb-6">{{ t.orderOverviewTitle }}</h2>
+            <h2 class="text-2xl font-bold mb-6">{{ isQuoteMode ? t.quoteOverviewTitle : t.orderOverviewTitle }}</h2>
 
             <!-- Regular Products -->
             <div
@@ -242,10 +242,10 @@
           <div class="flex flex-col sm:flex-row gap-4 justify-center pt-8">
             <router-link
               v-if="authStore.isAuthenticated"
-              :to="localizeHref('/account/orders', languageStore.language)"
+              :to="localizeHref(isQuoteMode ? '/account/quotes' : '/account/orders', languageStore.language)"
               class="px-8 py-3 bg-card border-2 border-primary text-primary rounded-[var(--radius-container)] font-semibold hover:bg-primary/5 transition text-center"
             >
-              {{ t.viewOrderHistory }}
+              {{ isQuoteMode ? t.viewQuoteHistory : t.viewOrderHistory }}
             </router-link>
             <router-link
               :to="localizeHref('/', languageStore.language)"
@@ -304,6 +304,14 @@ const languageStore = useLanguageStore();
 
 const orderId = computed(() => route.params.orderId as string);
 const isQuoteMode = computed(() => route.query.mode === "quote");
+
+// In quote mode the summary is for a quote *request* — override OrderSummary's
+// order-number/date labels with request wording.
+const summaryLabels = computed(() =>
+  isQuoteMode.value
+    ? { ...orderSummaryLabels.value, orderNumber: t.value.quoteNumber, orderDate: t.value.quoteDate }
+    : orderSummaryLabels.value,
+);
 
 // ── Mollie PSP return resolution ────────────────────────────────────────────
 //

@@ -9,7 +9,7 @@
         :showCompanyOrders="false"
         :onOrderClick="(id) => router.push(localizeHref(`/account/quotes/${id}`, languageStore.language))"
         :orderStatus="['QUOTATION']"
-        :labels="labels"
+        :labels="quoteLabels"
         :statusLabels="orderStatusLabels"
         :rowsClickable="true"
         :searchFields="['term', 'createdAt', 'price']"
@@ -23,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
@@ -40,4 +41,7 @@ const companyStore = useCompanyStore()
 const labels = useTranslations('OrderList')
 const orderStatusLabels = useTranslations('OrderStatus')
 const t = useTranslations('Account')
+
+// Quote history, not order history — override the OrderList empty-state string.
+const quoteLabels = computed(() => ({ ...labels.value, noOrders: t.value.noQuotes }))
 </script>
