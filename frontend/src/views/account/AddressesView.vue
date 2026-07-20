@@ -19,7 +19,7 @@
             :onEdit="handleEditAddress"
             :onDelete="handleDeleteAddress"
             :onSetDefault="handleSetDefault"
-            :countries="COUNTRIES"
+            :countries="getCountries(languageStore.language)"
           />
           <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
             <p class="text-sm text-muted-foreground">{{ t.noDefaultInvoiceAddress }}</p>
@@ -38,7 +38,7 @@
             :onEdit="handleEditAddress"
             :onDelete="handleDeleteAddress"
             :onSetDefault="handleSetDefault"
-            :countries="COUNTRIES"
+            :countries="getCountries(languageStore.language)"
           />
           <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
             <p class="text-sm text-muted-foreground">{{ t.noDefaultDeliveryAddress }}</p>
@@ -65,7 +65,7 @@
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
           :onSetDefault="handleSetDefault"
-          :countries="COUNTRIES"
+          :countries="getCountries(languageStore.language)"
         />
       </div>
       <p v-else class="text-muted-foreground italic text-sm">{{ t.noAdditionalBillingAddresses }}</p>
@@ -88,7 +88,7 @@
           :onEdit="handleEditAddress"
           :onDelete="handleDeleteAddress"
           :onSetDefault="handleSetDefault"
-          :countries="COUNTRIES"
+          :countries="getCountries(languageStore.language)"
         />
       </div>
       <p v-else class="text-muted-foreground italic text-sm">{{ t.noAdditionalDeliveryAddresses }}</p>
@@ -104,7 +104,7 @@
       :enableActions="false"
       :onEdit="handleSaveNewAddress"
       :onCancel="() => { showAddModal = false }"
-      :countries="COUNTRIES"
+      :countries="getCountries(languageStore.language)"
     />
   </div>
 </template>
@@ -115,16 +115,18 @@ import { type Address, AddressType, type Company, YesNo } from '@propeller-comme
 import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
+import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { useAddress } from '@propeller-commerce/propeller-v2-vue-ui'
 import type { AddressInput } from '@propeller-commerce/propeller-v2-vue-ui'
 import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
 import { AddressCard } from '@propeller-commerce/propeller-v2-vue-ui';
-import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { getCountries } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
+const languageStore = useLanguageStore()
 const addressCardLabels = useTranslations('AddressCard')
 const t = useTranslations('Account')
 

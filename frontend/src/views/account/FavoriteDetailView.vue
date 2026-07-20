@@ -7,6 +7,9 @@
     <FavoriteListDetails
       v-if="authStore.user"
       :labels="favoriteListDetailsLabels"
+      :stockLabels="itemStockLabels"
+      :addToCartLabels="addToCartLabels"
+      :itemLabels="favoriteListItemLabels"
       :favoriteListId="String(route.params.id)"
       :onListLoaded="(list: any) => { listName = list?.name || '' }"
       :onItemDelete="handleItemDelete"
@@ -45,6 +48,9 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const priceStore = usePriceStore()
 const favoriteListDetailsLabels = useTranslations('FavoriteListDetails')
+const itemStockLabels = useTranslations('ItemStock')
+const addToCartLabels = useTranslations('AddToCart')
+const favoriteListItemLabels = useTranslations('FavoriteListItem')
 const t = useTranslations('Account')
 
 const listName = ref('')

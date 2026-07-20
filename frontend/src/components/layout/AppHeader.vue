@@ -33,7 +33,7 @@
 
           <PriceToggle
             v-if="showVatToggle"
-            :initialState="priceStore.includeTax"
+            :value="priceStore.includeTax"
             :inclExclVatSwitched="(val: boolean) => priceStore.setIncludeTax(val)"
             :language="languageStore.language"
             :labels="priceToggleLabels"
@@ -151,6 +151,7 @@
               :showTotals="true"
               iconClassName="text-white hover:text-white hover:bg-white/10"
               :labels="cartIconAndSidebarLabels"
+              :cartItemLabels="cartItemLabels"
             />
           </div>
         </div>
@@ -284,6 +285,7 @@ const productPriceLabels = useTranslations('ProductPrice');
 const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
 const loginFormLabels = useTranslations('LoginForm');
 const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+const cartItemLabels = useTranslations('CartItem');
 const menuLabels = useTranslations('Menu');
 const accountLabels = useTranslations('Account');
 const headerLabels = useTranslations('Header');
