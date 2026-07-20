@@ -14,6 +14,14 @@ export interface SSRContext {
   cookies: Record<string, string>
   /** Request URL path + query (what the router was pushed with). */
   url: string
+  /**
+   * HTTP status a route loader wants the server to send, overriding the
+   * default (200 for a matched route). A loader sets this to 404 when the
+   * matched route can't find its content — e.g. the CMS catch-all resolving
+   * to a page that doesn't exist — so the render still produces the branded
+   * body but the response carries the right status (SEO: deindex dead URLs).
+   */
+  status?: number
 }
 
 /** Parse a `Cookie` header into a plain name→value map. */

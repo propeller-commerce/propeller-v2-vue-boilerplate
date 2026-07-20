@@ -22,6 +22,7 @@ import {
   prefetchCategory,
   prefetchSearch,
   prefetchCluster,
+  prefetchCmsPage,
 } from './router/ssrPrefetch'
 import { fetchMenu, getAnonymousInfra, getServerInfra } from './lib/server'
 import { useMenuStore } from './stores/menu'
@@ -54,6 +55,7 @@ const SSR_LOADERS: Record<
   category: prefetchCategory,
   search: prefetchSearch,
   cluster: prefetchCluster,
+  cms: prefetchCmsPage,
 }
 
 export interface RenderResult {
@@ -134,7 +136,10 @@ export async function render(
     }
   }
 
-  const status = resolved.matched.length === 0 ? 404 : 200
+  // Default: 404 only when nothing matched. A loader may override this below
+  // (via `ssrContext.status`) — e.g. the CMS catch-all matches every path but
+  // resolves to a not-found page, so it promotes a matched 200 to a 404.
+  const defaultStatus = resolved.matched.length === 0 ? 404 : 200
 
   // Always-on layout-level prefetches: the menu (rendered in `AppHeader`
   // on every page). Runs in parallel with the route-specific loaders below
@@ -181,6 +186,7 @@ export async function render(
     headTags: payload.headTags,
     htmlAttrs: payload.htmlAttrs,
     bodyAttrs: payload.bodyAttrs,
-    status,
+    // A loader-set status (e.g. the CMS catch-all's 404) wins over the default.
+    status: ssrContext.status ?? defaultStatus,
   }
 }
