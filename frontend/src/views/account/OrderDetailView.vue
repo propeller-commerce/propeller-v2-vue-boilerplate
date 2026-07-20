@@ -38,6 +38,8 @@
           :showDeliveryInfo="true"
           :showRemarks="true"
           :labels="orderSummaryLabels"
+          :statusLabels="orderStatusLabels"
+          :paymethodLabels="paymethodNames"
         />
         <OrderActions
           :order="order as Order"
@@ -146,6 +148,8 @@ import { getCountries } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
 const orderSummaryLabels = useTranslations('OrderSummary');
+const orderStatusLabels = useTranslations('OrderStatus');
+const paymethodNames = useTranslations('PaymethodNames');
 const orderActionsLabels = useTranslations('OrderActions');
 const orderShipmentsLabels = useTranslations('OrderShipments');
 const orderItemCardLabels = useTranslations('OrderItemCard');

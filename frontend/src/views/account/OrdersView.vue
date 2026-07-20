@@ -9,6 +9,7 @@
         :showCompanyOrders="false"
         :onOrderClick="(id) => router.push(localizeHref(`/account/orders/${id}`, languageStore.language))"
         :labels="labels"
+        :statusLabels="orderStatusLabels"
         :rowsClickable="true"
         :searchFields="['term', 'createdAt', 'price']"
         :columnConfig="{ id: '#', date: t.colDate, status: t.colStatus, total: t.colTotal }"
@@ -36,5 +37,6 @@ const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
 
 const labels = useTranslations('OrderList')
+const orderStatusLabels = useTranslations('OrderStatus')
 const t = useTranslations('Account')
 </script>

@@ -10,6 +10,7 @@
         :onOrderClick="(id) => router.push(localizeHref(`/account/quote-requests/${id}`, languageStore.language))"
         :orderStatus="['REQUEST']"
         :labels="labels"
+        :statusLabels="orderStatusLabels"
         :rowsClickable="true"
         :columnConfig="{ id: '#', date: t.colDate, status: t.colStatus, total: t.colTotal }"
         :columns="['id', 'date', 'status', 'total']"
@@ -35,5 +36,6 @@ const languageStore = useLanguageStore()
 const companyStore = useCompanyStore()
 
 const labels = useTranslations('OrderList')
+const orderStatusLabels = useTranslations('OrderStatus')
 const t = useTranslations('Account')
 </script>

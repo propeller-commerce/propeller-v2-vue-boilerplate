@@ -184,6 +184,8 @@
               :showDeliveryInfo="true"
               :showRemarks="true"
               :labels="orderSummaryLabels"
+              :statusLabels="orderStatusLabels"
+              :paymethodLabels="paymethodNames"
             />
           </div>
 
@@ -288,6 +290,8 @@ import { useTranslations } from '@/lib/i18n/composable';
 import { getCountries } from "@/composables/shared/utils/countries";
 
 const orderSummaryLabels = useTranslations('OrderSummary');
+const orderStatusLabels = useTranslations('OrderStatus');
+const paymethodNames = useTranslations('PaymethodNames');
 const orderItemCardLabels = useTranslations('OrderItemCard');
 const orderBonusItemsLabels = useTranslations('OrderBonusItems');
 const molliePaymentLabels = useTranslations('MolliePayment');
