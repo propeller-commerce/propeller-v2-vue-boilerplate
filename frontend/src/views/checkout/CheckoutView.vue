@@ -101,7 +101,7 @@
                 :enableDelete="false"
                 :enableSetDefault="false"
                 :onEdit="(addr) => handleAddressSubmit(addr, 'INVOICE', false)"
-                :countries="COUNTRIES"
+                :countries="getCountries(languageStore.language)"
                 :labels="addressCardLabels"
               />
               <template v-else>
@@ -118,7 +118,7 @@
                     }
                   "
                   :onEdit="(addr) => handleAddressSubmit(addr, 'INVOICE')"
-                  :countries="COUNTRIES"
+                  :countries="getCountries(languageStore.language)"
                   :labels="addressCardLabels"
                 />
                 <label
@@ -185,7 +185,7 @@
                   :onEdit="
                     (addr) => handleAddressSubmit(addr, 'DELIVERY', false)
                   "
-                  :countries="COUNTRIES"
+                  :countries="getCountries(languageStore.language)"
                   :labels="addressCardLabels"
                 />
                 <div class="flex items-center gap-4">
@@ -207,7 +207,7 @@
                     :onAddressSelected="
                       (addr) => handleAddressSubmit(addr, 'DELIVERY', true)
                     "
-                    :countries="COUNTRIES"
+                    :countries="getCountries(languageStore.language)"
                     :labels="addressSelectorLabels"
                     class="ml-auto"
                   />
@@ -227,7 +227,7 @@
                     }
                   "
                   :onEdit="(addr) => handleAddressSubmit(addr, 'DELIVERY')"
-                  :countries="COUNTRIES"
+                  :countries="getCountries(languageStore.language)"
                   :labels="addressCardLabels"
                 />
               </template>
@@ -269,6 +269,7 @@
                   :cart="cart as Cart"
                   :onPaymethodSelect="(pm) => (selectedPayment = pm.code)"
                   :labels="cartPaymethodsLabels"
+                  :paymethodLabels="paymethodNames"
                 />
               </div>
               <!-- Carrier -->
@@ -487,13 +488,14 @@ import { useCheckout } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 
 import { AddressCard, AddressSelector, CartCarriers, CartOverview, CartPaymethods, CartSummary, DeliveryDate, ItemsOverview } from '@propeller-commerce/propeller-v2-vue-ui';
-import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { getCountries } from "@/composables/shared/utils/countries";
 
 const addressCardLabels = useTranslations('AddressCard');
 const addressSelectorLabels = useTranslations('AddressSelector');
 const cartCarriersLabels = useTranslations('CartCarriers');
 const cartOverviewLabels = useTranslations('CartOverview');
 const cartPaymethodsLabels = useTranslations('CartPaymethods');
+const paymethodNames = useTranslations('PaymethodNames');
 const cartSummaryLabels = useTranslations('CartSummary');
 const molliePaymentLabels = useTranslations('MolliePayment');
 const deliveryDateLabels = useTranslations('DeliveryDate');

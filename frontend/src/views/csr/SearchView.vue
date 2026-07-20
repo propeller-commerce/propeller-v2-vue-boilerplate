@@ -2,7 +2,7 @@
   <div class="py-8 bg-background">
     <div class="container-width">
       <GridTitle
-        :title="searchTerm ? `Search Products: '${searchTerm}'` : 'Search Products'"
+        :title="searchTerm ? `${searchLabels.resultsFor} '${searchTerm}'` : searchLabels.allProducts"
         :labels="gridTitleLabels"
       />
 
@@ -70,17 +70,17 @@
                 />
               </svg>
               <h2 class="text-xl font-semibold text-foreground mb-2">
-                No products found for &quot;{{ searchTerm }}&quot;
+                {{ searchLabels.emptyTitle }} &quot;{{ searchTerm }}&quot;
               </h2>
               <p class="text-sm text-muted-foreground mb-6 max-w-md">
-                Try adjusting your search term, or browse our products from the homepage.
+                {{ searchLabels.emptyBrowse }}
               </p>
               <button
                 type="button"
                 class="inline-flex items-center justify-center px-4 py-2 rounded-[var(--radius-control)] bg-primary text-primary-foreground hover:bg-primary/90 transition font-medium text-sm"
                 @click="() => router.push(localizeHref('/', languageStore.language))"
               >
-                Go to homepage
+                {{ searchLabels.emptyGoHome }}
               </button>
             </div>
           </template>
@@ -166,6 +166,7 @@ const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const languageStore = useLanguageStore()
 
+const searchLabels = useTranslations('Search');
 const gridTitleLabels = useTranslations('GridTitle');
 const gridFiltersLabels = useTranslations('GridFilters');
 const gridToolbarLabels = useTranslations('GridToolbar');

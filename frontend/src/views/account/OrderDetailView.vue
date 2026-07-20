@@ -26,7 +26,7 @@
       <div class="border rounded-[var(--radius-container)] p-6 space-y-4">
         <OrderSummary
           :order="order as Order"
-          :countries="COUNTRIES"
+          :countries="getCountries(languageStore.language)"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -142,7 +142,7 @@ import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 import { OrderActions, OrderBonusItems, OrderItemCard, OrderShipments, OrderSummary, OrderTotals } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
-import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { getCountries } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
 const orderSummaryLabels = useTranslations('OrderSummary');

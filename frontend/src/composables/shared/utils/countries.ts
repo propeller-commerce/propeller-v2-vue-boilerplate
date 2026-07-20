@@ -1,3 +1,5 @@
+import { COUNTRIES_NL } from './countries.nl';
+
 export interface Country {
   code: string;
   name: string;
@@ -11,6 +13,17 @@ export const COUNTRIES: Country[] = [
   { code: 'UK', name: 'United Kingdom' },
   { code: 'US', name: 'United States' },
 ];
+
+/**
+ * Localized country list for the active language. NL returns the Dutch names
+ * (Nederland, België, …); anything else falls back to the English list. Pass
+ * the result as the `countries` prop to AddressCard/checkout so the country
+ * dropdown + display render in the page language instead of hardcoded English.
+ */
+export function getCountries(language?: string): Country[] {
+  if ((language || '').toUpperCase() === 'NL') return COUNTRIES_NL;
+  return COUNTRIES;
+}
 
 /**
  * Same data as COUNTRIES, in `{ code: name }` map form. RegisterForm's

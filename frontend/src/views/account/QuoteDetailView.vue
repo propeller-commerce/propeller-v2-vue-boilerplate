@@ -33,7 +33,7 @@
       <div class="border rounded-[var(--radius-container)] p-6 space-y-4">
         <OrderSummary
           :order="quote"
-          :countries="COUNTRIES"
+          :countries="getCountries(languageStore.language)"
           :labels="{ ...orderSummaryLabels, orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
           :showReference="true"
           :showNotes="true"
@@ -179,7 +179,7 @@ import type { Order } from "@propeller-commerce/propeller-sdk-v2";
 import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from '@propeller-commerce/propeller-v2-vue-ui';
-import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { getCountries } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
 const route = useRoute();

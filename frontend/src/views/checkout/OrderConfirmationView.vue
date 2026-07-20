@@ -171,7 +171,7 @@
           >
             <OrderSummary
               :order="order"
-              :countries="COUNTRIES"
+              :countries="getCountries(languageStore.language)"
               :title="t.orderSummaryTitle"
               :showReference="true"
               :showNotes="true"
@@ -285,7 +285,7 @@ import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
-import { COUNTRIES } from "@/composables/shared/utils/countries";
+import { getCountries } from "@/composables/shared/utils/countries";
 
 const orderSummaryLabels = useTranslations('OrderSummary');
 const orderItemCardLabels = useTranslations('OrderItemCard');
