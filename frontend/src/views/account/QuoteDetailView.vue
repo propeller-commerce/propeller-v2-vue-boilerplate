@@ -34,7 +34,7 @@
         <OrderSummary
           :order="quote"
           :countries="getCountries(languageStore.language)"
-          :labels="{ ...orderSummaryLabels, orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
+          :labels="summaryLabels"
           :statusLabels="orderStatusLabels"
           :paymethodLabels="paymethodNames"
           :showReference="true"
@@ -211,6 +211,15 @@ const errorBackLabel = computed(() =>
     ? errorPagesLabels.value.backToQuoteRequests
     : errorPagesLabels.value.backToQuotes
 );
+
+// OrderSummary is generic; override its order-number/date labels with the
+// right entity wording. A request uses "Aanvraag…"; an issued quote uses
+// "Offerte…". (Previously hardcoded English "Quote Number"/"Quote Date".)
+const summaryLabels = computed(() => ({
+  ...orderSummaryLabels.value,
+  orderNumber: isQuoteRequest.value ? t.value.quoteNumber : t.value.issuedQuoteNumber,
+  orderDate: isQuoteRequest.value ? t.value.quoteDate : t.value.issuedQuoteDate,
+}));
 
 const quoteId = route.params.id as string;
 
