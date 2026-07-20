@@ -13,6 +13,7 @@
           <AddressCard
             v-if="defaultAddresses.invoice"
             :key="`inv-${defaultAddresses.invoice.id}`"
+            :showTypeBadge="false"
             :labels="addressCardLabels"
             :address="defaultAddresses.invoice"
             :enableDelete="false"
@@ -32,6 +33,7 @@
           <AddressCard
             v-if="defaultAddresses.delivery"
             :key="`del-${defaultAddresses.delivery.id}`"
+            :showTypeBadge="false"
             :labels="addressCardLabels"
             :address="defaultAddresses.delivery"
             :enableDelete="false"
@@ -60,6 +62,7 @@
         <AddressCard
           v-for="address in billingAddresses"
           :key="address.id"
+          :showTypeBadge="false"
           :labels="addressCardLabels"
           :address="address"
           :onEdit="handleEditAddress"
@@ -83,6 +86,7 @@
         <AddressCard
           v-for="address in deliveryAddresses"
           :key="address.id"
+          :showTypeBadge="false"
           :labels="addressCardLabels"
           :address="address"
           :onEdit="handleEditAddress"

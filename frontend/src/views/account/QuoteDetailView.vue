@@ -35,6 +35,8 @@
           :order="quote"
           :countries="getCountries(languageStore.language)"
           :labels="{ ...orderSummaryLabels, orderNumber: 'Quote Number', orderDate: 'Quote Date' }"
+          :statusLabels="orderStatusLabels"
+          :paymethodLabels="paymethodNames"
           :showReference="true"
           :showNotes="true"
           :showDeliveryAddress="true"
@@ -189,6 +191,8 @@ const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
 
 const orderSummaryLabels = useTranslations('OrderSummary');
+const orderStatusLabels = useTranslations('OrderStatus');
+const paymethodNames = useTranslations('PaymethodNames');
 const quoteActionsLabels = useTranslations('QuoteActions');
 const orderItemCardLabels = useTranslations('OrderItemCard');
 const orderBonusItemsLabels = useTranslations('OrderBonusItems');

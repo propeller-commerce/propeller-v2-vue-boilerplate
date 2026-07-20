@@ -6,7 +6,7 @@
   "loggingIn": "Logging in...",
   "password": "Password",
   "passwordPlaceholder": "••••••••",
-  "noAccount": "Don't have an account?",
+  "noAccount": "Don't have an account? {link}",
   "registerLink": "Create an Account",
   "registerText": "Don't have an account?"
 }
