@@ -114,7 +114,9 @@
             <SearchBar
               :onSubmit="handleSearch"
               :onViewAllClick="handleSearch"
+              :getViewAllHref="searchHref"
               :onResultClick="(result) => { if (result.url) router.push(result.url) }"
+              :getResultHref="(result) => result.url || '#'"
               :clearSignal="searchClearSignal"
               :labels="searchBarLabels"
               :priceLabels="productPriceLabels"
@@ -187,7 +189,9 @@
           <SearchBar
             :onSubmit="(term: string) => { showMobileSearch = false; handleSearch(term) }"
             :onViewAllClick="(term: string) => { showMobileSearch = false; handleSearch(term) }"
+            :getViewAllHref="searchHref"
             :onResultClick="(result) => { showMobileSearch = false; if (result.url) router.push(result.url) }"
+            :getResultHref="(result) => result.url || '#'"
             :clearSignal="searchClearSignal"
             :labels="searchBarLabels"
             :priceLabels="productPriceLabels"
@@ -585,6 +589,13 @@ function handleAfterRequestAuthorization(cart: Cart) {
   const parked = restoreManagerCart()
   cartStore.setCart(parked)
   router.push(localizeHref(`/authorization-request-sent/${cart.cartId}`, languageStore.language))
+}
+
+// URL builder for the SearchBar's <a href> result/view-all links (so they are
+// middle-clickable / new-tab-able / crawlable); the onClick callbacks still
+// drive SPA navigation.
+function searchHref(term: string): string {
+  return localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', languageStore.language)
 }
 
 function handleSearch(term: string) {
