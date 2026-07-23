@@ -53,6 +53,7 @@ import {
   imageVariantFiltersLarge,
   baseCategoryId as configBaseCategoryId,
   DEFAULT_LANGUAGE,
+  configuration,
 } from './config'
 
 /** Statuses the storefront grid shows — mirrors the client `useProductSearch`. */
@@ -321,7 +322,14 @@ export async function getServerInfra(
   let user: Contact | Customer | null = null
   if (token) {
     try {
-      const viewer = await services.user.getViewer({})
+      // Paginate the viewer's companies + purchase-auth configs (present on
+      // every viewer fetch) so the SSR-seeded user matches the client
+      // refreshUser — no hydration drift in the company switcher. Machine
+      // attributes stay CSR (no companyAttributesInput here).
+      const viewer = await services.user.getViewer({
+        contactPAConfigInput: configuration.contactPAConfigInput,
+        contactCompaniesSearchInput: configuration.contactCompaniesSearchInput,
+      })
       user = (viewer ? toPlain(viewer) : null) as Contact | Customer | null
     } catch {
       user = null

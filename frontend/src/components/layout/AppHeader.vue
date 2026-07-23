@@ -445,11 +445,21 @@ const showAccount = ref(true)
 const showCart = ref(true)
 const showCategoriesMenu = ref(true)
 const categoriesMenuLabel = computed(() => headerLabels.value.browseCategories)
-const navLinks = computed(() => [
-  { label: headerLabels.value.newArrivals, url: '/new-arrivals', highlight: false },
-  { label: headerLabels.value.bestSellers, url: '/best-sellers', highlight: false },
-  { label: headerLabels.value.sale, url: '/sale', highlight: true },
-])
+// Contact-only: the machines section reads the contact's MY_INSTALLATIONS, so
+// the nav entry only appears for a logged-in contact. Mirrors propeller-next's
+// Header `isContact` gate.
+const isContact = computed(() => !!(authStore.user && 'contactId' in authStore.user))
+const navLinks = computed(() => {
+  const links = [
+    { label: headerLabels.value.newArrivals, url: '/new-arrivals', highlight: false },
+    { label: headerLabels.value.bestSellers, url: '/best-sellers', highlight: false },
+    { label: headerLabels.value.sale, url: '/sale', highlight: true },
+  ]
+  if (isContact.value) {
+    links.unshift({ label: headerLabels.value.machines || 'Machines', url: '/machines', highlight: false })
+  }
+  return links
+})
 
 // Logo: env var or fallback
 const logoSrc = import.meta.env.VITE_LOGO_URL || '/propeller_logo.webp'

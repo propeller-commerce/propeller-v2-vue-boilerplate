@@ -127,6 +127,35 @@ export const configuration = {
   currencyCode: 'EUR',
   baseCategoryId,
   menuDepth,
+  // Track attributes fetched with the viewer (mirrors propeller-next data/config.ts).
+  // `companyTrackAttributes` MUST include MY_INSTALLATIONS so the machines root
+  // can read the contact's installation ids off the company.
+  productTrackAttributes: [] as string[],
+  categoryTrackAttributes: [] as string[],
+  clusterTrackAttributes: [] as string[],
+  companyTrackAttributes: ['MY_INSTALLATIONS'] as string[],
+  contactTrackAttributes: [] as string[],
+  customerTrackAttributes: [] as string[],
+  // Viewer pagination inputs — MUST be GraphQL input *objects*, never `[]`.
+  // The viewer query selects `purchaseAuthorizationConfigs(input:)` and
+  // `companies(input:)`; an empty array is truthy but the backend rejects it
+  // ("Expected type ContactPurchaseAuthorizationConfigSearchInput to be an
+  // object"). Present on every viewer fetch so a multi-company / multi-PA
+  // contact isn't truncated by the server default page.
+  contactPAConfigInput: { page: 1, offset: 50 },
+  contactCompaniesSearchInput: { page: 1, offset: 50 },
+  /**
+   * Spare-parts machines. `source` is the external system the ids in the
+   * `MY_INSTALLATIONS` company track attribute belong to (paired as
+   * `machine(source:, sourceId:)`). `language` is the language the machine TREE
+   * is authored in (usually EN) — distinct from the storefront language, which
+   * localizes the parts. Leave `source` unset to disable the machines root.
+   */
+  machines: {
+    source: (import.meta.env.VITE_BOILERPLATE_MACHINE_SOURCE as string | undefined) || undefined,
+    language:
+      (import.meta.env.VITE_BOILERPLATE_MACHINE_LANGUAGE as string | undefined) || 'EN',
+  },
   urls: {
     getProductUrl(product: Product, language?: string): string {
       const slug = (language && product?.slugs?.find((s: any) => s.language === language)?.value) || product?.slugs?.[0]?.value || ''
