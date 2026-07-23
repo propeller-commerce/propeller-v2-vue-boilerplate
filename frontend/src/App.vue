@@ -17,6 +17,23 @@ const language = useLanguageStore()
 const price = usePriceStore()
 const company = useCompanyStore()
 
+// Only expose a company the signed-in contact actually belongs to. A stale
+// `selected_company` left in localStorage by a previously logged-in identity
+// would otherwise be sent as companyId before the company store's `syncFromUser`
+// reconciles it — and PricingV2 rejects it ("Provided companyId N does not match
+// the contact's companies"), erroring the first catalog/parts fetch. Mirrors
+// propeller-next's PropellerHostBridge companyId guard.
+const validatedCompanyId = computed<number | undefined>(() => {
+  const selId = company.companyId ?? undefined
+  const u = auth.user as
+    | { company?: { companyId?: number }; companies?: { items?: { companyId?: number }[] } }
+    | null
+  if (!u) return selId
+  const candidates = [...(u.companies?.items ?? []), ...(u.company ? [u.company] : [])]
+  if (selId != null && candidates.some((c) => c?.companyId === selId)) return selId
+  return u.company?.companyId ?? undefined
+})
+
 // Document-level head defaults. `htmlAttrs.lang` tracks the active language so
 // the SSR <html lang> reflects the rendered locale; per-page <title>/<meta>
 // are layered on top by the catalog views via their own useHead() calls.
@@ -45,7 +62,7 @@ watch(
 <template>
   <PropellerProvider
     :user="auth.user ?? null"
-    :company-id="company.companyId ?? undefined"
+    :company-id="validatedCompanyId"
     :language="language.language"
     :include-tax="price.includeTax"
     portal-mode="open"

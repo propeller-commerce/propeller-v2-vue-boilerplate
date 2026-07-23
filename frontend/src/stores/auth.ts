@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { type Contact, type Customer, PurchaseRole, UserService } from '@propeller-commerce/propeller-sdk-v2';
+import { type Contact, type Customer, PurchaseRole, UserService, type ViewerVariables } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api'
 import { isBrowser, safeStorage, setCookie, deleteCookie } from '@/lib/ssr'
+import { configuration } from '@/lib/config'
 
 type User = Contact | Customer
 
@@ -151,7 +152,15 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       graphqlClient.setAccessToken(storedToken)
       const userService = new UserService(graphqlClient)
-      const viewerData = await userService.getViewer({})
+      // Request the tracked company/customer attributes so the machines root can
+      // read MY_INSTALLATIONS off the hydrated company. Mirrors propeller-next's
+      // AuthContext.refreshUser.
+      const viewerData = await userService.getViewer({
+        companyAttributesInput: { attributeDescription: { names: configuration.companyTrackAttributes } },
+        customerAttributesInput: { attributeDescription: { names: configuration.customerTrackAttributes } },
+        contactPAConfigInput: configuration.contactPAConfigInput,
+        contactCompaniesSearchInput: configuration.contactCompaniesSearchInput,
+      } as ViewerVariables)
       if (viewerData) {
         const plain = sanitizeUser(JSON.parse(JSON.stringify(viewerData, (_k, v) => v)))
         safeStorage.setItem('user', JSON.stringify(plain))

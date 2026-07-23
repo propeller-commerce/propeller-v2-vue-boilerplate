@@ -61,6 +61,10 @@ function buildRoutes() {
         // Cluster — hybrid SSR
         { path: 'cluster/:clusterId/:slug', name: 'cluster', meta: { ssrKey: 'cluster' }, component: () => import('@/views/ClusterView.vue') },
 
+        // Machines / spare parts (contact-only) — CSR; `:slug*` matches the root
+        // (/machines) AND any drill-down (/machines/a/b/…). Guarded by requiresAuth.
+        { path: 'machines/:slug*', name: 'machines', meta: { requiresAuth: true }, component: () => import('@/views/MachinesView.vue') },
+
         // ──────────────────────────────────────────────────────────────────
         // Legacy CSR shadow routes — pre-SSR copies of the four catalog
         // pages, kept verbatim for side-by-side comparison with the canonical
