@@ -325,14 +325,23 @@ const summaryLabels = computed(() =>
 // open/pending/failed leaves it in sync with the still-live backend cart so a
 // retry reuses the same un-finalized order instead of stranding it. (This is a
 // separate rule from the package's server-side webhook cart ladder.)
-const SUCCESS_MOLLIE_STATUSES = new Set(["paid", "authorized"]);
-const PENDING_MOLLIE_STATUSES = new Set(["open", "pending"]);
-const FAILED_MOLLIE_STATUSES = new Set([
-  "failed",
-  "canceled",
-  "cancelled",
-  "expired",
-]);
+// Per-provider status → return-state maps (mirrors propeller-next thank-you
+// PSP_STATUS_SETS). The active set is picked by the `?psp=` provider below.
+const PSP_STATUS_SETS: Record<
+  "mollie" | "multisafepay",
+  { success: Set<string>; pending: Set<string>; failed: Set<string> }
+> = {
+  mollie: {
+    success: new Set(["paid", "authorized"]),
+    pending: new Set(["open", "pending"]),
+    failed: new Set(["failed", "canceled", "cancelled", "expired"]),
+  },
+  multisafepay: {
+    success: new Set(["completed", "reserved", "shipped"]),
+    pending: new Set(["initialized", "uncleared"]),
+    failed: new Set(["declined", "cancelled", "canceled", "void", "expired"]),
+  },
+};
 
 // Mollie redirects the shopper back the instant they finish the hosted
 // checkout, but it flips the payment to `paid` and fires the webhook a beat
@@ -353,7 +362,7 @@ type PaymentState =
   | "pending"
   | "failed";
 
-interface MollieStatusResponse {
+interface PspStatusResponse {
   ok?: boolean;
   status?: string;
   settled?: boolean;
@@ -362,13 +371,26 @@ interface MollieStatusResponse {
   error?: string;
 }
 
-const isPspReturn = computed(() => route.query.psp === "mollie");
+// The `?psp=<provider>` return marker set by the checkout hand-off.
+const pspProvider = computed<"mollie" | "multisafepay" | null>(() => {
+  const p = route.query.psp;
+  return p === "mollie" || p === "multisafepay" ? p : null;
+});
+const isPspReturn = computed(() => pspProvider.value !== null);
+// Status sets + route base for the active provider (falls back to the mollie
+// shape when absent — only ever evaluated on a real ?psp= return anyway).
+const statusSets = computed(() => PSP_STATUS_SETS[pspProvider.value ?? "mollie"]);
+const apiBase = computed(() =>
+  pspProvider.value === "multisafepay" ? "/api/msp" : "/api/mollie",
+);
 const paymentState = ref<PaymentState>("none");
-const mollieStatus = ref<string | null>(null);
+const pspStatus = ref<string | null>(null);
 const rechecking = ref(false);
 let cartCleared = false;
 
-const stashKey = computed(() => `mollie_payment_${orderId.value}`);
+const stashKey = computed(
+  () => `${pspProvider.value ?? "mollie"}_payment_${orderId.value}`,
+);
 
 function readStash(): string | null {
   if (typeof window === "undefined") return null;
@@ -389,24 +411,25 @@ function dropStash() {
 }
 
 /**
- * Map a live Mollie status to a return-page state and apply it. Returns whether
- * the status is TERMINAL (success/failed → stop polling) or not (open/pending/
- * unknown → keep polling). The pending/unknown branches set `paymentState` to
- * `"pending"` so a caller that has exhausted its attempts lands on the right UI.
+ * Map a live PSP status to a return-page state and apply it, using the active
+ * provider's status sets. Returns whether the status is TERMINAL (success/failed
+ * → stop polling) or not (open/pending/unknown → keep polling). The pending/
+ * unknown branches set `paymentState` to `"pending"` so a caller that has
+ * exhausted its attempts lands on the right UI.
  */
-function applyMollieStatus(data: MollieStatusResponse): { terminal: boolean } {
+function applyPspStatus(data: PspStatusResponse): { terminal: boolean } {
   const status = (data.status || "").toLowerCase();
-  mollieStatus.value = status || null;
-  if (data.ok && SUCCESS_MOLLIE_STATUSES.has(status)) {
+  pspStatus.value = status || null;
+  if (data.ok && statusSets.value.success.has(status)) {
     paymentState.value = "success"; // → cart-clear watcher fires
     dropStash();
     return { terminal: true };
   }
-  if (FAILED_MOLLIE_STATUSES.has(status)) {
+  if (statusSets.value.failed.has(status)) {
     paymentState.value = "failed"; // keep cart
     return { terminal: true };
   }
-  // open / pending / unknown → not resolved yet; keep cart, keep polling.
+  // pending / unknown → not resolved yet; keep cart, keep polling.
   paymentState.value = "pending";
   return { terminal: false };
 }
@@ -442,10 +465,10 @@ async function resolvePspReturn() {
   for (let attempt = 1; attempt <= PENDING_POLL_ATTEMPTS; attempt++) {
     try {
       const res = await fetch(
-        `/api/mollie/payment-status?paymentId=${encodeURIComponent(paymentId)}`,
+        `${apiBase.value}/payment-status?paymentId=${encodeURIComponent(paymentId)}`,
       );
-      const data = (await res.json()) as MollieStatusResponse;
-      const { terminal } = applyMollieStatus(data);
+      const data = (await res.json()) as PspStatusResponse;
+      const { terminal } = applyPspStatus(data);
       if (terminal) return;
     } catch {
       // network error → treat as not-yet-resolved; keep cart, keep polling.
@@ -472,10 +495,10 @@ async function recheckStatus() {
   rechecking.value = true;
   try {
     const res = await fetch(
-      `/api/mollie/payment-status?paymentId=${encodeURIComponent(paymentId)}`,
+      `${apiBase.value}/payment-status?paymentId=${encodeURIComponent(paymentId)}`,
     );
-    const data = (await res.json()) as MollieStatusResponse;
-    applyMollieStatus(data);
+    const data = (await res.json()) as PspStatusResponse;
+    applyPspStatus(data);
   } catch {
     /* leave pending on transient error */
   } finally {
