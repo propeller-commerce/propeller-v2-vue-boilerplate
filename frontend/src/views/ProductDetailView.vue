@@ -96,7 +96,7 @@
                 :className="'flex items-center w-full gap-2'"
                 :enableIncrementDecrement="true"
                 :onCartCreated="(cart: any) => cartStore.setCart(cart)"
-                :afterAddToCart="(cart: any) => cartStore.setCart(cart)"
+                :afterAddToCart="(cart: any) => { cartStore.setCart(cart); trackPreprEvent('AddToCart') }"
                 :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
                 :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
                 :labels="addToCartLabels"
@@ -207,6 +207,7 @@ import {
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
+import { trackPreprEvent } from '@/lib/preprEvent';
 
 const t = useTranslations('ProductDetail');
 const breadcrumbsLabels = useTranslations('Breadcrumbs');

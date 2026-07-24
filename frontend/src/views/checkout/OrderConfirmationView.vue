@@ -281,6 +281,7 @@ import { restoreManagerCart } from "@/lib/cartHelpers";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { trackPreprEvent } from "@/lib/preprEvent";
 import AccessErrorView from "@/components/access/AccessErrorView.vue";
 import { classifyApiError } from "@/lib/errors";
 import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
@@ -304,6 +305,17 @@ const languageStore = useLanguageStore();
 
 const orderId = computed(() => route.params.orderId as string);
 const isQuoteMode = computed(() => route.query.mode === "quote");
+
+// Quote requested = conversion. Prepr correlates it to the personalized variants
+// the visitor saw on the way here. Fires once per confirmed quote (client-only,
+// after mount, since the pixel is browser-side). No-ops off-Prepr.
+let quoteTracked = false;
+onMounted(() => {
+  if (isQuoteMode.value && orderId.value && !quoteTracked) {
+    quoteTracked = true;
+    trackPreprEvent("QuoteRequest");
+  }
+});
 
 // In quote mode the summary is for a quote *request* — override OrderSummary's
 // order-number/date labels with request wording.

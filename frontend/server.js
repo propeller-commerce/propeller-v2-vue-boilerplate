@@ -26,6 +26,12 @@ import {
   isOnAccountMethod,
 } from './src/server/mollie.js'
 import { getMspProvider, isMspEnabled } from './src/server/msp.js'
+import {
+  isPreprEnabled,
+  resolvePreprRequest,
+  preprUidCookie,
+  previewSecret,
+} from './src/server/cms.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -485,6 +491,104 @@ async function createServer() {
     })
   })
 
+  // ── /api/preview + /api/cms-revalidate — Prepr CMS endpoints ──────────────
+  //
+  // All gated on Prepr being the active CMS (isPreprEnabled). For Strapi/none
+  // they 404, so a non-Prepr shop exposes no CMS surface. Registered BEFORE the
+  // `*all` SSR catch-all. (Next mirror: app/api/preview, app/api/cms-revalidate.)
+
+  // Enter draft mode: verify the secret, set a `prepr_preview` cookie the SSR
+  // loaders read (to fetch draft content via the preview token), and redirect to
+  // the page — carrying the segment/AB/locale switches so the previewed variant
+  // resolves. Prepr's preview URL:
+  //   /api/preview?secret=<PREPR_PREVIEW_SECRET>&slug=/{slug}&locale={locale}
+  app.get('/api/preview', (req, res) => {
+    if (!isPreprEnabled()) {
+      res.status(404).end('Not found')
+      return
+    }
+    if ((req.query.secret || '') !== previewSecret()) {
+      res.status(401).end('Invalid preview secret')
+      return
+    }
+    const slug = String(req.query.slug || req.query.redirect || '/')
+    // The home page is served at `/`, not the CMS catch-all.
+    const HOME = ['home', 'home-personalized', 'index', 'home-generic']
+    const bare = slug.replace(/^\/+/, '').toLowerCase()
+    const base = bare === '' || HOME.includes(bare)
+      ? '/'
+      : slug.startsWith('/') ? slug : `/${slug}`
+    res.cookie('prepr_preview', '1', { path: '/', httpOnly: false, sameSite: 'lax' })
+    const params = new URLSearchParams()
+    const rawLocale = req.query.locale || req.query.lang
+    if (rawLocale) params.set('preview_lang', String(rawLocale).split('-')[0].toUpperCase())
+    for (const key of ['prepr_preview_segment', 'prepr_preview_ab']) {
+      if (req.query[key]) params.set(key, String(req.query[key]))
+    }
+    const qs = params.toString()
+    res.redirect(302, qs ? `${base}${base.includes('?') ? '&' : '?'}${qs}` : base)
+  })
+
+  // Exit draft mode: clear the cookie and return to the page (or home).
+  app.get('/api/preview/exit', (req, res) => {
+    if (!isPreprEnabled()) {
+      res.status(404).end('Not found')
+      return
+    }
+    res.clearCookie('prepr_preview', { path: '/' })
+    const slug = String(req.query.redirect || '/')
+    res.redirect(302, slug.startsWith('/') ? slug : `/${slug}`)
+  })
+
+  // Prepr publish webhook → bust the CMS cache. Mirrors /api/revalidate but for
+  // the `cms` tag family (cms, cms:page:<slug>, cms:article:<slug>). Same
+  // shared-secret gate. Body: { slug, type } or { tag } (or {} → full CMS wipe).
+  app.post('/api/cms-revalidate', express.json({ limit: '8kb' }), async (req, res) => {
+    if (!isPreprEnabled()) {
+      res.status(404).json({ error: 'not found' })
+      return
+    }
+    const expected = process.env.REVALIDATE_SECRET
+    if (!expected) {
+      res.status(503).json({ error: 'revalidation endpoint not configured' })
+      return
+    }
+    const provided = req.headers['x-revalidate-secret']
+    const providedStr = Array.isArray(provided) ? provided[0] : provided
+    if (!providedStr || providedStr !== expected) {
+      res.status(401).json({ error: 'unauthorized' })
+      return
+    }
+    const body = req.body && typeof req.body === 'object' ? req.body : {}
+    const slug = typeof body.slug === 'string' ? body.slug : undefined
+    const type = typeof body.type === 'string' ? body.type : undefined
+    const explicitTag = typeof body.tag === 'string' ? body.tag : undefined
+    let tags
+    if (explicitTag) {
+      tags = [explicitTag === '*' ? 'cms' : explicitTag]
+    } else if (slug && type === 'article') {
+      tags = [`cms:article:${slug}`, 'cms']
+    } else if (slug) {
+      tags = [`cms:page:${slug}`, 'cms']
+    } else {
+      tags = ['cms']
+    }
+    let ssrInvalidated = 0
+    try {
+      const mod = isProd
+        ? await import('./dist/server/entry-server.js')
+        : await vite.ssrLoadModule('/src/entry-server.ts')
+      if (typeof mod.invalidateCache === 'function') {
+        for (const tag of tags) ssrInvalidated += mod.invalidateCache(tag)
+      }
+    } catch (err) {
+      console.error('[cms-revalidate] SSR cache invalidation failed:', err)
+    }
+    let proxyInvalidated = 0
+    for (const tag of tags) proxyInvalidated += gqlCacheInvalidateTag(tag)
+    res.json({ ok: true, tags, invalidated: { proxy: proxyInvalidated, ssr: ssrInvalidated } })
+  })
+
   // ── /api/mollie/* — Mollie PSP host endpoints ─────────────────────────────
   //
   // The Mollie package is server-side + framework-agnostic; these three routes
@@ -834,10 +938,15 @@ async function createServer() {
       }
 
       const cookieHeader = req.headers.cookie || ''
+      // Prepr personalization bridge (no-op unless CMS_PROVIDER=prepr): resolve
+      // the visitor id + Prepr-* headers and forward them to the render so CMS
+      // loaders can fetch personalized/preview content server-side.
+      const prepr = resolvePreprRequest(req)
       const ssrContext = {
         cookieHeader,
         cookies: parseCookies(cookieHeader),
         url,
+        preprHeaders: prepr.headers,
       }
 
       const result = await render(url, ssrContext)
@@ -845,6 +954,16 @@ async function createServer() {
       if (result.redirect) {
         res.redirect(302, result.redirect)
         return
+      }
+
+      // Persist a freshly-minted __prepr_uid so the pixel + future renders share
+      // it, plus any cookies a loader asked to set on the response.
+      const responseCookies = [
+        ...(prepr.isNew && prepr.uid ? [preprUidCookie(prepr.uid)] : []),
+        ...(result.responseCookies || []),
+      ]
+      for (const c of responseCookies) {
+        res.cookie(c.name, c.value, c.options || {})
       }
 
       const stateScript = `<script>window.__INITIAL_STATE__=${serializeState(

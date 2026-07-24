@@ -1,41 +1,40 @@
 <template>
-  <div class="container-width py-12">
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-    </div>
-    <div v-else-if="page">
-      <!-- CMS page content - rendered when CMS blocks are available -->
-      <div v-for="block in page.blocks" :key="block.id">
-        <!-- DynamicBlockRenderer equivalent — render blocks here -->
-        <pre class="text-xs text-foreground-subtle">{{ block.__component }}</pre>
-      </div>
-    </div>
+  <div>
+    <CmsPageRenderer
+      v-if="page && page.blocks.length"
+      :page="page"
+      :renderers="cmsBlockRenderers"
+    />
     <CmsFallback v-else />
+    <PreprTrack v-if="page?.id" :item-id="page.id" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { CmsPageRenderer } from '@propeller-commerce/propeller-v2-cms-vue'
 import CmsFallback from '@/components/layout/CmsFallback.vue'
+import PreprTrack from '@/components/cms/PreprTrack.vue'
+import { cmsBlockRenderers } from '@/components/cms/blockRenderers'
+import { useSsrCatalogStore } from '@/stores/ssrCatalog'
+import type { CmsRichPage } from '@/lib/cms/types'
 
 const route = useRoute()
-const page = ref<any>(null)
-const loading = ref(true)
+const ssrCatalog = useSsrCatalogStore()
 
-async function loadPage() {
-  loading.value = true
-  try {
-    // CMS page loaded from Strapi - implement when CMS is configured
-    // const slug = Array.isArray(route.params.slug) ? route.params.slug.join('/') : route.params.slug
-    // page.value = await getPage(slug)
-  } catch (e) {
-    console.error('Failed to load CMS page', e)
-  } finally {
-    loading.value = false
-  }
-}
+// peekSeed (not consume): the SSR render and the client's hydration render must
+// read the SAME seed so their DOM trees match — no hydration mismatch. The
+// post-hydration consumeSeed below clears it. The CMS page is fetched
+// server-side (the provider token is server-only), so client-side soft
+// navigations to a new CMS slug have no seed and fall back to <CmsFallback>
+// until a full navigation re-runs the SSR loader.
+const seed = ssrCatalog.peekSeed(route.fullPath)
+const page = ref<CmsRichPage | null>(
+  seed?.kind === 'cms' ? (seed.data as CmsRichPage) : null,
+)
 
-onMounted(loadPage)
-watch(() => route.params.slug, loadPage)
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath)
+})
 </script>

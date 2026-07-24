@@ -55,6 +55,14 @@ import {
   DEFAULT_LANGUAGE,
   configuration,
 } from './config'
+import { cms } from './cms'
+import { TAG_CMS, cmsPageTag, cmsArticleTag } from './cms/core'
+import type {
+  CmsRichPage,
+  CmsArticle,
+  CmsFetchArgs,
+  CmsArticleArgs,
+} from './cms/types'
 
 /** Statuses the storefront grid shows — mirrors the client `useProductSearch`. */
 const STOREFRONT_STATUSES: ProductStatus[] = [
@@ -147,7 +155,7 @@ export const CACHE_TAGS_HEADER = 'X-Propeller-Cache-Tags'
  */
 export const TAG_CATALOG = 'catalog'
 
-type CacheableEntity = 'product' | 'category' | 'cluster' | 'menu' | 'search'
+type CacheableEntity = 'product' | 'category' | 'cluster' | 'menu' | 'search' | 'cms'
 
 /**
  * Build a Next.js-style cache tag for a cacheable entity. Single source of
@@ -944,5 +952,66 @@ export async function fetchMenu(
       return []
     }
   })
+}
+
+// ── CMS (Strapi / Prepr) fetch helpers ───────────────────────────────────────
+// The CMS provider (src/lib/cms) does its own HTTP fetch (Strapi REST / Prepr
+// GraphQL), so unlike the SDK helpers above these don't mint a tagged SDK
+// client — they wrap the provider call in `withAnonymousCache` with `cms` tags
+// so the parsed page/article is cached + surgically bustable via
+// `/api/cms-revalidate`. Preview (draft) and personalized (segments /
+// extraHeaders) reads bypass the cache: they vary per draft/visitor, so a
+// shared cache entry would be wrong. Those signals come from the SSR loader
+// (forwarded from the request), not from the SDK infra.
+
+/** Fetch + cache a CMS page. `null` when the slug has no page. */
+export async function fetchCmsPage(
+  infra: ServerInfra,
+  slug: string,
+  args?: CmsFetchArgs,
+): Promise<CmsRichPage | null> {
+  const personalized = !!args?.segments?.length || !!args?.extraHeaders
+  const bypass = !!infra.user || !!args?.preview || !!args?.noStore || personalized
+  const load = () => cms.getPage(slug, args)
+  if (bypass) return load()
+  const cacheKey = `cms:page:${slug}:${args?.locale ?? infra.language}`
+  return withAnonymousCache<CmsRichPage | null>(
+    infra,
+    cacheKey,
+    [TAG_CMS, cmsPageTag(slug)],
+    load,
+  )
+}
+
+/** Fetch + cache the blog article list. */
+export async function fetchCmsArticles(
+  infra: ServerInfra,
+  language?: string,
+  args?: CmsArticleArgs,
+): Promise<CmsArticle[]> {
+  const bypass = !!infra.user || !!args?.preview || !!args?.extraHeaders
+  const load = () => cms.getArticles(language ?? infra.language, args)
+  if (bypass) return load()
+  const cacheKey = `cms:articles:${language ?? infra.language}`
+  return withAnonymousCache<CmsArticle[]>(infra, cacheKey, [TAG_CMS], load)
+}
+
+/** Fetch + cache a single blog article. `null` when the slug has no article. */
+export async function fetchCmsArticle(
+  infra: ServerInfra,
+  slug: string,
+  language?: string,
+  args?: CmsArticleArgs,
+): Promise<CmsArticle | null> {
+  const bypass = !!infra.user || !!args?.preview || !!args?.extraHeaders
+  const load = () => cms.getArticle(slug, language ?? infra.language, args)
+  if (bypass) return load()
+  const cacheKey = `cms:article:${slug}:${language ?? infra.language}`
+  return withAnonymousCache<CmsArticle | null>(
+    infra,
+    cacheKey,
+    [TAG_CMS, cmsArticleTag(slug)],
+    load,
+  )
 }
 

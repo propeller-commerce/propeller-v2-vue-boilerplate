@@ -23,6 +23,9 @@ import {
   prefetchSearch,
   prefetchCluster,
   prefetchCmsPage,
+  prefetchHome,
+  prefetchBlog,
+  prefetchBlogPost,
 } from './router/ssrPrefetch'
 import { fetchMenu, getAnonymousInfra, getServerInfra } from './lib/server'
 import { useMenuStore } from './stores/menu'
@@ -56,6 +59,9 @@ const SSR_LOADERS: Record<
   search: prefetchSearch,
   cluster: prefetchCluster,
   cms: prefetchCmsPage,
+  home: prefetchHome,
+  blog: prefetchBlog,
+  'blog-post': prefetchBlogPost,
 }
 
 export interface RenderResult {
@@ -71,6 +77,12 @@ export interface RenderResult {
   redirect?: string
   /** HTTP status the server should send (404 for unmatched, etc.). */
   status: number
+  /**
+   * Cookies to set on the response (e.g. a freshly-minted `__prepr_uid`),
+   * collected from `ssrContext.responseCookies`. `server.js` applies these via
+   * `res.cookie(...)` before sending the HTML.
+   */
+  responseCookies?: SSRContext['responseCookies']
 }
 
 export async function render(
@@ -188,5 +200,7 @@ export async function render(
     bodyAttrs: payload.bodyAttrs,
     // A loader-set status (e.g. the CMS catch-all's 404) wins over the default.
     status: ssrContext.status ?? defaultStatus,
+    // Cookies a loader / the server bridge wants persisted (e.g. __prepr_uid).
+    responseCookies: ssrContext.responseCookies,
   }
 }
