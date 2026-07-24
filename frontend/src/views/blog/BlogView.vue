@@ -14,9 +14,9 @@
       >
         <img v-if="post.cover?.url" :src="post.cover.url" :alt="post.title" class="w-full h-48 object-cover" />
         <div class="p-5">
-          <p class="text-xs text-muted-foreground mb-2">{{ post.publishedAt }}</p>
+          <p v-if="post.publishedAt" class="text-xs text-muted-foreground mb-2">{{ post.publishedAt }}</p>
           <h2 class="text-lg font-semibold mb-2 line-clamp-2">{{ post.title }}</h2>
-          <p class="text-sm text-muted-foreground line-clamp-3">{{ post.excerpt }}</p>
+          <p class="text-sm text-muted-foreground line-clamp-3">{{ post.description }}</p>
         </div>
       </div>
     </div>
@@ -25,20 +25,29 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useLanguageStore } from '@/stores/language'
 import { localizeHref } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable'
 import CmsFallback from '@/components/layout/CmsFallback.vue'
+import { useSsrCatalogStore } from '@/stores/ssrCatalog'
+import type { CmsArticle } from '@/lib/cms/types'
 
+const route = useRoute()
 const router = useRouter()
 const languageStore = useLanguageStore()
 const t = useTranslations('Blog')
-const posts = ref<any[]>([])
-const loading = ref(true)
+const ssrCatalog = useSsrCatalogStore()
 
-onMounted(async () => {
-  // Blog posts loaded from CMS - implement when CMS is configured
-  loading.value = false
+// Server-seeded article list (peek so SSR + hydration read the same value).
+const seed = ssrCatalog.peekSeed(route.fullPath)
+const posts = ref<CmsArticle[]>(
+  seed?.kind === 'cms-articles' ? (seed.data as CmsArticle[]) : [],
+)
+// The list is server-fetched (CMS token is server-only); no client refetch.
+const loading = ref(false)
+
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath)
 })
 </script>

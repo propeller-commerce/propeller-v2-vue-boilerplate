@@ -6,6 +6,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { usePriceStore } from '@/stores/price'
 import { useCompanyStore } from '@/stores/company'
+import { PREPR_ENABLED } from '@/lib/preprEvent'
+import PreprPreviewBar from '@/components/cms/PreprPreviewBar.vue'
+import PreprSegmentsSync from '@/components/cms/PreprSegmentsSync.vue'
 
 // Tier 2 — bind the per-scope state to the routed tree. Tier 1 (graphqlClient,
 // services, currency, configuration) is installed by app.use(propellerVue, …)
@@ -34,11 +37,29 @@ const validatedCompanyId = computed<number | undefined>(() => {
   return u.company?.companyId ?? undefined
 })
 
+// Prepr data-collection pixel (prepr_v2.min.js). Manages the __prepr_uid
+// visitor cookie in-browser; per-page events are fired by <PreprTrack>. Only
+// injected when Prepr is the CMS AND a tracking token is configured.
+const PREPR_TRACKING_TOKEN = (import.meta.env.VITE_PREPR_TRACKING_TOKEN as string | undefined) || ''
+const preprScripts =
+  PREPR_ENABLED && PREPR_TRACKING_TOKEN
+    ? [
+        {
+          // Rendered into <head> — the SSR pipeline only injects the head
+          // payload (`headTags`), not body-positioned tags. A tracking pixel in
+          // <head> is standard and matches the Next mirror's early injection.
+          key: 'prepr-tracking',
+          innerHTML: `!function(e,t,p,r,n,a,s){e[r]||((n=e[r]=function(){n.process?n.process.apply(n,arguments):n.queue.push(arguments)}).queue=[],n.t=+new Date,(a=t.createElement(p)).async=1,a.src="https://cdn.tracking.prepr.io/js/prepr_v2.min.js?t="+864e5*Math.ceil(new Date/864e5),(s=t.getElementsByTagName(p)[0]).parentNode.insertBefore(a,s))}(window,document,"script","prepr"),prepr("init","${PREPR_TRACKING_TOKEN}"),prepr("event","pageload");`,
+        },
+      ]
+    : []
+
 // Document-level head defaults. `htmlAttrs.lang` tracks the active language so
 // the SSR <html lang> reflects the rendered locale; per-page <title>/<meta>
 // are layered on top by the catalog views via their own useHead() calls.
 useHead({
   htmlAttrs: { lang: computed(() => language.language.toLowerCase()) },
+  script: preprScripts,
 })
 
 // Force a fresh view mount whenever the active company changes. The catalog
@@ -68,5 +89,9 @@ watch(
     portal-mode="open"
   >
     <router-view :key="viewKey" />
+    <template v-if="PREPR_ENABLED">
+      <PreprSegmentsSync />
+      <PreprPreviewBar />
+    </template>
   </PropellerProvider>
 </template>

@@ -44,7 +44,7 @@ function buildRoutes() {
       path: `/:lang(${langSegmentRegex})?`,
       component: () => import('@/components/layout/AppLayout.vue'),
       children: [
-        { path: '', name: 'home', component: () => import('@/views/HomeView.vue') },
+        { path: '', name: 'home', meta: { ssrKey: 'home' }, component: () => import('@/views/HomeView.vue') },
         { path: 'login', name: 'login', component: () => import('@/views/LoginView.vue') },
         { path: 'register', name: 'register', component: () => import('@/views/RegisterView.vue') },
         { path: 'forgot-password', name: 'forgot-password', component: () => import('@/views/ForgotPasswordView.vue') },
@@ -94,8 +94,8 @@ function buildRoutes() {
         { path: 'authorization-request-sent/:cartId', name: 'authorization-request-sent', component: () => import('@/views/AuthorizationRequestSentView.vue') },
 
         // Blog
-        { path: 'blog', name: 'blog', component: () => import('@/views/blog/BlogView.vue') },
-        { path: 'blog/:slug', name: 'blog-post', component: () => import('@/views/blog/BlogPostView.vue') },
+        { path: 'blog', name: 'blog', meta: { ssrKey: 'blog' }, component: () => import('@/views/blog/BlogView.vue') },
+        { path: 'blog/:slug', name: 'blog-post', meta: { ssrKey: 'blog-post' }, component: () => import('@/views/blog/BlogPostView.vue') },
 
         // Account (protected)
         {

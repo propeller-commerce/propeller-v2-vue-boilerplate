@@ -1,5 +1,12 @@
 <template>
-  <div class="bg-background">
+  <!-- Prepr-driven home page when the CMS has one; else the built-in home. -->
+  <CmsPageRenderer
+    v-if="cmsPage && cmsPage.blocks.length"
+    :page="cmsPage"
+    :renderers="cmsBlockRenderers"
+    wrapper-class="bg-background"
+  />
+  <div v-else class="bg-background">
     <!-- Hero / Featured products fallback -->
     <div class="container-width py-16">
       <div class="text-center mb-12">
@@ -58,11 +65,12 @@
       />
     </div>
   </div>
+  <PreprTrack v-if="cmsPage?.id" :item-id="cmsPage.id" />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { usePriceStore } from "@/stores/price";
@@ -70,6 +78,11 @@ import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient, productService } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { CmsPageRenderer } from "@propeller-commerce/propeller-v2-cms-vue";
+import PreprTrack from "@/components/cms/PreprTrack.vue";
+import { cmsBlockRenderers } from "@/components/cms/blockRenderers";
+import { useSsrCatalogStore } from "@/stores/ssrCatalog";
+import type { CmsRichPage } from "@/lib/cms/types";
 import { ProductSlider } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
@@ -88,10 +101,23 @@ import type {
   Product,
 } from "@propeller-commerce/propeller-sdk-v2";
 
+const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const cartStore = useCartStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
 const companyStore = useCompanyStore();
+
+// Prepr home page, seeded server-side by the `home` SSR loader. When present it
+// renders instead of the built-in home (the fallback). peek (not consume) so
+// SSR + hydration read the same value; consume post-hydration.
+const ssrCatalog = useSsrCatalogStore();
+const homeSeed = ssrCatalog.peekSeed(route.fullPath);
+const cmsPage = ref<CmsRichPage | null>(
+  homeSeed?.kind === "cms" ? (homeSeed.data as CmsRichPage) : null,
+);
+onMounted(() => {
+  ssrCatalog.consumeSeed(route.fullPath);
+});
 </script>

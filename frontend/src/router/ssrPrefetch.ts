@@ -27,9 +27,13 @@ import {
   fetchCategory,
   fetchSearch,
   fetchCluster,
+  fetchCmsPage,
+  fetchCmsArticles,
+  fetchCmsArticle,
   type ServerInfra,
   type ListingFetchOptions,
 } from '@/lib/server'
+import { isHomeSlug } from '@/lib/cms/core'
 import { DEFAULT_LANGUAGE } from '@/lib/config'
 import { ProductSortField, SortOrder } from '@propeller-commerce/propeller-sdk-v2'
 import type { ProductTextFilterInput } from '@propeller-commerce/propeller-sdk-v2'
@@ -179,22 +183,117 @@ export async function prefetchSearch(
 }
 
 /**
- * CMS catch-all (`:slug+`) — resolve the slug to a CMS page. The CMS backend
- * isn't wired server-side yet, so there is no page to resolve: every path that
- * falls through to this route is a genuine miss and must carry a 404 (so
- * crawlers deindex dead/typo URLs instead of keeping a 200'd fallback). The
- * body still renders `<CmsFallback>` — branded, with a link home — only the
- * HTTP status changes.
- *
- * When a server-side `getPage` seam is added, fetch here and only set 404 when
- * it returns null; a real page keeps the 200 (leave `ctx.status` unset).
+ * CMS catch-all (`:slug+`) — resolve the slug to a CMS page via the server
+ * `fetchCmsPage` seam. A real page seeds the store and keeps the 200; a genuine
+ * miss (provider returns null, or no CMS configured) sets 404 so crawlers
+ * deindex dead/typo URLs. The view renders `<CmsFallback>` on a miss.
  */
 export async function prefetchCmsPage(
-  _route: RouteLocationNormalized,
+  route: RouteLocationNormalized,
   ctx: SSRContext,
 ): Promise<void> {
-  // No server CMS seam → treat as not found.
-  ctx.status = 404
+  const slugParam = route.params.slug
+  const slug = Array.isArray(slugParam) ? slugParam.join('/') : String(slugParam || '')
+  // The home page is served at `/`, not this catch-all; never resolve it here.
+  if (!slug || isHomeSlug(slug)) {
+    ctx.status = 404
+    return
+  }
+  const lang = routeLanguage(route)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const extraHeaders = preprHeadersFrom(ctx)
+  const page = await fetchCmsPage(infra, slug, {
+    locale: previewLocaleFrom(ctx) || lang,
+    extraHeaders,
+    preview,
+    noStore: preview,
+  })
+  if (page) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms', data: page })
+  } else {
+    ctx.status = 404
+  }
+}
+
+/** Prepr personalization headers the server bridge forwarded (empty off-Prepr). */
+function preprHeadersFrom(ctx: SSRContext): Record<string, string> | undefined {
+  const h = ctx.preprHeaders
+  return h && Object.keys(h).length ? h : undefined
+}
+
+/** Previewed locale carried on the URL as `?preview_lang` (preview mode only). */
+function previewLocaleFrom(ctx: SSRContext): string | undefined {
+  if (ctx.cookies['prepr_preview'] !== '1') return undefined
+  const q = new URL(ctx.url, 'http://x').searchParams.get('preview_lang')
+  return q ? q.toUpperCase() : undefined
+}
+
+/**
+ * Home page (`/`) — resolve the Prepr `home` page (personalized). Seeds the
+ * `cms` seed so HomeView renders the Prepr blocks; when the CMS has no home
+ * page the seed is absent and HomeView shows its built-in fallback. A missing
+ * home is NOT a 404 (the home route always renders something).
+ */
+export async function prefetchHome(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const lang = routeLanguage(route)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const page = await fetchCmsPage(infra, 'home', {
+    locale: previewLocaleFrom(ctx) || lang,
+    extraHeaders: preprHeadersFrom(ctx),
+    preview,
+    noStore: preview || !!preprHeadersFrom(ctx),
+  })
+  if (page) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms', data: page })
+  }
+}
+
+/** Blog index (`/blog`) — fetch the article list. */
+export async function prefetchBlog(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const lang = routeLanguage(route)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const articles = await fetchCmsArticles(infra, lang, {
+    preview,
+    extraHeaders: preprHeadersFrom(ctx),
+  })
+  useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms-articles', data: articles })
+}
+
+/** Blog post (`/blog/:slug`) — fetch one article; 404 on a genuine miss. */
+export async function prefetchBlogPost(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const slug = String(route.params.slug || '')
+  if (!slug) {
+    ctx.status = 404
+    return
+  }
+  const lang = routeLanguage(route)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const article = await fetchCmsArticle(infra, slug, lang, {
+    preview,
+    extraHeaders: preprHeadersFrom(ctx),
+  })
+  if (article) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms-article', data: article })
+  } else {
+    ctx.status = 404
+  }
 }
 
 /** Cluster detail page — fetch the cluster (config-scoped attributes). */

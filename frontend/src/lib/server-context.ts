@@ -22,6 +22,34 @@ export interface SSRContext {
    * body but the response carries the right status (SEO: deindex dead URLs).
    */
   status?: number
+  /**
+   * Prepr personalization headers the server (`server.js`) resolved for this
+   * request and forwarded onto the context (Prepr-Customer-Id, Prepr-Segments,
+   * Prepr-Visitor-IP, Prepr-Context-*, Prepr-ABTesting). CMS loaders pass these
+   * to the provider as `extraHeaders` so personalized/preview content resolves
+   * server-side. Empty on non-Prepr providers. Lowercased header names.
+   */
+  preprHeaders?: Record<string, string>
+  /**
+   * Cookies a loader / the server wants set on the RESPONSE (the read side is
+   * `cookies` above). `server.js`'s `*all` handler applies these via
+   * `res.cookie(...)` before sending the HTML. Used to persist a freshly-minted
+   * `__prepr_uid` visitor id so the tracking pixel and future renders share it.
+   */
+  responseCookies?: ResponseCookie[]
+}
+
+/** A cookie to set on the SSR response. */
+export interface ResponseCookie {
+  name: string
+  value: string
+  options?: {
+    path?: string
+    maxAge?: number
+    sameSite?: 'lax' | 'strict' | 'none'
+    httpOnly?: boolean
+    secure?: boolean
+  }
 }
 
 /** Parse a `Cookie` header into a plain name→value map. */

@@ -32,6 +32,9 @@ export type CatalogSeed =
   | { kind: 'category'; data: unknown }
   | { kind: 'search'; term: string; data: unknown }
   | { kind: 'cluster'; data: unknown }
+  | { kind: 'cms'; data: unknown }
+  | { kind: 'cms-article'; data: unknown }
+  | { kind: 'cms-articles'; data: unknown }
 
 export const useSsrCatalogStore = defineStore('ssrCatalog', () => {
   /** Route fullPath → seed. */
