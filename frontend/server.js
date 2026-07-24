@@ -25,6 +25,7 @@ import {
   isMollieEnabled,
   isOnAccountMethod,
 } from './src/server/mollie.js'
+import { getMspProvider, isMspEnabled } from './src/server/msp.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -594,6 +595,112 @@ async function createServer() {
       res.status(200).end() // unconditional ack
     },
   )
+
+  // ── /api/msp/* — MultiSafepay PSP host endpoints ──────────────────────────
+  //
+  // The MultiSafepay sibling of the Mollie routes above (the Next mirror is
+  // app/api/msp/*). Same create-payment / payment-status shape; the webhook
+  // differs — MSP puts the id in the QUERY string (`?transactionid=<orderId>`)
+  // and calls via POST or GET, so that route takes no body parser. The provider
+  // talks directly to upstream with the order-editor key — see src/server/msp.js.
+
+  // POST /api/msp/create-payment — start a payment for a placed order.
+  app.post(
+    '/api/msp/create-payment',
+    express.json({ limit: '8kb' }),
+    async (req, res) => {
+      if (!isMspEnabled()) {
+        res.status(503).json({ error: 'multisafepay not configured' })
+        return
+      }
+      const b = req.body || {}
+      const valid =
+        typeof b.orderId === 'number' &&
+        (typeof b.amount === 'number' || typeof b.amount === 'string') &&
+        typeof b.currency === 'string' &&
+        typeof b.method === 'string' &&
+        typeof b.description === 'string' &&
+        typeof b.redirectUrl === 'string'
+      if (!valid) {
+        res.status(400).json({ error: 'missing or invalid fields' })
+        return
+      }
+      // Defense in depth: on-account methods must never reach the PSP. The
+      // shared helper is provider-agnostic and lives in mollie.js.
+      if (isOnAccountMethod(b.method)) {
+        res.status(400).json({ error: 'on-account method does not use a PSP' })
+        return
+      }
+      try {
+        const result = await getMspProvider().createPayment({
+          orderId: b.orderId,
+          amount: b.amount,
+          currency: b.currency,
+          method: b.method,
+          description: b.description,
+          redirectUrl: b.redirectUrl,
+          ...(b.userId !== undefined ? { userId: b.userId } : {}),
+          ...(b.anonymousId !== undefined ? { anonymousId: b.anonymousId } : {}),
+        })
+        res.json({ ok: true, ...result })
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'payment creation failed'
+        console.error('[msp] create-payment failed:', message)
+        res.status(500).json({ error: 'payment creation failed' })
+      }
+    },
+  )
+
+  // GET /api/msp/payment-status?paymentId=<orderId> — live status for the return
+  // page. MSP keys transactions by order id, so paymentId IS the order id
+  // (orderId accepted as an alias). Read-only; a non-ok body means "unknown".
+  app.get('/api/msp/payment-status', async (req, res) => {
+    if (!isMspEnabled()) {
+      res.status(503).json({ error: 'multisafepay not configured' })
+      return
+    }
+    const paymentId = String(
+      req.query.paymentId || req.query.orderId || '',
+    ).trim()
+    if (!paymentId) {
+      res.status(400).json({ error: 'missing paymentId' })
+      return
+    }
+    try {
+      const result = await getMspProvider().getPaymentStatus(paymentId)
+      res.json(result) // { ok, paymentId, status?, settled?, orderId?, error? }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'status lookup failed'
+      console.error('[msp] payment-status failed:', message)
+      res.json({ ok: false, paymentId, error: 'status lookup failed' })
+    }
+  })
+
+  // POST|GET /api/msp/webhook — MSP calls with `?transactionid=<orderId>` (the id
+  // is in the query, never a form body → no body parser). The provider re-fetches
+  // from MSP, classifies, and updates Propeller. ALWAYS 200 ("OK") so MSP never
+  // retry-storms.
+  const mspWebhookHandler = async (req, res) => {
+    if (!isMspEnabled()) {
+      res.status(200).send('OK')
+      return
+    }
+    const id = String(req.query.transactionid || req.query.orderId || '').trim()
+    try {
+      const result = await getMspProvider().handleWebhook(id)
+      if (!result.ok) {
+        console.warn('[msp] webhook not processed:', result.error, 'order:', id)
+      }
+    } catch (e) {
+      console.error(
+        '[msp] webhook handler error:',
+        e instanceof Error ? e.message : e,
+      )
+    }
+    res.status(200).send('OK') // unconditional ack
+  }
+  app.post('/api/msp/webhook', mspWebhookHandler)
+  app.get('/api/msp/webhook', mspWebhookHandler)
 
   // ── /api/graphql proxy with anonymous-query response cache ────────────────
   //
