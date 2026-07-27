@@ -1,0 +1,59 @@
+<template>
+  <div class="py-8 bg-background">
+    <div class="container-width">
+      <h1 class="text-3xl font-bold mb-8 text-foreground">{{ t.pageTitle }}</h1>
+      <div class="bg-card rounded-[var(--radius-container)] shadow-sm p-6">
+        <QuickOrder
+          :companyId="companyStore.companyId ?? undefined"
+          :language="languageStore.language"
+          :currency="configuration.currency"
+          :configuration="quickOrderConfiguration"
+          :parseSpreadsheet="parseQuickOrderXlsx"
+          templateUrl="/files/quickorder-template.xlsx"
+          :afterAddToCart="(cart: Cart) => { cartStore.setCart(cart) }"
+          :onMissingCodes="onMissingCodes"
+          :labels="t"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+/**
+ * Quick-order route — a standalone bulk order pad (type/paste SKUs with
+ * typeahead, or upload an XLSX of code+quantity pairs, then add everything to
+ * the cart in one bulk mutation). CSR + login-only: the router's requiresAuth
+ * guard redirects direct/anonymous access to /login, and logging out while here
+ * navigates to '/' via AppHeader's logout. Infra (graphqlClient/user) resolves
+ * from <PropellerProvider>; the XLSX parser is app-local (SheetJS, dynamic
+ * import). Mirrors nextDemo's /quick-order page + react-ui <QuickOrder>.
+ */
+import { computed } from 'vue'
+import type { Cart } from '@propeller-commerce/propeller-sdk-v2'
+import { QuickOrder } from '@propeller-commerce/propeller-v2-vue-ui'
+import { useCartStore } from '@/stores/cart'
+import { useCompanyStore } from '@/stores/company'
+import { useLanguageStore } from '@/stores/language'
+import { configuration } from '@/lib/config'
+import { useTranslations } from '@/lib/i18n/composable'
+import { parseQuickOrderXlsx } from '@/lib/parseQuickOrderXlsx'
+
+const cartStore = useCartStore()
+const companyStore = useCompanyStore()
+const languageStore = useLanguageStore()
+const t = useTranslations('QuickOrder')
+
+// Image filters so typeahead results carry thumbnails (same as the SearchBar).
+const quickOrderConfiguration = computed(() => ({
+  imageSearchFiltersGrid: configuration.imageSearchFiltersGrid,
+  imageVariantFiltersSmall: configuration.imageVariantFiltersSmall,
+}))
+
+function onMissingCodes(codes: string[]) {
+  if (codes.length) {
+    // eslint-disable-next-line no-console
+    console.warn(`${t.value.missing}: ${codes.join(', ')}`)
+  }
+}
+</script>
