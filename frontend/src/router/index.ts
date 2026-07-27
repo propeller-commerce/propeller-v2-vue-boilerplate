@@ -65,6 +65,11 @@ function buildRoutes() {
         // (/machines) AND any drill-down (/machines/a/b/…). Guarded by requiresAuth.
         { path: 'machines/:slug*', name: 'machines', meta: { requiresAuth: true }, component: () => import('@/views/MachinesView.vue') },
 
+        // Quick order (bulk SKU/qty add-to-cart + XLSX upload) — CSR, login-only.
+        // The router's requiresAuth guard redirects direct/anonymous access to
+        // /login; logging out while here navigates to '/' via AppHeader's logout.
+        { path: 'quick-order', name: 'quick-order', meta: { requiresAuth: true }, component: () => import('@/views/QuickOrderView.vue') },
+
         // ──────────────────────────────────────────────────────────────────
         // Legacy CSR shadow routes — pre-SSR copies of the four catalog
         // pages, kept verbatim for side-by-side comparison with the canonical

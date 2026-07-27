@@ -449,12 +449,17 @@ const categoriesMenuLabel = computed(() => headerLabels.value.browseCategories)
 // the nav entry only appears for a logged-in contact. Mirrors propeller-next's
 // Header `isContact` gate.
 const isContact = computed(() => !!(authStore.user && 'contactId' in authStore.user))
+// Quick order is available to any signed-in user (contact OR customer).
+const isLoggedIn = computed(() => !!(authStore.isAuthenticated && authStore.user))
 const navLinks = computed(() => {
   const links = [
     { label: headerLabels.value.newArrivals, url: '/new-arrivals', highlight: false },
     { label: headerLabels.value.bestSellers, url: '/best-sellers', highlight: false },
     { label: headerLabels.value.sale, url: '/sale', highlight: true },
   ]
+  if (isLoggedIn.value) {
+    links.unshift({ label: headerLabels.value.quickOrder || 'Quick order', url: '/quick-order', highlight: false })
+  }
   if (isContact.value) {
     links.unshift({ label: headerLabels.value.machines || 'Machines', url: '/machines', highlight: false })
   }
