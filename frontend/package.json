@@ -25,7 +25,7 @@
     "@propeller-commerce/propeller-v2-cms-vue": "^0.1.4",
     "@propeller-commerce/propeller-v2-mollie": "^0.2.4",
     "@propeller-commerce/propeller-v2-msp": "^0.1.2",
-    "@propeller-commerce/propeller-v2-vue-ui": "^0.5.0",
+    "@propeller-commerce/propeller-v2-vue-ui": "^0.5.1",
     "@unhead/vue": "^2.1.15",
     "@vueuse/core": "^14.2.1",
     "class-variance-authority": "^0.7.1",
