@@ -373,9 +373,8 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
 
 function getCategoryName(): string {
   if (!category.value) return "";
-  const nameArr =
-    (category.value as any).name || (category.value as any).names || [];
-  const match = nameArr.find((n: any) => n.language === languageStore.language);
+  const nameArr = category.value.names ?? [];
+  const match = nameArr.find((n) => n.language === languageStore.language);
   return match?.value || nameArr[0]?.value || "";
 }
 
@@ -389,7 +388,7 @@ const seoTitle = computed(
   () =>
     resolveSeoTitle(
       category.value?.metadataTitles,
-      category.value?.name,
+      category.value?.names,
       languageStore.language,
     ) || getCategoryName() || "Category",
 );
@@ -397,7 +396,7 @@ const seoDescription = computed(
   () =>
     resolveSeoDescription(
       category.value?.metadataDescriptions,
-      [category.value?.shortDescription, category.value?.description],
+      [category.value?.shortDescriptions, category.value?.descriptions],
       languageStore.language,
     ) || "",
 );
