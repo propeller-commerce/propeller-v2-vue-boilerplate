@@ -48,6 +48,8 @@ function buildRoutes() {
         { path: 'login', name: 'login', component: () => import('@/views/LoginView.vue') },
         { path: 'register', name: 'register', component: () => import('@/views/RegisterView.vue') },
         { path: 'forgot-password', name: 'forgot-password', component: () => import('@/views/ForgotPasswordView.vue') },
+        // Magic-token login (passwordless / punchout handoff) — anonymous entry, NOT requiresAuth.
+        { path: 'magic-login', name: 'magic-login', component: () => import('@/views/MagicLoginView.vue') },
         { path: 'terms-conditions', name: 'terms', component: () => import('@/views/TermsView.vue') },
 
         // Product — hybrid SSR (meta.ssrKey selects the server prefetch loader,
