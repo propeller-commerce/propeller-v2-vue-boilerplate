@@ -26,6 +26,29 @@ import {
   isOnAccountMethod,
 } from './src/server/mollie.js'
 import { getMspProvider, isMspEnabled } from './src/server/msp.js'
+import { CartService } from '@propeller-commerce/propeller-sdk-v2'
+import {
+  parseSetupRequest,
+  buildSetupResponse,
+  buildErrorResponse,
+  buildStartUrl,
+  buildAutoPostForm,
+  buildDebugPage,
+  buildOciFields,
+  buildOrderCxml,
+  mapOciParams,
+} from '@propeller-commerce/propeller-v2-punchout'
+import {
+  isPunchoutEnabled,
+  isPunchoutDebug,
+  resolveCxmlBuyer,
+  createPunchoutMagicToken,
+  createAuthedClient,
+  PUNCHOUT_CONFIG,
+  CART_IMAGE_FILTERS,
+  PUNCHOUT_COOKIE,
+  PUNCHOUT_FLAG_COOKIE,
+} from './src/server/punchout.js'
 import {
   isPreprEnabled,
   resolvePreprRequest,
@@ -805,6 +828,159 @@ async function createServer() {
   }
   app.post('/api/msp/webhook', mspWebhookHandler)
   app.get('/api/msp/webhook', mspWebhookHandler)
+
+  // ── /api/punchout/* — OCI + cXML PunchOut host endpoints ──────────────────
+  //
+  // The Vue mirror of propeller-next's app/api/punchout/*. Wire-format logic is
+  // in @propeller-commerce/propeller-v2-punchout (pure); the app-specific glue
+  // is in src/server/punchout.js. Sits on top of the magic-token login flow.
+
+  // POST /api/punchout/cxml/setup — inbound cXML PunchOutSetupRequest.
+  app.post(
+    '/api/punchout/cxml/setup',
+    express.text({ type: () => true, limit: '512kb' }),
+    async (req, res) => {
+      const sendXml = (body, status) =>
+        res.status(status).type('application/xml; charset=utf-8').send(body)
+      if (!isPunchoutEnabled()) return sendXml(buildErrorResponse(403, 'PunchOut disabled'), 403)
+      let parsed
+      try {
+        parsed = parseSetupRequest(typeof req.body === 'string' ? req.body : '')
+      } catch {
+        return sendXml(buildErrorResponse(400, 'Malformed cXML'), 400)
+      }
+      const buyer = await resolveCxmlBuyer(parsed.sharedSecret || '')
+      if (!buyer) {
+        return sendXml(buildErrorResponse(401, 'Invalid credentials'), 401)
+      }
+      let mtoken
+      try {
+        mtoken = await createPunchoutMagicToken(buyer.contactId)
+      } catch (err) {
+        console.error('[punchout] token mint failed:', err?.message || err)
+        return sendXml(buildErrorResponse(500, 'Could not start punchout session'), 500)
+      }
+      const origin = `${req.protocol}://${req.get('host')}`
+      const startUrl = buildStartUrl(`${origin}/api/punchout/enter`, {
+        mode: 'cxml',
+        mtoken,
+        redirect: '/cart',
+        HOOK_URL: parsed.browserFormPostUrl,
+        buyer_cookie: parsed.buyerCookie,
+        cxml_from: parsed.fromIdentity,
+        cxml_to: parsed.toIdentity,
+        deployment_mode: parsed.deploymentMode,
+      })
+      return sendXml(buildSetupResponse({ startUrl }), 200)
+    },
+  )
+
+  // GET /api/punchout/enter — capture the session cookie, redirect to magic-login.
+  app.get('/api/punchout/enter', (req, res) => {
+    if (!isPunchoutEnabled()) return res.status(404).send('PunchOut disabled')
+    const q = req.query
+    const mtoken = String(q.mtoken || '')
+    if (!mtoken) return res.status(400).send('Missing mtoken')
+
+    const mode = q.mode === 'cxml' ? 'cxml' : 'oci'
+    const returnUrl = String(q.HOOK_URL || q.hook_url || q.returnUrl || '')
+    const session =
+      mode === 'oci'
+        ? { mode, returnUrl, target: PUNCHOUT_CONFIG.transferTarget, session: mapOciParams(q) }
+        : {
+            mode,
+            returnUrl,
+            target: PUNCHOUT_CONFIG.transferTarget,
+            session: {},
+            buyerCookie: q.buyer_cookie ? String(q.buyer_cookie) : undefined,
+            from: q.cxml_from ? String(q.cxml_from) : undefined,
+            to: q.cxml_to ? String(q.cxml_to) : undefined,
+            deploymentMode: String(q.deployment_mode || 'test'),
+          }
+
+    const redirect = String(q.redirect || '/cart')
+    const cookieOpts = { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' }
+    res.cookie(PUNCHOUT_COOKIE, JSON.stringify(session), { ...cookieOpts, httpOnly: true, maxAge: 3600_000 })
+    res.cookie(PUNCHOUT_FLAG_COOKIE, mode, { ...cookieOpts, httpOnly: false, maxAge: 3600_000 })
+    const target = `/magic-login?mtoken=${encodeURIComponent(mtoken)}&redirect=${encodeURIComponent(redirect)}`
+    res.redirect(302, target)
+  })
+
+  // POST /api/punchout/transfer — build the OCI/cXML payload, hand the cart back.
+  app.post('/api/punchout/transfer', express.urlencoded({ extended: false, limit: '16kb' }), async (req, res) => {
+    const cookies = parseCookies(req.headers.cookie || '')
+    const rawSession = cookies[PUNCHOUT_COOKIE]
+    if (!rawSession) return res.status(400).send('No punchout session')
+    let session
+    try {
+      session = JSON.parse(rawSession)
+    } catch {
+      return res.status(400).send('Bad punchout session')
+    }
+    if (!session.returnUrl) return res.status(400).send('No return URL')
+
+    const cartId = String(req.body?.cartId || '')
+    if (!cartId) return res.status(400).send('Missing cartId')
+
+    const client = createAuthedClient(cookies['access_token'])
+    const cartService = new CartService(client)
+    let cart
+    try {
+      cart = await cartService.getCart({
+        cartId,
+        language: PUNCHOUT_CONFIG.language,
+        imageSearchFilters: CART_IMAGE_FILTERS.imageSearchFilters,
+        imageVariantFilters: CART_IMAGE_FILTERS.imageVariantFilters,
+      })
+    } catch (err) {
+      console.error('[punchout] cart load failed:', err?.message || err)
+      return res.status(502).send('Could not load cart')
+    }
+
+    const ctx = {
+      language: PUNCHOUT_CONFIG.language,
+      currency: PUNCHOUT_CONFIG.currency,
+      session: session.session,
+      buyerCookie: session.buyerCookie,
+      from: session.from,
+      to: session.to,
+      deploymentMode: session.deploymentMode,
+    }
+
+    const debug = isPunchoutDebug()
+    let html
+    if (session.mode === 'cxml') {
+      const orderXml = buildOrderCxml(cart, ctx, PUNCHOUT_CONFIG.cxmlMapping)
+      html = debug
+        ? buildDebugPage({ mode: 'cxml', returnUrl: session.returnUrl, xml: orderXml, target: session.target })
+        : buildAutoPostForm(session.returnUrl, { 'cxml-urlencoded': orderXml }, {
+            target: session.target,
+            submitLabel: 'Transfer cart to procurement',
+          })
+    } else {
+      const fields = buildOciFields(cart, ctx, PUNCHOUT_CONFIG.ociMapping)
+      html = debug
+        ? buildDebugPage({ mode: 'oci', returnUrl: session.returnUrl, fields, target: session.target })
+        : buildAutoPostForm(session.returnUrl, fields, {
+            target: session.target,
+            submitLabel: 'Transfer cart to procurement',
+          })
+    }
+
+    // In debug mode keep the cart + session so the preview is re-runnable. In a
+    // real transfer, delete the shop cart (items live in the ERP now) and clear
+    // the punchout cookies.
+    if (!debug) {
+      try {
+        await cartService.deleteCart({ id: cartId })
+      } catch {
+        /* non-fatal: the ERP already has the payload */
+      }
+      res.clearCookie(PUNCHOUT_COOKIE, { path: '/' })
+      res.clearCookie(PUNCHOUT_FLAG_COOKIE, { path: '/' })
+    }
+    res.status(200).type('text/html; charset=utf-8').send(html)
+  })
 
   // ── /api/graphql proxy with anonymous-query response cache ────────────────
   //
