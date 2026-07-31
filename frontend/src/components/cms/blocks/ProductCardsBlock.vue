@@ -29,6 +29,15 @@
         :createCart="true"
         :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
         :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
+        :onProductClick="
+          (product: Product) =>
+            router.push(configuration.urls.getProductUrl(product, languageStore.language))
+        "
+        :onClusterClick="
+          (cluster: Cluster) =>
+            router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))
+        "
+        :onLoginClick="() => router.push(localizeHref('/login', languageStore.language))"
       />
       <p v-else class="text-muted-foreground text-center">
         {{ cmsBlocksLabels.noProductsConfigured }}
@@ -39,16 +48,18 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ProductSlider } from '@propeller-commerce/propeller-v2-vue-ui'
 import { useCartStore } from '@/stores/cart'
 import { useLanguageStore } from '@/stores/language'
 import { configuration, localizeHref } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable'
 import type { CmsProductCards } from '@/lib/cms/types'
-import type { Cart } from '@propeller-commerce/propeller-sdk-v2'
+import type { Cart, Cluster, Product } from '@propeller-commerce/propeller-sdk-v2'
 
 const props = defineProps<{ block: CmsProductCards }>()
 
+const router = useRouter()
 const cartStore = useCartStore()
 const languageStore = useLanguageStore()
 

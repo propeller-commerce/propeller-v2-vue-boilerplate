@@ -26,6 +26,7 @@
           (cluster: Cluster) =>
             router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))
         "
+        :onLoginClick="() => router.push(localizeHref('/login', languageStore.language))"
       />
     </div>
   </section>
