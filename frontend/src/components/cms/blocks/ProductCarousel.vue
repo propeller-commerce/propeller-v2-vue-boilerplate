@@ -34,6 +34,7 @@
           (cluster: Cluster) =>
             router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))
         "
+        :onLoginClick="() => router.push(localizeHref('/login', languageStore.language))"
         :labels="productSliderLabels"
         :productCardLabels="productCardLabels"
         :clusterCardLabels="clusterCardLabels"
@@ -53,6 +54,7 @@ import {
   configuration,
   imageSearchFiltersGrid,
   imageVariantFiltersMedium,
+  localizeHref,
 } from '@/lib/config'
 import { useCartStore } from '@/stores/cart'
 import { useLanguageStore } from '@/stores/language'
