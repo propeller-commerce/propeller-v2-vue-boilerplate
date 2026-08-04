@@ -44,6 +44,7 @@ import {
   ProductSortField,
   SortOrder,
   ProductSearchableField,
+  channelService,
 } from '@propeller-commerce/propeller-sdk-v2'
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-vue-ui/shared'
 import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui'
@@ -53,6 +54,7 @@ import {
   imageVariantFiltersMedium,
   imageVariantFiltersLarge,
   baseCategoryId as configBaseCategoryId,
+  channelId,
   DEFAULT_LANGUAGE,
   configuration,
 } from './config'
@@ -511,12 +513,20 @@ function stableListingKey(opts: ListingFetchOptions): string {
   })
 }
 
-/** Resolve the `userId` the SDK search input expects from the infra user. */
-function resolveUserId(user: Contact | Customer | null): number | undefined {
-  if (!user) return undefined
+/**
+ * Resolve the `userId` the SDK search input expects from the infra user.
+ * For anonymous renders (`user === null`) falls back to the channel's
+ * `anonymousUserId` when supplied — so anonymous pricing follows the
+ * channel's configured anon user instead of the backend apikey default.
+ */
+function resolveUserId(
+  user: Contact | Customer | null,
+  anonymousUserId?: number,
+): number | undefined {
+  if (!user) return anonymousUserId
   if ('contactId' in user) return (user as Contact).contactId
   if ('customerId' in user) return (user as Customer).customerId
-  return undefined
+  return anonymousUserId
 }
 
 /**
@@ -533,6 +543,68 @@ function resolveCompanyId(infra: ServerInfra): number | undefined {
   const user = infra.user
   if (!user || !('contactId' in user)) return undefined
   return (user as Contact).company?.companyId
+}
+
+// ── Channel-derived anonymous defaults ───────────────────────────────────────
+//
+// Anonymous catalog/search renders send the channel's `anonymousUserId` as the
+// `userId` (so anon pricing follows the channel's configured anon user, not the
+// backend apikey default), and use the channel's `catalogRootId` as the base-
+// category fallback. Both come from a single `channel(channelId)` query, memoised
+// process-wide for a short TTL — channel config barely changes and this saves a
+// round-trip on every anonymous render. propeller-next uses Next's `unstable_cache`
+// here; Vue has no equivalent, so this is a plain module-level TTL memo.
+
+/** Anonymous-render defaults derived from the active channel. */
+export interface ChannelDefaults {
+  anonymousUserId?: number
+  catalogRootId?: number
+}
+
+const CHANNEL_DEFAULTS_TTL_MS = 300 * 1000 // 5 min — mirrors the anon SSR cache posture
+
+let channelDefaultsCache: { value: ChannelDefaults; expires: number } | undefined
+
+async function getChannelDefaults(id: number): Promise<ChannelDefaults> {
+  const now = Date.now()
+  if (channelDefaultsCache && channelDefaultsCache.expires > now) return channelDefaultsCache.value
+  try {
+    const client = createServerClient({ getAccessToken: () => undefined })
+    const channel = await channelService(client).getChannel({ channelId: id })
+    const value: ChannelDefaults = {
+      anonymousUserId: channel?.anonymousUserId ?? undefined,
+      catalogRootId: channel?.catalogRootId ?? undefined,
+    }
+    channelDefaultsCache = { value, expires: now + CHANNEL_DEFAULTS_TTL_MS }
+    return value
+  } catch {
+    // Channel is non-critical: fall back to apikey-default pricing / config base.
+    return {}
+  }
+}
+
+/**
+ * Resolve the listing `userId` for a fetch. Authenticated renders use the
+ * user's own id; anonymous renders hit the channel query once for its
+ * `anonymousUserId`. Only anonymous renders pay the channel round-trip.
+ */
+async function listingUserId(infra: ServerInfra): Promise<number | undefined> {
+  if (infra.user) return resolveUserId(infra.user)
+  const { anonymousUserId } = await getChannelDefaults(channelId)
+  return anonymousUserId
+}
+
+/**
+ * Resolve the catalog-root category id for the server-side menu / search base.
+ * An explicit `VITE_BASE_CATEGORY_ID` wins; otherwise fall back to the channel's
+ * `catalogRootId`, then the configured default.
+ */
+export async function resolveBaseCategoryId(): Promise<number> {
+  const raw = import.meta.env.VITE_BASE_CATEGORY_ID as string | undefined
+  const explicit = raw ? parseInt(raw, 10) : NaN
+  if (Number.isFinite(explicit) && explicit > 0) return explicit
+  const { catalogRootId } = await getChannelDefaults(channelId)
+  return catalogRootId ?? configBaseCategoryId
 }
 
 // ── Anonymous-only SSR response cache ────────────────────────────────────────
@@ -730,7 +802,7 @@ export async function fetchCategory(
   const page = opts.page ?? 1
   const offset = opts.offset ?? 12
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }]
-  const userId = resolveUserId(infra.user)
+  const userId = await listingUserId(infra)
   const companyId = resolveCompanyId(infra)
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
@@ -786,7 +858,7 @@ export async function fetchSearch(
   const page = opts.page ?? 1
   const offset = opts.offset ?? 12
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }]
-  const userId = resolveUserId(infra.user)
+  const userId = await listingUserId(infra)
   const companyId = resolveCompanyId(infra)
 
   const categoryProductSearchInput: CategoryProductSearchInput = {

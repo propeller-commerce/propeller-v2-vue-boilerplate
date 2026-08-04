@@ -27,12 +27,11 @@ import {
   prefetchBlog,
   prefetchBlogPost,
 } from './router/ssrPrefetch'
-import { fetchMenu, getAnonymousInfra, getServerInfra } from './lib/server'
+import { fetchMenu, getAnonymousInfra, getServerInfra, resolveBaseCategoryId } from './lib/server'
 import { useMenuStore } from './stores/menu'
 import { usePriceStore } from './stores/price'
 import { useAuthStore } from './stores/auth'
 import { useCompanyStore } from './stores/company'
-import { baseCategoryId as configBaseCategoryId } from './lib/config'
 
 /**
  * Re-exported so `server.js`'s `/api/revalidate` route can bust the
@@ -161,7 +160,9 @@ export async function render(
   // `useMenu` fetch when no tree is supplied, so the page still renders.
   const menuPrefetch = (async () => {
     try {
-      const tree = await fetchMenu(getAnonymousInfra(), configBaseCategoryId)
+      // Base category resolves from VITE_BASE_CATEGORY_ID, else the channel's
+      // catalogRootId (see resolveBaseCategoryId) — one channel query, memoised.
+      const tree = await fetchMenu(getAnonymousInfra(), await resolveBaseCategoryId())
       useMenuStore().setTree(tree)
     } catch (err) {
       console.error('[ssr] menu prefetch failed:', err)
