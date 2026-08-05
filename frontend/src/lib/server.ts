@@ -46,6 +46,7 @@ import {
   ProductSearchableField,
 } from '@propeller-commerce/propeller-sdk-v2'
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-vue-ui/shared'
+import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui'
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,
@@ -446,10 +447,22 @@ export interface ListingFetchOptions {
   textFilters?: ProductTextFilterInput[]
   priceFilterMin?: number
   priceFilterMax?: number
+  /**
+   * Active stock-availability buckets. Mirrors the client `useProductSearch`
+   * listing path — converted to the SDK's `inventory` filter via
+   * `buildInventoryFilter` (never reimplement the operator semantics here).
+   */
+  availability?: Availability[]
   language?: string
 }
 
-/** Build the optional `textFilters` / `price` slice of the search input. */
+/**
+ * Build the optional `textFilters` / `price` / `inventory` slice of the
+ * search input. The inventory filter is built exclusively via
+ * `buildInventoryFilter` — it returns `undefined` for both an empty
+ * selection and a both-buckets selection (both mean "unfiltered"), so the
+ * field is only spread in when it resolves to a real filter.
+ */
 function buildFilterInput(
   opts: ListingFetchOptions,
 ): Partial<CategoryProductSearchInput> {
@@ -462,13 +475,19 @@ function buildFilterInput(
     }
     slice.price = price
   }
+  const inventory = buildInventoryFilter(opts.availability)
+  if (inventory) slice.inventory = inventory
   return slice
 }
 
 /**
  * Stable, content-only key fragment for a listing's filter slice. Sort attribute
  * names + their value arrays so two calls with the same filters (regardless of
- * input order) hit the same cache entry. Price bounds are appended explicitly.
+ * input order) hit the same cache entry. Price bounds and availability are
+ * appended explicitly — availability MUST be part of the key or a filtered and
+ * an unfiltered request collide on the same cache entry and serve each other's
+ * results. Sorted so `['out-of-stock','in-stock']` and `['in-stock','out-of-stock']`
+ * (both-selected, i.e. unfiltered) hit the same key.
  */
 function stableListingKey(opts: ListingFetchOptions): string {
   const filters = (opts.textFilters ?? [])
@@ -484,6 +503,7 @@ function stableListingKey(opts: ListingFetchOptions): string {
     f: filters,
     pMin: opts.priceFilterMin ?? null,
     pMax: opts.priceFilterMax ?? null,
+    avail: [...(opts.availability ?? [])].sort(),
   })
 }
 

@@ -7,10 +7,11 @@
  *   - Attribute filters: `?BRAND=["acme","globex"]` — the value is a
  *     JSON.stringify'd string array.
  *   - Reserved keys: `page`, `minPrice`, `maxPrice`, `offset`, `sortField`,
- *     `sortOrder` — handled explicitly, never a filter.
+ *     `sortOrder`, `availability` — handled explicitly, never a filter.
  */
 
 import { ProductSortField, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
+import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 
 /** Reserved query keys — handled explicitly, never treated as a filter. */
 export const RESERVED_QUERY_KEYS = [
@@ -20,7 +21,23 @@ export const RESERVED_QUERY_KEYS = [
   'offset',
   'sortField',
   'sortOrder',
+  'availability',
 ] as const;
+
+/**
+ * Parse the `availability` query param into typed buckets. Accepts a plain
+ * string (`URLSearchParams`/Vue Router's single-value query) or a `string[]`
+ * (a repeated key). Unknown values are dropped rather than manufacturing a
+ * bucket that doesn't exist.
+ */
+export function parseAvailability(raw: string | string[] | undefined | null): Availability[] {
+  const value = Array.isArray(raw) ? raw.join(',') : raw;
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v): v is Availability => v === 'in-stock' || v === 'out-of-stock');
+}
 
 /**
  * Marketing / tracking query params that ad, email and social platforms append
@@ -87,6 +104,8 @@ export interface ListingParams {
   minPrice: number | undefined;
   maxPrice: number | undefined;
   filters: Record<string, string[]>;
+  /** Active stock-availability buckets. Empty when not filtered. */
+  availability: Availability[];
 }
 
 /** Read a single scalar query value (first occurrence), or undefined when empty. */
@@ -116,6 +135,7 @@ export function parseListingParams(
     minPrice: minRaw ? parseFloat(minRaw) : undefined,
     maxPrice: maxRaw ? parseFloat(maxRaw) : undefined,
     filters,
+    availability: parseAvailability(readScalarQuery(query, 'availability')),
   };
 }
 
