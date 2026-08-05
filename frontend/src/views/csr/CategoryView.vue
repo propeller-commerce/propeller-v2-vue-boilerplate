@@ -33,6 +33,9 @@
             :activeTextFilters="filters"
             :activePriceMin="minPrice"
             :activePriceMax="maxPrice"
+            :showAvailabilityFilter="SHOW_STOCK"
+            :activeAvailability="availability"
+            :onAvailabilityChange="handleAvailabilityChange"
             :isLoading="filtersLoading"
             :isMobile="false"
             :collapsed="true"
@@ -54,6 +57,7 @@
               :activeTextFilters="filters"
               :priceFilterMin="minPrice"
               :priceFilterMax="maxPrice"
+              :availability="availability"
               :onViewChange="
                 (mode: string) => (viewMode = mode as 'grid' | 'list')
               "
@@ -61,6 +65,7 @@
               :onSortChange="handleSortChange"
               :onFilterRemove="handleFilterRemove"
               :onPriceFilterRemove="handlePriceFilterRemove"
+              :onAvailabilityFilterRemove="handleAvailabilityFilterRemove"
               :onClearFilters="handleClearFilters"
               :labels="gridToolbarLabels"
             />
@@ -74,13 +79,14 @@
             :showModal="true"
             :textFilters="activeTextFilters"
             :showPrice="true"
-            :showStock="true"
+            :showStock="SHOW_STOCK"
             :showAvailability="false"
             :allowAllCategories="true"
             :allowIncrDecr="true"
             :allowAddToCart="true"
             :priceFilterMin="minPrice"
             :priceFilterMax="maxPrice"
+            :availability="availability"
             :pageSize="offset"
             :sortField="sortField"
             :sortOrder="sortOrder"
@@ -149,6 +155,7 @@
 import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { type AttributeFilter, AttributeType, Cart, type Category, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from "@propeller-commerce/propeller-sdk-v2";
+import { type Availability } from "@propeller-commerce/propeller-v2-core-ui";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
@@ -156,7 +163,7 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
-import { parseFiltersFromQuery } from "@/lib/listingParams";
+import { parseFiltersFromQuery, parseAvailability } from "@/lib/listingParams";
 
 import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
@@ -181,6 +188,13 @@ const addToCartLabels = useTranslations('AddToCart');
 const productPriceLabels = useTranslations('ProductPrice');
 const gridPaginationLabels = useTranslations('GridPagination');
 
+/**
+ * Whether product cards show a stock indicator. Gates the availability
+ * filter too: filtering by stock is meaningless when no stock is displayed,
+ * so both read this one value rather than being set independently.
+ */
+const SHOW_STOCK = true;
+
 // Derived from route — ProductGrid fetches internally using this
 const categoryId = computed(() => parseInt(route.params.id as string));
 
@@ -204,6 +218,7 @@ function readNumberQuery(value: any): number | undefined {
 const filters = ref<Record<string, string[]>>(parseFiltersFromQuery(route.query as any));
 const minPrice = ref<number | undefined>(readNumberQuery(route.query.minPrice));
 const maxPrice = ref<number | undefined>(readNumberQuery(route.query.maxPrice));
+const availability = ref<Availability[]>(parseAvailability(route.query.availability as string | string[] | undefined));
 const clearSignal = ref(0);
 const currentPage = ref(readNumberQuery(route.query.page) ?? 1);
 const offset = ref(readNumberQuery(route.query.offset) ?? 12);
@@ -226,6 +241,9 @@ function syncStateToUrl() {
   }
   if (minPrice.value !== undefined) query.minPrice = String(minPrice.value);
   if (maxPrice.value !== undefined) query.maxPrice = String(maxPrice.value);
+  // Only a single-bucket selection goes in the URL. Empty and both-selected
+  // are the same unfiltered listing, so the parameter is omitted.
+  if (availability.value.length === 1) query.availability = availability.value[0];
   if (offset.value !== 12) query.offset = String(offset.value);
   if (sortField.value !== ProductSortField.CATEGORY_ORDER) query.sortField = sortField.value;
   if (sortOrder.value !== SortOrder.DESC) query.sortOrder = sortOrder.value;
@@ -249,6 +267,7 @@ watch(
     }
     minPrice.value = readNumberQuery(q.minPrice);
     maxPrice.value = readNumberQuery(q.maxPrice);
+    availability.value = parseAvailability(q.availability as string | string[] | undefined);
     currentPage.value = readNumberQuery(q.page) ?? 1;
     offset.value = readNumberQuery(q.offset) ?? 12;
     sortField.value = (q.sortField as string) || ProductSortField.CATEGORY_ORDER;
@@ -351,10 +370,21 @@ function handlePriceChange(min: number, max: number) {
   syncStateToUrl();
 }
 
+function handleAvailabilityChange(newAvailability: Availability[]) {
+  availability.value = newAvailability;
+  currentPage.value = 1;
+  syncStateToUrl();
+}
+
+function handleAvailabilityFilterRemove(value: Availability) {
+  handleAvailabilityChange(availability.value.filter((v) => v !== value));
+}
+
 function handleClearFilters() {
   filters.value = {};
   minPrice.value = undefined;
   maxPrice.value = undefined;
+  availability.value = [];
   clearSignal.value++;
   currentPage.value = 1;
   syncStateToUrl();
@@ -395,6 +425,7 @@ watch(
     priceBoundsMax.value = undefined;
     minPrice.value = readNumberQuery(route.query.minPrice);
     maxPrice.value = readNumberQuery(route.query.maxPrice);
+    availability.value = parseAvailability(route.query.availability as string | string[] | undefined);
     currentPage.value = readNumberQuery(route.query.page) ?? 1;
     clearSignal.value++;
   },

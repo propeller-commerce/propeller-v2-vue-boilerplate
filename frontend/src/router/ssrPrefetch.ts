@@ -38,6 +38,7 @@ import { DEFAULT_LANGUAGE } from '@/lib/config'
 import { ProductSortField, SortOrder } from '@propeller-commerce/propeller-sdk-v2'
 import type { ProductTextFilterInput } from '@propeller-commerce/propeller-sdk-v2'
 import { AttributeType } from '@propeller-commerce/propeller-sdk-v2'
+import { parseAvailability } from '@/lib/listingParams'
 
 /** Resolve the active language from the route's optional `:lang` param. */
 function routeLanguage(route: RouteLocationNormalized): string {
@@ -53,6 +54,7 @@ const RESERVED_QUERY_KEYS = [
   'offset',
   'sortField',
   'sortOrder',
+  'availability',
 ]
 
 /**
@@ -103,6 +105,7 @@ function listingOptions(
     textFilters: buildTextFilters(route.query),
     priceFilterMin: num(route.query.minPrice),
     priceFilterMax: num(route.query.maxPrice),
+    availability: parseAvailability(route.query.availability as string | string[] | undefined),
   }
 }
 
