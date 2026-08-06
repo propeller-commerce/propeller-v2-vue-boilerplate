@@ -97,6 +97,9 @@ function listingOptions(
   route: RouteLocationNormalized,
   defaultSort: ProductSortField,
 ): ListingFetchOptions {
+  const { availability, minStock } = parseAvailability(
+    route.query.availability as string | string[] | undefined,
+  )
   return {
     page: num(route.query.page) ?? 1,
     offset: num(route.query.offset) ?? 12,
@@ -105,7 +108,8 @@ function listingOptions(
     textFilters: buildTextFilters(route.query),
     priceFilterMin: num(route.query.minPrice),
     priceFilterMax: num(route.query.maxPrice),
-    availability: parseAvailability(route.query.availability as string | string[] | undefined),
+    availability,
+    minStock,
   }
 }
 
