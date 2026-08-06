@@ -448,11 +448,13 @@ export interface ListingFetchOptions {
   priceFilterMin?: number
   priceFilterMax?: number
   /**
-   * Active stock-availability buckets. Mirrors the client `useProductSearch`
+   * Active stock-availability selection. Mirrors the client `useProductSearch`
    * listing path — converted to the SDK's `inventory` filter via
    * `buildInventoryFilter` (never reimplement the operator semantics here).
    */
-  availability?: Availability[]
+  availability?: Availability
+  /** Minimum quantity for the `'in-stock'` selection. Defaults to the SDK's `MIN_STOCK_THRESHOLD`. */
+  minStock?: number
   language?: string
 }
 
@@ -475,7 +477,7 @@ function buildFilterInput(
     }
     slice.price = price
   }
-  const inventory = buildInventoryFilter(opts.availability)
+  const inventory = buildInventoryFilter(opts.availability, opts.minStock)
   if (inventory) slice.inventory = inventory
   return slice
 }
@@ -486,8 +488,9 @@ function buildFilterInput(
  * input order) hit the same cache entry. Price bounds and availability are
  * appended explicitly — availability MUST be part of the key or a filtered and
  * an unfiltered request collide on the same cache entry and serve each other's
- * results. Sorted so `['out-of-stock','in-stock']` and `['in-stock','out-of-stock']`
- * (both-selected, i.e. unfiltered) hit the same key.
+ * results. `minStock` is included alongside the selection: two `'in-stock'`
+ * requests with different thresholds (e.g. "at least 1" vs "at least 5") are
+ * different queries and must not collide on one cache entry.
  */
 function stableListingKey(opts: ListingFetchOptions): string {
   const filters = (opts.textFilters ?? [])
@@ -503,7 +506,8 @@ function stableListingKey(opts: ListingFetchOptions): string {
     f: filters,
     pMin: opts.priceFilterMin ?? null,
     pMax: opts.priceFilterMax ?? null,
-    avail: [...(opts.availability ?? [])].sort(),
+    avail: opts.availability ?? 'all',
+    minStock: opts.minStock ?? null,
   })
 }
 
