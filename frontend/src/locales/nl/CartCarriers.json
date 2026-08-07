@@ -1,4 +1,5 @@
 {
   "deliveryDeadline": "Bezorgtermijn:",
-  "noCarriers": "Geen vervoerders beschikbaar."
+  "noCarriers": "Geen vervoerders beschikbaar.",
+  "carriersLabel": "Bezorgmethode"
 }

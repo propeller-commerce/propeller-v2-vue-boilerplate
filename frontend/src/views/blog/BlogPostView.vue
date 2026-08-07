@@ -19,6 +19,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useHead } from '@unhead/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CmsPageRenderer } from '@propeller-commerce/propeller-v2-cms-vue'
 import { useTranslations } from '@/lib/i18n/composable'
@@ -49,5 +50,17 @@ const articlePage = computed(() => ({
 
 onMounted(() => {
   ssrCatalog.consumeSeed(route.fullPath)
+})
+
+// Article title/summary for the crawler — the server-seeded post is already
+// resolved at render time, so this lands in the SSR HTML, not post-hydration.
+useHead({
+  title: computed(() => post.value?.title || t.value.title || ''),
+  meta: [
+    {
+      name: 'description',
+      content: computed(() => post.value?.description || ''),
+    },
+  ],
 })
 </script>

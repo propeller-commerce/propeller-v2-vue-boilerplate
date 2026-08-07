@@ -1,4 +1,5 @@
 {
   "deliveryDeadline": "Delivery deadline:",
-  "noCarriers": "No carriers available."
+  "noCarriers": "No carriers available.",
+  "carriersLabel": "Delivery method"
 }

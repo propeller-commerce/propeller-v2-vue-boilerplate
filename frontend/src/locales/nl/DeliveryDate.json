@@ -22,5 +22,6 @@
   "month_10": "nov",
   "month_11": "dec",
   "pastDate": "Selecteer een datum in de toekomst.",
-  "pickDate": "Andere datum..."
+  "pickDate": "Andere datum...",
+  "deliveryDateLabel": "Bezorgdatum"
 }

@@ -57,8 +57,23 @@ const preprScripts =
 // Document-level head defaults. `htmlAttrs.lang` tracks the active language so
 // the SSR <html lang> reflects the rendered locale; per-page <title>/<meta>
 // are layered on top by the catalog views via their own useHead() calls.
+// Site-wide title. `index.html` deliberately carries no <title> (the first one
+// in the document wins, and a static placeholder there beat every page's real
+// title), so this is the only default — views layer their own on top via
+// useHead({ title }) and the template appends the site name. A function
+// template, not '%s | Name', so the bare default doesn't render "Name | Name".
+const SITE_NAME = (import.meta.env.VITE_SITE_NAME as string | undefined) || 'Propeller'
+const SITE_DESCRIPTION =
+  (import.meta.env.VITE_SITE_DESCRIPTION as string | undefined) || ''
+
 useHead({
   htmlAttrs: { lang: computed(() => language.language.toLowerCase()) },
+  title: SITE_NAME,
+  titleTemplate: (title?: string) =>
+    title && title !== SITE_NAME ? `${title} | ${SITE_NAME}` : SITE_NAME,
+  ...(SITE_DESCRIPTION
+    ? { meta: [{ name: 'description', content: SITE_DESCRIPTION }] }
+    : {}),
   script: preprScripts,
 })
 

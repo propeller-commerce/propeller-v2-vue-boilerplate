@@ -410,6 +410,7 @@
                 <CartOverview
                   v-if="cart"
                   :cart="cart as Cart"
+                  :countries="getCountries(languageStore.language)"
                   :showTermsAndConditions="true"
                   :showReference="true"
                   :showNotes="true"

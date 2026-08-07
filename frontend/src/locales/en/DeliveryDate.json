@@ -22,5 +22,6 @@
   "month_10": "Nov",
   "month_11": "Dec",
   "pastDate": "Please select a date in the future.",
-  "pickDate": "Other date..."
+  "pickDate": "Other date...",
+  "deliveryDateLabel": "Delivery date"
 }
