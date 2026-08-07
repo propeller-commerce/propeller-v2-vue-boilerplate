@@ -11,7 +11,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useHead } from '@unhead/vue'
 import { useRoute } from 'vue-router'
 import { CmsPageRenderer } from '@propeller-commerce/propeller-v2-cms-vue'
 import CmsFallback from '@/components/layout/CmsFallback.vue'
@@ -36,5 +37,17 @@ const page = ref<CmsRichPage | null>(
 
 onMounted(() => {
   ssrCatalog.consumeSeed(route.fullPath)
+})
+
+// CMS pages carry their own title/description; without this every one of them
+// served the site default.
+useHead({
+  title: computed(() => page.value?.title || ''),
+  meta: [
+    {
+      name: 'description',
+      content: computed(() => page.value?.description || ''),
+    },
+  ],
 })
 </script>

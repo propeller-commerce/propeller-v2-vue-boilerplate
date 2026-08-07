@@ -24,7 +24,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useHead } from '@unhead/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLanguageStore } from '@/stores/language'
 import { localizeHref } from '@/lib/config'
@@ -50,4 +51,6 @@ const loading = ref(false)
 onMounted(() => {
   ssrCatalog.consumeSeed(route.fullPath)
 })
+
+useHead({ title: computed(() => t.value.title || '') })
 </script>

@@ -129,6 +129,111 @@ const ORDER_EDITOR_MUTATIONS = new Set([
 const ORDER_EDITOR_OPT_IN_MUTATIONS = new Set(['contactRegister'])
 const ORDER_EDITOR_CLIENT_ID = 'order-editor'
 
+// ── Proxy hardening: per-IP rate limit + body cap ───────────────────────────
+//
+// `/api/graphql` and `/api/order-editor` inject an API key server-side, so an
+// unthrottled proxy is an open, unauthenticated relay to the upstream GraphQL
+// API — anyone who can reach the site can drive it at any rate. These are the
+// Vue mirror of propeller-next's app/api/graphql/route.ts limits; they don't
+// replace upstream validation, they stop the trivial DoS / scrape.
+//
+// In-memory buckets = one limiter per Node process. PM2 typically runs SSR
+// single-instance; behind N instances each enforces its own slice, so the
+// effective ceiling is N × the limit. Move to Redis or a CDN edge limit if you
+// scale out.
+const RATE_LIMIT_WINDOW_MS = 60_000 // 1 min rolling window
+// Deliberately generous: a real shopper fires 4–8 GraphQL calls per page
+// navigation (menu, search, cart, price toggle, grid, PDP tabs), so a brisk
+// session crosses 60/min easily. This is a bot/scraper shield, not a
+// user-behavior shield. Same numbers as the Next boilerplate.
+const RATE_LIMIT_AUTH = 300 // per-IP, authenticated
+const RATE_LIMIT_ANON = 150 // per-IP, anonymous
+const MAX_BODY_BYTES = 100 * 1024 // 100 KB — accommodates large bulk queries
+
+/** ip → array of request timestamps inside the current window. */
+const rateLimitBuckets = new Map()
+
+/**
+ * Structural JWT check — 3 segments, decodable JSON payload, `exp` in the
+ * future. The signature is NOT verified: upstream is the authority on token
+ * validity and re-checks every call. This exists only so the higher auth
+ * rate-limit tier keys off a token that at least parses, rather than raw
+ * cookie presence — which any HTTP client can forge with `access_token=x`
+ * to claim the auth ceiling. (Mirrors propeller-next's lib/jwt.ts; the fix
+ * PWP-862 asked for, applied here from the start.)
+ */
+function looksLikeValidJwt(token) {
+  if (!token) return false
+  const parts = token.split('.')
+  if (parts.length !== 3) return false
+  let payload
+  try {
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'))
+  } catch {
+    return false
+  }
+  if (!payload || typeof payload !== 'object') return false
+  // `exp` is seconds since epoch. No exp claim → can't prove expiry, treat as
+  // plausible (upstream still rejects it if it isn't).
+  if (typeof payload.exp === 'number') return payload.exp * 1000 > Date.now()
+  return true
+}
+
+function isRateLimited(ip, limit) {
+  const now = Date.now()
+  const cutoff = now - RATE_LIMIT_WINDOW_MS
+  const fresh = (rateLimitBuckets.get(ip) ?? []).filter((t) => t > cutoff)
+  if (fresh.length >= limit) {
+    rateLimitBuckets.set(ip, fresh)
+    return true
+  }
+  fresh.push(now)
+  rateLimitBuckets.set(ip, fresh)
+  // ponytail: sweep only when the map gets big. Unlike Next's per-request
+  // lambdas this process lives for weeks, so never pruning would leak one
+  // array per IP ever seen. Bump the threshold if you front a large NAT.
+  if (rateLimitBuckets.size > 10_000) {
+    for (const [key, stamps] of rateLimitBuckets) {
+      if (!stamps.some((t) => t > cutoff)) rateLimitBuckets.delete(key)
+    }
+  }
+  return false
+}
+
+/**
+ * Best-effort client IP. `x-forwarded-for` is set by the reverse proxy in
+ * front of this server; a client can spoof it, so the worst case is an
+ * attacker spreading their own budget across forged IPs — still bounded by
+ * upstream, and the honest single-IP flood (the reported case) is stopped.
+ */
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for']
+  const xffStr = Array.isArray(xff) ? xff[0] : xff
+  if (xffStr) return xffStr.split(',')[0].trim()
+  const xri = req.headers['x-real-ip']
+  if (xri) return Array.isArray(xri) ? xri[0] : xri
+  return req.socket?.remoteAddress || 'unknown'
+}
+
+/**
+ * Express middleware — mounted on BOTH key-injecting proxies. The auth tier is
+ * gated on a structurally valid, non-expired JWT (see looksLikeValidJwt), so
+ * presenting any `access_token` cookie value doesn't buy the higher ceiling.
+ */
+function rateLimitProxy(req, res, next) {
+  const token = parseCookies(req.headers.cookie || '')['access_token']
+  const limit = looksLikeValidJwt(token) ? RATE_LIMIT_AUTH : RATE_LIMIT_ANON
+  if (isRateLimited(clientIp(req), limit)) {
+    res
+      .status(429)
+      .set('Retry-After', String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)))
+      .json({ errors: [{ message: 'rate limit exceeded' }] })
+    return
+  }
+  next()
+}
+
 /**
  * Resolve a GraphQL operation name for API-key routing. Prefer the explicit
  * `operationName` the SDK sends in the body; fall back to the first
@@ -305,10 +410,30 @@ function gqlCacheKey(rawBody) {
 function graphqlCachedHandler() {
   return async (req, res) => {
     // Collect the raw body manually — we need it both for the cache key and
-    // for the upstream forward.
+    // for the upstream forward. Capped: this buffers in memory, so without a
+    // ceiling a single client can make the process allocate without bound.
     const chunks = []
-    req.on('data', (c) => chunks.push(c))
+    let received = 0
+    let aborted = false
+    const declared = Number(req.headers['content-length'])
+    if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+      res.status(413).json({ errors: [{ message: 'payload too large' }] })
+      req.destroy()
+      return
+    }
+    req.on('data', (c) => {
+      if (aborted) return
+      received += c.length
+      if (received > MAX_BODY_BYTES) {
+        aborted = true
+        res.status(413).json({ errors: [{ message: 'payload too large' }] })
+        req.destroy()
+        return
+      }
+      chunks.push(c)
+    })
     req.on('end', async () => {
+      if (aborted) return
       const rawBody = Buffer.concat(chunks)
       const auth = req.headers['authorization']
       const authHeader = Array.isArray(auth) ? auth[0] : auth
@@ -994,6 +1119,11 @@ async function createServer() {
   // Why a hand-rolled handler and not the proxy library: the library streams
   // the response and doesn't expose a clean hook to capture the body, which
   // we need to store. With `fetch` we get the response as a buffer for free.
+  // Rate limit BOTH key-injecting proxies. `/api/order-editor` carries the
+  // more privileged key, so leaving it unthrottled while guarding
+  // `/api/graphql` would just move the open relay one path over.
+  app.use(['/api/graphql', '/api/order-editor'], rateLimitProxy)
+
   app.post('/api/graphql', graphqlCachedHandler())
   app.use(
     '/api/order-editor',

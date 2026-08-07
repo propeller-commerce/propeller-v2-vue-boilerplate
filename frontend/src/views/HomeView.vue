@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
@@ -85,6 +85,7 @@ import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import type { CmsRichPage } from "@/lib/cms/types";
 import { ProductSlider } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
+import { useHead } from '@unhead/vue';
 
 const t = useTranslations('Home');
 const productSliderLabels = useTranslations('ProductSlider');
@@ -119,5 +120,18 @@ const cmsPage = ref<CmsRichPage | null>(
 );
 onMounted(() => {
   ssrCatalog.consumeSeed(route.fullPath);
+});
+
+// The homepage set no head tags of its own, so it inherited the site default:
+// no distinct title and no description for crawlers. A CMS-managed home wins;
+// otherwise fall back to the localized welcome copy.
+useHead({
+  title: computed(() => cmsPage.value?.title || t.value.welcomeTitle || ""),
+  meta: [
+    {
+      name: "description",
+      content: computed(() => t.value.welcomeSubtitle || ""),
+    },
+  ],
 });
 </script>

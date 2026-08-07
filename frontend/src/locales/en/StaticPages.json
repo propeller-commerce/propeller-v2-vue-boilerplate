@@ -1,3 +1,8 @@
 {
-  "termsTitle": "Terms & Conditions"
+  "termsTitle": "Terms & Conditions",
+  "termsIntro": "Please read these terms and conditions carefully before using our service.",
+  "termsAcceptanceTitle": "1. Acceptance of Terms",
+  "termsAcceptanceBody": "By accessing and using this website, you accept and agree to be bound by the terms and provisions of this agreement.",
+  "termsLicenseTitle": "2. Use License",
+  "termsLicenseBody": "Permission is granted to temporarily download one copy of the materials on our website for personal, non-commercial transitory viewing only."
 }

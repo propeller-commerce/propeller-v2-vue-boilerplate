@@ -1,3 +1,4 @@
 {
-  "noMethods": "Geen betaalmethoden beschikbaar."
+  "noMethods": "Geen betaalmethoden beschikbaar.",
+  "methodsLabel": "Betaalmethode"
 }
