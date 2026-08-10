@@ -17,6 +17,7 @@
       <CategoryDescription
         v-if="category"
         :category="category as Category"
+        :labels="categoryDescriptionLabels"
       />
 
       <div class="flex flex-col lg:flex-row gap-8 mt-4">
@@ -182,6 +183,7 @@ const languageStore = useLanguageStore();
 
 const breadcrumbsLabels = useTranslations('Breadcrumbs');
 const gridTitleLabels = useTranslations('GridTitle');
+const categoryDescriptionLabels = useTranslations('CategoryDescription');
 const gridFiltersLabels = useTranslations('GridFilters');
 const gridToolbarLabels = useTranslations('GridToolbar');
 const productGridLabels = useTranslations('ProductGrid');

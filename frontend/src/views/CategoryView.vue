@@ -17,7 +17,11 @@
 
       <GridTitle :title="getCategoryName()" :labels="gridTitleLabels" />
 
-      <CategoryDescription v-if="category" :category="category as Category" />
+      <CategoryDescription
+        v-if="category"
+        :category="category as Category"
+        :labels="categoryDescriptionLabels"
+      />
 
       <!-- Hybrid SSR island. The grid is now server-rendered too — when a
            seed is available we hand the items array to <ProductGrid> via the
@@ -190,6 +194,7 @@ const languageStore = useLanguageStore();
 
 const breadcrumbsLabels = useTranslations('Breadcrumbs');
 const gridTitleLabels = useTranslations('GridTitle');
+const categoryDescriptionLabels = useTranslations('CategoryDescription');
 const gridFiltersLabels = useTranslations('GridFilters');
 const gridToolbarLabels = useTranslations('GridToolbar');
 const productGridLabels = useTranslations('ProductGrid');
