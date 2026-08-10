@@ -29,6 +29,7 @@ import {
 } from './router/ssrPrefetch'
 import { fetchMenu, getAnonymousInfra, getServerInfra, resolveBaseCategoryId } from './lib/server'
 import { useMenuStore } from './stores/menu'
+import { detectLanguageFromPath } from './lib/config'
 import { usePriceStore } from './stores/price'
 import { useAuthStore } from './stores/auth'
 import { useCompanyStore } from './stores/company'
@@ -162,7 +163,11 @@ export async function render(
     try {
       // Base category resolves from VITE_BASE_CATEGORY_ID, else the channel's
       // catalogRootId (see resolveBaseCategoryId) — one channel query, memoised.
-      const tree = await fetchMenu(getAnonymousInfra(), await resolveBaseCategoryId())
+      // Language off the request URL, not the site default.
+      const tree = await fetchMenu(
+        getAnonymousInfra(detectLanguageFromPath(url)),
+        await resolveBaseCategoryId(),
+      )
       useMenuStore().setTree(tree)
     } catch (err) {
       console.error('[ssr] menu prefetch failed:', err)

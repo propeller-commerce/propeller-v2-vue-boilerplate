@@ -30,6 +30,7 @@
             :isLoading="filtersLoading"
             :isMobile="false"
             :collapsed="true"
+            :language="languageStore.language"
             :labels="gridFiltersLabels"
           />
         </aside>
