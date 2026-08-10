@@ -596,15 +596,24 @@ async function listingUserId(infra: ServerInfra): Promise<number | undefined> {
 
 /**
  * Resolve the catalog-root category id for the server-side menu / search base.
- * An explicit `VITE_BASE_CATEGORY_ID` wins; otherwise fall back to the channel's
- * `catalogRootId`, then the configured default.
+ *
+ * An explicit `VITE_BASE_CATEGORY_ID` wins; otherwise the channel's
+ * `catalogRootId`. Those two are the only permitted sources — there is no
+ * literal fallback, because guessing an id that doesn't exist on this tenant
+ * surfaces to shoppers as an unexplained "Failed to load menu" (PWP-913).
+ *
+ * @throws when neither source yields an id.
  */
 export async function resolveBaseCategoryId(): Promise<number> {
-  const raw = import.meta.env.VITE_BASE_CATEGORY_ID as string | undefined
-  const explicit = raw ? parseInt(raw, 10) : NaN
-  if (Number.isFinite(explicit) && explicit > 0) return explicit
+  if (configBaseCategoryId !== undefined) return configBaseCategoryId
   const { catalogRootId } = await getChannelDefaults(channelId)
-  return catalogRootId ?? configBaseCategoryId
+  if (catalogRootId == null) {
+    throw new Error(
+      `No catalog root: channel ${channelId} exposes no catalogRootId and ` +
+        'VITE_BASE_CATEGORY_ID is unset. Set one of the two.',
+    )
+  }
+  return catalogRootId
 }
 
 // ── Anonymous-only SSR response cache ────────────────────────────────────────
@@ -850,8 +859,10 @@ export async function fetchSearch(
   infra: ServerInfra,
   term: string,
   opts: ListingFetchOptions = {},
-  baseCategoryId: number = configBaseCategoryId,
+  baseCategoryId?: number,
 ): Promise<ProductsResponse | null> {
+  // Env override, else the channel's catalog root — never a literal (PWP-913).
+  const rootCategoryId = baseCategoryId ?? (await resolveBaseCategoryId())
   const lang = opts.language ?? infra.language
   const sortField = opts.sortField ?? ProductSortField.RELEVANCE
   const sortOrder = opts.sortOrder ?? SortOrder.DESC
@@ -874,7 +885,7 @@ export async function fetchSearch(
     ...(companyId !== undefined && { companyId }),
   }
 
-  const cacheKey = `search:${baseCategoryId}:${lang}:${term}:${sortField}:${sortOrder}:${page}:${offset}:${stableListingKey(opts)}`
+  const cacheKey = `search:${rootCategoryId}:${lang}:${term}:${sortField}:${sortOrder}:${page}:${offset}:${stableListingKey(opts)}`
   // Search isn't tagged per-term — long-tail terms would explode the tag
   // namespace. Cardinality is controlled by the TTL; class-level
   // `tagFor('search')` busts all search-result entries at once.
@@ -883,7 +894,7 @@ export async function fetchSearch(
   return withAnonymousCache<ProductsResponse | null>(infra, cacheKey, tags, async () => {
     try {
       const result = await services.category.getCategory({
-        categoryId: baseCategoryId,
+        categoryId: rootCategoryId,
         language: lang,
         categoryProductSearchInput,
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
@@ -977,8 +988,8 @@ function buildMenuCategoriesFragment(depth: number): string {
     categories {
       categoryId
       hidden
-      names(language: $language) { value language }
-      slugs(language: $language) { value }
+      names { value language }
+      slugs { value language }
       ${buildMenuCategoriesFragment(depth - 1)}
     }
   `
@@ -986,7 +997,7 @@ function buildMenuCategoriesFragment(depth: number): string {
 
 function mapRawMenuCategory(raw: RawMenuCategory, language: string): MenuCategory {
   const nameEntry = raw.names?.find((n) => n.language === language) ?? raw.names?.[0]
-  const slugEntry = raw.slugs?.[0]
+  const slugEntry = raw.slugs?.find((s) => s.language === language) ?? raw.slugs?.[0]
   return {
     categoryId: raw.categoryId,
     name: nameEntry?.value ?? '',
@@ -1023,12 +1034,12 @@ export async function fetchMenu(
     // Cache-key keying note: variable order locked (categoryId, language).
     // See the note on `fetchProduct`.
     const query = `
-      query Menu($categoryId: Float, $language: String) {
+      query Menu($categoryId: Float) {
         category(categoryId: $categoryId) {
           categoryId
           hidden
-          names(language: $language) { value language }
-          slugs(language: $language) { value }
+          names { value language }
+          slugs { value language }
           ${buildMenuCategoriesFragment(depth)}
         }
       }
@@ -1036,7 +1047,7 @@ export async function fetchMenu(
     try {
       const result = await client.execute<{ category: RawMenuCategory | null }>({
         query,
-        variables: { categoryId: rootCategoryId, language: lang },
+        variables: { categoryId: rootCategoryId },
         operationName: 'Menu',
       })
       const root = result.data?.category ?? null

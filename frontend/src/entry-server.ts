@@ -162,8 +162,13 @@ export async function render(
     try {
       // Base category resolves from VITE_BASE_CATEGORY_ID, else the channel's
       // catalogRootId (see resolveBaseCategoryId) — one channel query, memoised.
-      const tree = await fetchMenu(getAnonymousInfra(), await resolveBaseCategoryId())
-      useMenuStore().setTree(tree)
+      const rootId = await resolveBaseCategoryId()
+      const tree = await fetchMenu(getAnonymousInfra(), rootId)
+      const menuStore = useMenuStore()
+      menuStore.setTree(tree)
+      // Seed the id too: if the client ever has to fetch the menu itself it
+      // must use the same root, not a literal from config (PWP-913).
+      menuStore.setBaseCategoryId(rootId)
     } catch (err) {
       console.error('[ssr] menu prefetch failed:', err)
     }

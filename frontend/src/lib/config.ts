@@ -49,7 +49,15 @@ function buildEntityUrl(page: string, id?: number | string, slug?: string, patte
   return `${prefix}/${parts.join('/')}`
 }
 
-export const baseCategoryId = parseInt(import.meta.env.VITE_BASE_CATEGORY_ID || '17', 10)
+// Env override ONLY — no literal. When unset the catalog root comes from the
+// channel: `resolveBaseCategoryId()` server-side, seeded to the client through
+// `useMenuStore().baseCategoryId`. A hardcoded id is wrong on any shop whose
+// catalog root isn't that number (PWP-913).
+export const baseCategoryId: number | undefined = (() => {
+  const raw = import.meta.env.VITE_BASE_CATEGORY_ID as string | undefined
+  const parsed = raw ? parseInt(raw, 10) : NaN
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+})()
 export const menuDepth = parseInt(import.meta.env.VITE_MENU_DEPTH || '3', 10)
 // Set VITE_CHANNEL_ID per environment to the channel orders/quotes are placed
 // on. The account order/quote lists filter by `channelIds: [channelId]`, so a
