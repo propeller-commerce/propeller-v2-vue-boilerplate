@@ -29,7 +29,7 @@ import {
 } from './router/ssrPrefetch'
 import { fetchMenu, getAnonymousInfra, getServerInfra, resolveBaseCategoryId } from './lib/server'
 import { useMenuStore } from './stores/menu'
-import { detectLanguageFromPath } from './lib/config'
+import { useLanguageStore } from './stores/language'
 import { usePriceStore } from './stores/price'
 import { useAuthStore } from './stores/auth'
 import { useCompanyStore } from './stores/company'
@@ -99,6 +99,11 @@ export async function render(
   // right gross/net prices and the hydration snapshot matches.
   usePriceStore(pinia).seedFromCookie(ssrContext.cookies)
 
+  // Same for the language: the URL's prefix still wins (the router guard runs
+  // after this), but an unprefixed path now keeps the visitor's stored choice
+  // instead of resetting to the default.
+  useLanguageStore(pinia).seedFromCookie(ssrContext.cookies)
+
   // Seed the auth store from the `access_token` cookie BEFORE routing, so the
   // router's `requiresAuth` guard sees the logged-in user. Without this the
   // server starts anonymous (it can't read localStorage) and every `/account/*`
@@ -165,7 +170,9 @@ export async function render(
       // catalogRootId (see resolveBaseCategoryId) — one channel query, memoised.
       // Language off the request URL, not the site default.
       const rootId = await resolveBaseCategoryId()
-      const tree = await fetchMenu(getAnonymousInfra(detectLanguageFromPath(url)), rootId)
+      // Store, not the URL: it is cookie-seeded above and the router guard has
+      // already applied any prefix, so it covers unprefixed pages too.
+      const tree = await fetchMenu(getAnonymousInfra(useLanguageStore(pinia).language), rootId)
       const menuStore = useMenuStore()
       menuStore.setTree(tree)
       // Seed the id too: if the client ever has to fetch the menu itself — which

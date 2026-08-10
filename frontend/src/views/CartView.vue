@@ -45,15 +45,14 @@
             class="rounded-lg border bg-card p-4"
           >
             <p class="mb-3 text-sm text-muted-foreground">
-              You are shopping from your procurement system. Send this cart back
-              as a requisition.
+              {{ t.punchoutIntro }}
             </p>
             <input type="hidden" name="cartId" :value="cartStore.cart.cartId" />
             <button
               type="submit"
               class="w-full rounded-lg bg-primary px-6 py-3 text-primary-foreground transition hover:bg-primary/90"
             >
-              Transfer cart to procurement
+              {{ t.punchoutTransfer }}
             </button>
           </form>
           <CartSummary

@@ -15,8 +15,17 @@ export const useLanguageStore = defineStore('language', () => {
     language.value = lang
     safeStorage.setItem(STORAGE_KEY, lang)
     if (isBrowser) {
+      // Mirror into a cookie — the SSR render can't read localStorage, so
+      // without this an unprefixed page always renders the default language.
+      document.cookie = `${STORAGE_KEY}=${lang}; path=/; max-age=31536000; samesite=lax`
       window.dispatchEvent(new CustomEvent('languageChanged', { detail: lang }))
     }
+  }
+
+  /** Seed from the request cookie during SSR (mirrors the price store). */
+  function seedFromCookie(cookies: Record<string, string>) {
+    const value = cookies[STORAGE_KEY]
+    if (value) language.value = value.toUpperCase()
   }
 
   // Sync with other tabs — browser-only.
@@ -28,5 +37,5 @@ export const useLanguageStore = defineStore('language', () => {
     })
   }
 
-  return { language, setLanguage }
+  return { language, setLanguage, seedFromCookie }
 })

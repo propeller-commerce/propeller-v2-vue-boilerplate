@@ -4,5 +4,6 @@
   "loginSubtitle": "",
   "loginTitle": "Welcome Back",
   "logoutLabel": "Log Out",
-  "signedInAs": "Signed in as"
+  "signedInAs": "Signed in as",
+  "accountMenuTitle": "My account"
 }

@@ -3,6 +3,7 @@
     <div class="w-full max-w-md">
       <LoginForm
         :labels="loginFormLabels"
+        :buttonText="loginFormLabels.submitButton"
         :cart="cartStore.cart as Cart | null"
         :afterLogin="(user: any, accessToken: any, refreshToken: any, expiresAt: any, anonymousCart: any) => handleLoginSuccess(user, accessToken, refreshToken, expiresAt, anonymousCart)"
         :onForgotPasswordClick="() => router.push(localizeHref('/forgot-password', languageStore.language))"

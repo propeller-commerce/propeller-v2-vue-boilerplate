@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.4] - 2026-08-10
+
+### Fixed
+
+- **The language choice did not survive navigation.** Selecting EN re-rendered
+  the current page, but any navigation reverted to Dutch. The preference lived
+  in localStorage only, which the SSR render cannot read, and the router guard
+  reset the store to the default on every unprefixed path. The choice is now
+  mirrored into a `preferred_language` cookie, seeded server-side alongside the
+  price store, and the guard syncs only from a prefixed URL — an unprefixed
+  path is that request's default, not a preference.
+
+- `routeLanguage()` in `ssrPrefetch` is the single resolver for an SSR fetch's
+  language — URL prefix, else the cookie, else the default — so no call site
+  restates the precedence. The menu prefetch reads the store rather than
+  re-deriving from the URL.
+
+- **Auth-flow strings stayed English on a Dutch page.** The login failure
+  message needed the `invalidCredentials` label the app never supplied. The
+  submit buttons on login, register and forgot-password, plus that page's
+  title and success message, are package *props* rather than label keys, so
+  passing `labels` alone left them English. Adds the `accountMenuTitle` key
+  the package reads.
+
+- The PunchOut cart notice and transfer button were hardcoded English; the
+  machines page title and card CTA had no labels (new `Machines` namespace).
+
 ## [1.11.3] - 2026-08-10
 
 ### Fixed

@@ -8,5 +8,7 @@
   "passwordPlaceholder": "••••••••",
   "noAccount": "Don't have an account? {link}",
   "registerLink": "Create an Account",
-  "registerText": "Don't have an account?"
+  "registerText": "Don't have an account?",
+  "invalidCredentials": "The credentials you entered don't match our records. Please try again.",
+  "submitButton": "Log in"
 }
