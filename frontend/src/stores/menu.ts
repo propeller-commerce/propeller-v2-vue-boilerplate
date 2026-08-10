@@ -22,6 +22,16 @@ export const useMenuStore = defineStore('menu', () => {
   /** Pre-fetched category tree. `null` until the SSR prefetch runs. */
   const tree = ref<MenuCategory[] | null>(null)
 
+  /**
+   * The catalog root the server resolved (`VITE_BASE_CATEGORY_ID` when set,
+   * else the channel's `catalogRootId`). Seeded alongside the tree so the
+   * client fallback path — `<Menu>`'s own `useMenu` fetch, used whenever the
+   * SSR prefetch failed — asks for the SAME category the server would, rather
+   * than a hardcoded id from config that is wrong on any shop whose catalog
+   * root isn't that number (PWP-913).
+   */
+  const baseCategoryId = ref<number | null>(null)
+
   function setTree(next: MenuCategory[]): void {
     tree.value = next
   }
@@ -31,5 +41,11 @@ export const useMenuStore = defineStore('menu', () => {
     tree.value = null
   }
 
-  return { tree, setTree, clearTree }
+  function setBaseCategoryId(next: number): void {
+    baseCategoryId.value = next
+  }
+
+  // `baseCategoryId` deliberately survives `clearTree()`: the root doesn't
+  // change with the language, and the refetch that follows a switch needs it.
+  return { tree, baseCategoryId, setTree, clearTree, setBaseCategoryId }
 })

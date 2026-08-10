@@ -164,11 +164,14 @@ export async function render(
       // Base category resolves from VITE_BASE_CATEGORY_ID, else the channel's
       // catalogRootId (see resolveBaseCategoryId) — one channel query, memoised.
       // Language off the request URL, not the site default.
-      const tree = await fetchMenu(
-        getAnonymousInfra(detectLanguageFromPath(url)),
-        await resolveBaseCategoryId(),
-      )
-      useMenuStore().setTree(tree)
+      const rootId = await resolveBaseCategoryId()
+      const tree = await fetchMenu(getAnonymousInfra(detectLanguageFromPath(url)), rootId)
+      const menuStore = useMenuStore()
+      menuStore.setTree(tree)
+      // Seed the id too: if the client ever has to fetch the menu itself — which
+      // is exactly what happens after a language switch clears the tree — it
+      // must use the same root, not a literal from config (PWP-913).
+      menuStore.setBaseCategoryId(rootId)
     } catch (err) {
       console.error('[ssr] menu prefetch failed:', err)
     }

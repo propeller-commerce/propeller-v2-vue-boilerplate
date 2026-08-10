@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Switching to a language with partial translations emptied the category
+  menu** (PWP-927). `fetchMenu` filtered the localized fields server-side, so a
+  category with no entry for that language came back with empty `names` /
+  `slugs` and the mapper's fallback had nothing to fall back to — the row
+  rendered with a blank label and an empty slug. Both fields are now fetched
+  unfiltered and the mapper falls back to whichever translation exists.
+- **The catalog root is now channel-driven on the client too** (PWP-913).
+  `config.baseCategoryId` defaulted to a hardcoded `17` — correct on one tenant,
+  wrong on every other. It is now the env override only (`undefined` when
+  unset), `resolveBaseCategoryId()` throws rather than guessing when neither the
+  env nor the channel yields a root, and `entry-server.ts` seeds the resolved id
+  into `useMenuStore` so the refetch that follows a language switch uses the
+  same root the server did.
 - **Filter headings and the category menu stayed Dutch after switching to
   EN**, while the heading, description and product grid translated correctly.
   Three causes: the four listing views passed `labels` to `GridFilters` but
@@ -31,6 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/en/category/1845/vrachtwagenbanden`). The localized slug only arrives with
   the re-fetch that follows the switch. Cosmetic — the category id resolves the
   route and the page renders in the right language.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-vue-ui` -> `^0.14.5`.
+
 
 ## [1.11.2] - 2026-08-10
 

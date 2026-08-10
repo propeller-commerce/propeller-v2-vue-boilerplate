@@ -229,7 +229,8 @@
                    is in the initial response, no loading flash, no client
                    roundtrip on hydration. -->
               <PropellerMenu
-                :categoryId="configuration.baseCategoryId"
+                v-if="menuCategoryId !== undefined"
+                :categoryId="menuCategoryId"
                 :depth="configuration.menuDepth"
                 :tree="menuTreeProp"
                 :onMenuItemClick="handleCategoryClick"
@@ -262,8 +263,8 @@
       <!-- Mobile categories — same pre-fetched tree as the desktop instance.
            Both `<PropellerMenu>` mounts share one fetch via `useMenuStore`. -->
       <PropellerMenu
-        v-if="showCategoriesMenu"
-        :categoryId="configuration.baseCategoryId"
+        v-if="showCategoriesMenu && menuCategoryId !== undefined"
+        :categoryId="menuCategoryId"
         :depth="configuration.menuDepth"
         :tree="menuTreeProp"
         :onMenuItemClick="handleCategoryClick"
@@ -339,6 +340,14 @@ const languageStore = useLanguageStore()
 // empty render), and the legacy client-side fetch kicks in as fallback.
 const menuStore = useMenuStore()
 const menuTreeProp = computed(() => menuStore.tree ?? undefined)
+// Server-resolved root (env override, else the channel's catalogRootId), seeded
+// by `entry-server.ts`. Only consulted on the fallback path — when the SSR
+// prefetch failed and `<Menu>` fetches for itself — but it must be the same id
+// the server would use, not a literal (PWP-913). `configuration.baseCategoryId`
+// is the env override and is `undefined` when the channel is meant to drive it.
+const menuCategoryId = computed(
+  () => menuStore.baseCategoryId ?? configuration.baseCategoryId,
+)
 
 // `fetchActiveCart` here is the composable-bound version still used by
 // handleCompanyChange (which fires AFTER login and relies on the reactive
