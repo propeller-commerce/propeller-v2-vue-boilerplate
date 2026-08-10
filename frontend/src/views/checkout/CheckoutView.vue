@@ -267,7 +267,7 @@
                 <CartPaymethods
                   v-if="cart"
                   :cart="cart as Cart"
-                  :onPaymethodSelect="(pm) => (selectedPayment = pm.code)"
+                  :onPaymethodSelect="(pm) => handlePaymethodSelect(pm.code)"
                   :labels="cartPaymethodsLabels"
                   :paymethodLabels="paymethodNames"
                 />
@@ -725,6 +725,24 @@ watch(
   },
   { immediate: true },
 );
+
+// Persist the payment method the moment it is picked, so the order summary
+// shows THIS method's transaction costs instead of the previously stored
+// method's (PWP-930) — the totals used to only refresh on Continue, which made
+// the grand total jump at step 4. CartPaymethods also fires this on mount to
+// report the cart's stored method; skip the mutation when nothing changed.
+async function handlePaymethodSelect(code: string) {
+  selectedPayment.value = code;
+  const c = cart.value as any;
+  if (!c?.cartId || c.paymentData?.method === code) return;
+  try {
+    const updatedCart = await updateCartSettings(c.cartId, { paymentMethod: code });
+    if (updatedCart) cartStore.setCart(updatedCart);
+  } catch (e) {
+    // Non-fatal: the totals stay stale, but Continue re-sends the method.
+    console.error("[checkout] persist payment method failed:", e);
+  }
+}
 
 async function handleStep3Continue() {
   // A carrier is only required when the cart actually offers one. Some carts
