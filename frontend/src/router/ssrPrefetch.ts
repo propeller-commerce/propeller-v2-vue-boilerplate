@@ -40,10 +40,15 @@ import type { ProductTextFilterInput } from '@propeller-commerce/propeller-sdk-v
 import { AttributeType } from '@propeller-commerce/propeller-sdk-v2'
 import { parseAvailability } from '@/lib/listingParams'
 
-/** Resolve the active language from the route's optional `:lang` param. */
-function routeLanguage(route: RouteLocationNormalized): string {
+/**
+ * Browsing language for an SSR fetch: the URL's prefix wins, else the stored
+ * preference, else the default. Single resolver so no call site restates it.
+ */
+function routeLanguage(route: RouteLocationNormalized, ctx?: SSRContext): string {
   const lang = (route.params.lang as string | undefined)?.toUpperCase()
-  return lang || DEFAULT_LANGUAGE
+  if (lang) return lang
+  const cookie = ctx?.cookies?.['preferred_language']
+  return cookie ? cookie.toUpperCase() : DEFAULT_LANGUAGE
 }
 
 /** Query keys that are listing controls, not attribute filters. */
@@ -134,7 +139,7 @@ export async function prefetchProduct(
 ): Promise<void> {
   const productId = Number.parseInt(route.params.productId as string, 10)
   if (!Number.isFinite(productId)) return
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const product = await fetchProduct(infra, productId, lang)
@@ -150,7 +155,7 @@ export async function prefetchCategory(
 ): Promise<void> {
   const categoryId = Number.parseInt(route.params.id as string, 10)
   if (!Number.isFinite(categoryId)) return
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getListingInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const category = await fetchCategory(
@@ -172,7 +177,7 @@ export async function prefetchSearch(
   const term = Array.isArray(termParam)
     ? termParam.join('/')
     : (termParam as string) || ''
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getListingInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const products = await fetchSearch(
@@ -206,7 +211,7 @@ export async function prefetchCmsPage(
     ctx.status = 404
     return
   }
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const preview = ctx.cookies['prepr_preview'] === '1'
@@ -247,7 +252,7 @@ export async function prefetchHome(
   route: RouteLocationNormalized,
   ctx: SSRContext,
 ): Promise<void> {
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const preview = ctx.cookies['prepr_preview'] === '1'
@@ -267,7 +272,7 @@ export async function prefetchBlog(
   route: RouteLocationNormalized,
   ctx: SSRContext,
 ): Promise<void> {
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const preview = ctx.cookies['prepr_preview'] === '1'
@@ -288,7 +293,7 @@ export async function prefetchBlogPost(
     ctx.status = 404
     return
   }
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const preview = ctx.cookies['prepr_preview'] === '1'
@@ -310,7 +315,7 @@ export async function prefetchCluster(
 ): Promise<void> {
   const clusterId = Number.parseInt(route.params.clusterId as string, 10)
   if (!Number.isFinite(clusterId)) return
-  const lang = routeLanguage(route)
+  const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
   const cluster = await fetchCluster(infra, clusterId, lang)

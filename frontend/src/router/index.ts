@@ -177,11 +177,13 @@ function registerGuards(router: Router): void {
     // to /en/cart, the store flips to EN before the component mounts so GraphQL
     // queries fire in the right language — on the server this makes the render
     // itself language-correct.
+    // Only a PREFIXED url is an explicit choice. An unprefixed path is the
+    // default for that request, not a preference — syncing from it reset the
+    // stored language on every navigation.
     const language = useLanguageStore()
     const urlLang = (to.params.lang as string | undefined)?.toUpperCase()
-    const targetLang = urlLang || DEFAULT_LANGUAGE
-    if (language.language !== targetLang) {
-      language.setLanguage(targetLang)
+    if (urlLang && language.language !== urlLang) {
+      language.setLanguage(urlLang)
     }
 
     // Auth gate for protected routes — preserves the original redirect behavior

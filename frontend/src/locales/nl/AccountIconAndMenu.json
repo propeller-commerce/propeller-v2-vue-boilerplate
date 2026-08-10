@@ -4,5 +4,6 @@
   "loginSubtitle": "",
   "loginTitle": "Welkom terug",
   "logoutLabel": "Uitloggen",
-  "signedInAs": "Ingelogd als"
+  "signedInAs": "Ingelogd als",
+  "accountMenuTitle": "Mijn account"
 }

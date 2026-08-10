@@ -3,6 +3,7 @@
     <div class="w-full max-w-5xl">
       <RegisterForm
         :labels="registerFormLabels"
+        :buttonText="registerFormLabels.submitButton"
         :countries="COUNTRIES_MAP"
         :cart="cartStore.cart as Cart | null"
         :afterRegistration="

@@ -3,6 +3,9 @@
     <div class="w-full max-w-md">
       <ForgotPassword
         :labels="forgotPasswordLabels"
+        :title="forgotPasswordLabels.title"
+        :buttonText="forgotPasswordLabels.submitButton"
+        :responseMessage="forgotPasswordLabels.responseMessage"
         :onNavigateToLogin="() => router.push(localizeHref('/login', languageStore.language))"
       />
     </div>

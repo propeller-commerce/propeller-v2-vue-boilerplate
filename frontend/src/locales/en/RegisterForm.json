@@ -34,5 +34,6 @@
   "street": "Street",
   "successMessage": "Your account has been created successfully.",
   "userTypeLabel": "Account type",
-  "vatNumber": "VAT number"
+  "vatNumber": "VAT number",
+  "submitButton": "Register"
 }

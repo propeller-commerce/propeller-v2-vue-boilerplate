@@ -6,6 +6,8 @@
       <MachineGrid
         v-else
         :key="segments.join('/')"
+        :rootTitle="machinesLabels.rootTitle"
+        :machineCardLabels="machinesLabels"
         :segments="segments"
         :basePath="basePath"
         :source="source"
@@ -62,6 +64,7 @@ const companyStore = useCompanyStore()
 const cartStore = useCartStore()
 const languageStore = useLanguageStore()
 
+const machinesLabels = useTranslations('Machines')
 const paginationLabels = useTranslations('GridPagination')
 const filtersLabels = useTranslations('GridFilters')
 const toolbarLabels = useTranslations('GridToolbar')
