@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.5] - 2026-08-10
+
+### Fixed
+
+- **The last package strings that stayed English on a Dutch page.** vue-ui
+  0.14.6 makes them overridable; this supplies the keys so they follow the
+  language switcher.
+
+  - `CategoryDescription` — the Read more / Read less toggle, in a new
+    namespace.
+  - `ProductTabs` — the same two keys, which the package forwards to
+    `ProductDescription`.
+  - `Machines` — the loading and empty states.
+  - `RegisterForm` — the account-type validation message.
+  - `AccountIconAndMenu` — the greeting, via a `{name}` placeholder so the
+    translation controls word order.
+  - Both authorization components — the modal close button's accessible name.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-vue-ui` → `^0.14.6`.
+- The two dashboard card titles are capitalised.
+
+### Known issues
+
+- `CategoryDescription` does not truncate during SSR — `data-truncatable`
+  renders `false` even for a description well over the 200-character limit, so
+  the Read more toggle only appears after hydration. Pre-existing (reproduced
+  on 1.11.4 without these changes) and not caused by the label wiring; the
+  React boilerplates truncate correctly server-side.
+
 ## [1.11.4] - 2026-08-10
 
 ### Fixed
