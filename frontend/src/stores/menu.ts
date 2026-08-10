@@ -26,5 +26,10 @@ export const useMenuStore = defineStore('menu', () => {
     tree.value = next
   }
 
-  return { tree, setTree }
+  /** Drop the SSR tree so `<Menu>` refetches — e.g. after a language switch. */
+  function clearTree(): void {
+    tree.value = null
+  }
+
+  return { tree, setTree, clearTree }
 })

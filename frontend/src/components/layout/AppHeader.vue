@@ -635,6 +635,8 @@ function switchLanguage(lang: string) {
   // any URL builders called during render. The router guard would also do this
   // post-navigation, but updating now avoids a one-frame mismatch.
   languageStore.setLanguage(lang)
+  // Drop the SSR tree (previous language) so <Menu> refetches.
+  menuStore.clearTree()
   // Compute "the same page in the new language" by stripping any existing prefix
   // off the current path, then re-applying via localizeHref. Preserve query/hash.
   const canonical = stripLanguagePrefix(route.path)

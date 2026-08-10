@@ -167,7 +167,8 @@ export const configuration = {
       return buildEntityUrl('cluster', cluster?.clusterId, slug, URL_PATTERN, language)
     },
     getCategoryUrl(category: Category, language?: string): string {
-      const slug = (language && category?.slugs?.find((s: any) => s.language === language)?.value) || category?.slugs?.[0]?.value || ''
+      const lang = language?.toUpperCase()
+      const slug = (lang && category?.slugs?.find((s: any) => s.language?.toUpperCase() === lang)?.value) || category?.slugs?.[0]?.value || ''
       return buildEntityUrl('category', category?.categoryId, slug, URL_PATTERN, language)
     },
   },

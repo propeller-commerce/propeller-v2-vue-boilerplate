@@ -45,6 +45,7 @@
           :onAvailabilityChange="handleAvailabilityChange"
           :isLoading="filtersLoading"
           :collapsed="true"
+          :language="languageStore.language"
           :labels="gridFiltersLabels"
         />
 
