@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.3] - 2026-08-10
+
+### Fixed
+
+- **Filter headings and the category menu stayed Dutch after switching to
+  EN**, while the heading, description and product grid translated correctly.
+  Three causes: the four listing views passed `labels` to `GridFilters` but
+  not `language`, so it fell back to `descriptions[0]` (whichever language the
+  API returned first); the SSR menu prefetch called `getAnonymousInfra()` with
+  no argument, so the tree was always fetched in the default language; and the
+  switcher navigates client-side, so the SSR-seeded tree survived it and
+  `<Menu>` kept rendering the old language. The prefetch now takes the
+  language off the request URL, and the switcher clears the tree so `<Menu>`
+  falls back to its own language-aware fetch.
+
+- `getCategoryUrl` compared slug languages with `===`, so a lowercase code
+  silently fell through to the first slug. Now case-insensitive.
+
+### Known issues
+
+- After a language switch the URL keeps the previous language's slug (e.g.
+  `/en/category/1845/vrachtwagenbanden`). The localized slug only arrives with
+  the re-fetch that follows the switch. Cosmetic — the category id resolves the
+  route and the page renders in the right language.
+
 ## [1.11.2] - 2026-08-10
 
 ### Fixed
