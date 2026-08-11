@@ -169,6 +169,7 @@
               iconClassName="text-white hover:text-white hover:bg-white/10"
               :labels="cartIconAndSidebarLabels"
               :cartItemLabels="cartItemLabels"
+              :cartBonusItemsLabels="cartBonusItemsLabels"
             />
           </div>
         </div>
@@ -320,6 +321,7 @@ const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
 const loginFormLabels = useTranslations('LoginForm');
 const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
 const cartItemLabels = useTranslations('CartItem');
+const cartBonusItemsLabels = useTranslations('CartBonusItems');
 const menuLabels = useTranslations('Menu');
 const accountLabels = useTranslations('Account');
 const headerLabels = useTranslations('Header');
