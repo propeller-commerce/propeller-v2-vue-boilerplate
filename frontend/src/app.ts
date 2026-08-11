@@ -19,6 +19,7 @@ import { createAppRouter } from './router'
 import { propellerVue } from '@propeller-commerce/propeller-v2-vue-ui'
 import { graphqlClient, services } from './lib/api'
 import { configuration } from './lib/config'
+import { useMenuStore } from './stores/menu'
 
 export function createApp(history?: RouterHistory) {
   const app = createSSRApp(App)
@@ -32,11 +33,20 @@ export function createApp(history?: RouterHistory) {
   // Tier 1 — install app-wide infrastructure (GraphQL client + SDK services
   // bundle + branding). Per-scope state (user / companyId / language /
   // includeTax / portalMode) is bound by <PropellerProvider> in App.vue.
+  // `configuration.baseCategoryId` is the env override, undefined when the
+  // channel decides the root (PWP-913). Read the server-resolved id off the
+  // store per access so package consumers don't fall back to category 0.
+  const menuStore = useMenuStore(pinia)
   app.use(propellerVue, {
     graphqlClient,
     services,
     currency: '€',
-    configuration,
+    configuration: {
+      ...configuration,
+      get baseCategoryId() {
+        return menuStore.baseCategoryId ?? configuration.baseCategoryId
+      },
+    },
   })
 
   // Unhead manages <head> tags for SSR + hydration. The server build collects

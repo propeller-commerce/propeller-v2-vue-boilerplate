@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.8] - 2026-08-11
+
+### Fixed
+
+- **The search dropdown and the quick-order typeahead found nothing on a
+  channel-driven shop.** The plugin handed `lib/config` to the package as
+  `configuration`, and `configuration.baseCategoryId` is the env override —
+  `undefined` whenever `VITE_BASE_CATEGORY_ID` is unset and the channel decides
+  the catalog root, which is the intended default since PWP-913. Package
+  consumers that read it (`useProductSearch` for the autosuggest and the
+  term-search grid, `useQuickOrder` for the typeahead and XLSX upload, and
+  `Breadcrumbs`) each degrade to category `0` and return an empty result set
+  with no error and no spinner. The server already resolves the real root into
+  `useMenuStore().baseCategoryId`; the plugin's `configuration` now exposes
+  `baseCategoryId` as a getter reading that store, so the client half matches
+  the server half. `QuickOrderView` passes the same value explicitly; that is
+  now redundant but harmless. Mirrors the propeller-next 1.11.14 fix.
+
+  Not reproducible on this tenant, which sets `VITE_BASE_CATEGORY_ID=17`.
+  Verified by rebuilding without the override: the SSR response seeds
+  `baseCategoryId: 17` from the channel, and the getter resolves to it where
+  the previous build resolved to `0`.
+
 ## [1.11.7] - 2026-08-11
 
 ### Fixed
