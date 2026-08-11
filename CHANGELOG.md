@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.7] - 2026-08-11
+
+### Fixed
+
+- **Quick order could add products from outside the shop's catalogue.** Both the
+  row typeahead and the XLSX upload resolved codes through the flat `products`
+  resolver, which ignores catalog and orderlist scoping server-side — so quick
+  order surfaced products the category grid and the search preview correctly
+  hid. Fixed in vue-ui 0.14.8, which routes the search through
+  `category.getCategory` over a base category with `userId` / `companyId` /
+  `applyOrderlists`, the same path `ProductGrid` and `SearchBar` use.
+  `QuickOrderView` now passes `baseCategoryId`, preferring the menu store's
+  value over the env override so it is right on a channel-driven shop. Codes
+  outside the catalogue are reported as missing instead of being added.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-vue-ui` → `^0.14.8`.
+
 ## [1.11.6] - 2026-08-11
 
 ### Fixed
