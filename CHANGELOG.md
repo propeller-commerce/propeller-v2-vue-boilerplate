@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.6] - 2026-08-11
+
+### Fixed
+
+- **A free bonus item showed its list price on the order confirmation.** It
+  read € 0,00 in the cart and at checkout, then reappeared at its list price on
+  the confirmation page and in order details. The API models a bonus as two
+  order lines — the product line at its list price, plus a sibling `incentive`
+  line carrying the negative delta and pointing back via `parentOrderItemId` —
+  and `OrderBonusItems` rendered only the product line. Fixed in vue-ui 0.14.7
+  (via `getNettedBonusItems()` in core-ui 0.6.2), which nets each bonus against
+  its incentive siblings; partial discounts keep their remainder. Order totals
+  were already correct — this was display-only. Consumed here by pinning
+  vue-ui `^0.14.7`.
+
 ## [1.11.5] - 2026-08-10
 
 ### Fixed
