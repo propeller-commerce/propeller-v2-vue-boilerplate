@@ -35,6 +35,7 @@ import { QuickOrder } from '@propeller-commerce/propeller-v2-vue-ui'
 import { useCartStore } from '@/stores/cart'
 import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
+import { useMenuStore } from '@/stores/menu'
 import { configuration } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable'
 import { parseQuickOrderXlsx } from '@/lib/parseQuickOrderXlsx'
@@ -42,12 +43,16 @@ import { parseQuickOrderXlsx } from '@/lib/parseQuickOrderXlsx'
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()
 const languageStore = useLanguageStore()
+const menuStore = useMenuStore()
 const t = useTranslations('QuickOrder')
 
 // Image filters so typeahead results carry thumbnails (same as the SearchBar).
+// `baseCategoryId` scopes the code search to this shop's catalog — the store
+// value first, since a hardcoded id is wrong on a channel-driven shop.
 const quickOrderConfiguration = computed(() => ({
   imageSearchFiltersGrid: configuration.imageSearchFiltersGrid,
   imageVariantFiltersSmall: configuration.imageVariantFiltersSmall,
+  baseCategoryId: menuStore.baseCategoryId ?? configuration.baseCategoryId,
 }))
 
 function onMissingCodes(codes: string[]) {
