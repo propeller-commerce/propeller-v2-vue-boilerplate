@@ -32,6 +32,13 @@ export const useMenuStore = defineStore('menu', () => {
    */
   const baseCategoryId = ref<number | null>(null)
 
+  /**
+   * The channel's anonymous user, resolved server-side and serialized with the
+   * rest of this store. Logged-out listing queries scope to it, so the client
+   * refetch asks the same question the SSR seed did (PWP-942 #22).
+   */
+  const anonymousUserId = ref<number | null>(null)
+
   function setTree(next: MenuCategory[]): void {
     tree.value = next
   }
@@ -45,7 +52,19 @@ export const useMenuStore = defineStore('menu', () => {
     baseCategoryId.value = next
   }
 
+  function setAnonymousUserId(next: number | undefined): void {
+    anonymousUserId.value = next ?? null
+  }
+
   // `baseCategoryId` deliberately survives `clearTree()`: the root doesn't
   // change with the language, and the refetch that follows a switch needs it.
-  return { tree, baseCategoryId, setTree, clearTree, setBaseCategoryId }
+  return {
+    tree,
+    baseCategoryId,
+    anonymousUserId,
+    setTree,
+    clearTree,
+    setBaseCategoryId,
+    setAnonymousUserId,
+  }
 })
