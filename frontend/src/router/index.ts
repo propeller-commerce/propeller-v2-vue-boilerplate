@@ -192,7 +192,11 @@ function registerGuards(router: Router): void {
       const auth = useAuthStore()
       if (!auth.isAuthenticated) {
         return {
-          path: localizeHref('/login', targetLang),
+          // The URL's own prefix wins over the store: a guard that redirected
+          // to the stored language would drop a visitor who deep-linked to
+          // /en/account onto the default-language login. `targetLang` was never
+          // declared here — a latent ReferenceError on the first guarded route.
+          path: localizeHref('/login', urlLang ?? language.language),
           query: { redirect: to.fullPath },
         }
       }

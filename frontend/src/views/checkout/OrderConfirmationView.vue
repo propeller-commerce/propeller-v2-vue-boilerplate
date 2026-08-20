@@ -288,6 +288,8 @@ import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
+import { track } from "@/lib/tracking/bus";
+import { orderItems } from "@/lib/tracking/events";
 import { getCountries } from "@/composables/shared/utils/countries";
 
 const orderSummaryLabels = useTranslations('OrderSummary');
@@ -541,6 +543,76 @@ const {
   language: computed(() => languageStore.language),
   configuration,
 });
+
+// ── Conversion tracking (PWP-910) ────────────────────────────────────────────
+//
+// Emitted HERE and not from `placeOrder`, because the PSP branch navigates away
+// with `window.location.assign(checkoutUrl)` — the shopper leaves the SPA before
+// the order is confirmed, so an emit at placeOrder would book every abandoned
+// payment as a purchase.
+//
+// The client-side guard is LOAD-BEARING, not belt-and-braces. The server's
+// unique key is `(idempotency_key, occurred_at)` — MySQL requires the partition
+// column in every unique key — so `INSERT IGNORE` only dedupes a replay at the
+// SAME timestamp. A refresh of this page ten seconds later would insert a
+// second purchase row, doubling revenue for that order.
+let purchaseTracked = false;
+
+watch(
+  [order, orderId, paymentState],
+  () => {
+    const current = order.value;
+    if (!orderId.value || !current || purchaseTracked) return;
+
+    if (isQuoteMode.value) {
+      purchaseTracked = true;
+      track(
+        "propeller.quote_requested",
+        {
+          order_id: Number(orderId.value) || null,
+          value: (current as any).total?.gross ?? null,
+          item_count: current.items?.length ?? 0,
+        },
+        `quote_requested:${orderId.value}`,
+      );
+      return;
+    }
+
+    // On a PSP return the payment is not settled yet — the provider redirects
+    // here whatever happened. Emitting on arrival would book revenue for
+    // payments that go on to fail. Non-PSP orders (on account) are already
+    // final, so they emit immediately.
+    if (isPspReturn.value && paymentState.value !== "success") return;
+
+    purchaseTracked = true;
+    track(
+      "purchase",
+      {
+        order_id: Number(orderId.value) || null,
+        // `gross` is the EX-VAT total in this SDK and `net` the tax-inclusive
+        // one (OrderTotals' own doc comments). GA4 wants ex-VAT revenue with
+        // `tax` alongside, which is also what the WordPress plugin sends.
+        value: (current as any).total?.gross ?? null,
+        tax: (current as any).total?.tax ?? null,
+        shipping: (current as any).postageData?.gross ?? null,
+        item_count: current.items?.length ?? 0,
+        items: orderItems(current as never, languageStore.language),
+        order_status:
+          ((current as any).paymentData?.status || (current as any).status || "") || null,
+      },
+      `purchase:${orderId.value}`,
+    );
+  },
+  { immediate: true },
+);
+
+watch(
+  orderId,
+  (id) => {
+    track("page_viewed", { page_type: "thank_you" }, `page_viewed:thank_you:${id ?? ""}`);
+  },
+  { immediate: true },
+);
 
 // Authoritative override: a PAID/AUTHORIZED backend order means the webhook
 // already confirmed AND finalized the payment — that's the source of truth,

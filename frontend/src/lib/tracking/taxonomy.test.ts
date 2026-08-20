@@ -59,7 +59,9 @@ test('the server-side copy of the allowlist has not drifted', async () => {
   // does not recognise, so an event added here and not there never arrives and
   // nothing errors. This is the only thing standing between that and a quiet
   // hole in the data.
-  const server = await import('../../server/trackingTaxonomy.js');
+  // @ts-expect-error — plain JS with no declaration file, deliberately: it is
+  // imported by `server.js`, which bypasses Vite and cannot load TypeScript.
+  const server: { EVENT_NAMES: readonly string[] } = await import('../../server/trackingTaxonomy.js');
   assert.deepEqual(
     [...server.EVENT_NAMES].sort(),
     [...EVENT_NAMES].sort(),

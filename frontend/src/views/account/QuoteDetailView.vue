@@ -175,6 +175,7 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { useTranslations } from "@/lib/i18n/composable";
+import { track } from "@/lib/tracking/bus";
 import AccessErrorView from "@/components/access/AccessErrorView.vue";
 import { classifyApiError } from "@/lib/errors";
 import type { Order } from "@propeller-commerce/propeller-sdk-v2";
@@ -263,6 +264,17 @@ function handleTermsAndConditionsClick() {
 }
 
 function handleAfterAccept(acceptedQuote: any) {
+  // The conversion event for the quote funnel — this is where a quote becomes
+  // an order, so it is the one number the "quotes sent vs accepted" ratio needs.
+  track(
+    "propeller.quote_accepted",
+    {
+      quote_id: Number(acceptedQuote?.id) || null,
+      value: acceptedQuote?.total?.gross ?? null,
+      item_count: acceptedQuote?.items?.length ?? 0,
+    },
+    `quote_accepted:${acceptedQuote?.id ?? ""}`,
+  );
   router.push(
     localizeHref(
       `/checkout/thank-you/${acceptedQuote.id}`,
@@ -293,6 +305,11 @@ async function handleDownloadPDF() {
   downloading.value = true;
   try {
     const result = await downloadQuotePdf(Number(quoteId));
+    track(
+      "propeller.order_pdf_downloaded",
+      { order_id: Number(quoteId) || null, doc_type: "quote" },
+      `order_pdf_downloaded:quote:${quoteId}:${Math.floor(Date.now() / 2000)}`,
+    );
     if (result?.success) {
       showDownloadToast(t.value.pdfDownloaded, "success");
     } else {
@@ -308,6 +325,18 @@ async function handleDownloadPDF() {
 
 onMounted(async () => {
   await fetchOrder(parseInt(quoteId));
-  if (!quote.value) error.value = "Quote not found";
+  if (!quote.value) {
+    error.value = "Quote not found";
+    return;
+  }
+  track(
+    "propeller.quote_viewed",
+    {
+      order_id: Number(quoteId) || null,
+      value: (quote.value as any)?.total?.net ?? null,
+      order_status: (quote.value as any)?.status ?? null,
+    },
+    `quote_viewed:${quoteId}`,
+  );
 });
 </script>

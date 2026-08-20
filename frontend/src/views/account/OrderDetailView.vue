@@ -45,7 +45,7 @@
           :order="order as Order"
           :cartId="cartStore.cartId || undefined"
           :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-          :afterReorder="(cart: Cart) => cartStore.setCart(cart)"
+          :afterReorder="handleReorder"
           :labels="orderActionsLabels"
         />
       </div>
@@ -109,7 +109,7 @@
           :order="order"
           :cartId="cartStore.cartId || undefined"
           :onCartCreated="(cart: any) => cartStore.setCart(cart)"
-          :afterReorder="(cart: any) => cartStore.setCart(cart)"
+          :afterReorder="handleReorder"
           :labels="orderActionsLabels"
         />
         <OrderTotals
@@ -144,6 +144,8 @@ import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 import { OrderActions, OrderBonusItems, OrderItemCard, OrderShipments, OrderSummary, OrderTotals } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
+import { track } from '@/lib/tracking/bus';
+import { orderItems } from '@/lib/tracking/events';
 import { getCountries } from "@/composables/shared/utils/countries";
 
 // COUNTRIES imported from shared utils
@@ -200,8 +202,44 @@ const childMap = computed(() => {
   return map;
 });
 
+function handleReorder(cart: any) {
+  cartStore.setCart(cart);
+  // A reorder is the strongest repeat-purchase signal in the account area:
+  // it says the assortment worked, without needing a new search.
+  track(
+    "propeller.reorder_started",
+    {
+      source_order_id: Number(route.params.id) || null,
+      item_count: order.value?.items?.length ?? 0,
+      value: (order.value as any)?.total?.gross ?? null,
+      items: orderItems(order.value as never, languageStore.language),
+    },
+    `reorder_started:${route.params.id}:${Math.floor(Date.now() / 2000)}`,
+  );
+}
+
 onMounted(async () => {
   await fetchOrder(parseInt(route.params.id as string));
-  if (!order.value) error.value = "Order not found";
+  if (!order.value) {
+    error.value = "Order not found";
+    return;
+  }
+  const placed = Date.parse(String((order.value as any).orderDate ?? ""));
+  track(
+    "propeller.order_viewed",
+    {
+      order_id: Number(route.params.id) || null,
+      order_status: (order.value as any).status ?? null,
+      // `gross` is the EX-VAT total in this SDK — see lib/tracking/items.ts.
+      value: (order.value as any).total?.gross ?? null,
+      item_count: order.value.items?.length ?? 0,
+      // How long after placing it the customer came back to look. A short tail
+      // is order-tracking; a long one is usually a reorder about to happen.
+      age_days: Number.isNaN(placed)
+        ? null
+        : Math.floor((Date.now() - placed) / 86_400_000),
+    },
+    `order_viewed:${route.params.id}`,
+  );
 });
 </script>
