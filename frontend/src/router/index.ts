@@ -87,6 +87,11 @@ function buildRoutes() {
         // The router's requiresAuth guard redirects direct/anonymous access to
         // /login; logging out while here navigates to '/' via AppHeader's logout.
         { path: 'quick-order', name: 'quick-order', meta: { requiresAuth: true }, component: () => import('@/views/QuickOrderView.vue') },
+        // Analytics dashboard (PWP-910). Client-rendered, noindex, and
+        // deliberately NOT behind requiresAuth: gating is a deploy-time
+        // decision the shop owner makes, and a `meta.requiresAuth` here would
+        // let any logged-in customer read every account's revenue.
+        { path: 'tracker', name: 'tracker', component: () => import('@/views/TrackerView.vue') },
 
         // ──────────────────────────────────────────────────────────────────
         // Legacy CSR shadow routes — pre-SSR copies of the four catalog
