@@ -50,6 +50,23 @@ test('every propeller-namespaced name uses the dotted prefix', () => {
   }
 });
 
+test('the server-side copy of the allowlist has not drifted', async () => {
+  // `src/server/trackingTaxonomy.js` is a plain-JS duplicate of this file: the
+  // ingest route is imported directly by `server.js`, whose static imports
+  // bypass Vite, so the TypeScript original is unreachable from there.
+  //
+  // Drift is SILENT in the worst direction — the ingest route drops names it
+  // does not recognise, so an event added here and not there never arrives and
+  // nothing errors. This is the only thing standing between that and a quiet
+  // hole in the data.
+  const server = await import('../../server/trackingTaxonomy.js');
+  assert.deepEqual(
+    [...server.EVENT_NAMES].sort(),
+    [...EVENT_NAMES].sort(),
+    'src/server/trackingTaxonomy.js is out of sync — regenerate it from taxonomy.ts'
+  );
+});
+
 test('page types are unique and lower_snake_case', () => {
   assert.equal(PAGE_TYPES.length, new Set(PAGE_TYPES).size);
   for (const type of PAGE_TYPES) assert.match(type, /^[a-z][a-z_]*$/, `${type} is not lower_snake_case`);
