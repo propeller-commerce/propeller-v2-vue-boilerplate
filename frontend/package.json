@@ -18,7 +18,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:tracking": "node --test --experimental-strip-types src/lib/tracking/*.test.ts"
   },
   "dependencies": {
     "@propeller-commerce/propeller-sdk-v2": "^0.16.0",
