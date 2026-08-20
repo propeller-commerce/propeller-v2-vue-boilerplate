@@ -46,6 +46,11 @@ export function createApp(history?: RouterHistory) {
       get baseCategoryId() {
         return menuStore.baseCategoryId ?? configuration.baseCategoryId
       },
+      // Server-resolved, serialized with the store, read per access for the
+      // same reason as the root above (PWP-942 #22).
+      get anonymousUserId() {
+        return menuStore.anonymousUserId ?? undefined
+      },
     },
   })
 

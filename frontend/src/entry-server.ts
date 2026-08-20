@@ -27,7 +27,7 @@ import {
   prefetchBlog,
   prefetchBlogPost,
 } from './router/ssrPrefetch'
-import { fetchMenu, getAnonymousInfra, getServerInfra, resolveBaseCategoryId } from './lib/server'
+import { fetchMenu, getAnonymousInfra, getServerInfra, resolveBaseCategoryId, resolveAnonymousUserId } from './lib/server'
 import { useMenuStore } from './stores/menu'
 import { useLanguageStore } from './stores/language'
 import { usePriceStore } from './stores/price'
@@ -179,6 +179,9 @@ export async function render(
       // is exactly what happens after a language switch clears the tree — it
       // must use the same root, not a literal from config (PWP-913).
       menuStore.setBaseCategoryId(rootId)
+      // Same trip, same reason: the client's own listing fetches must scope to
+      // the channel's anonymous user, exactly as the SSR seed did (PWP-942 #22).
+      menuStore.setAnonymousUserId(await resolveAnonymousUserId())
     } catch (err) {
       console.error('[ssr] menu prefetch failed:', err)
     }

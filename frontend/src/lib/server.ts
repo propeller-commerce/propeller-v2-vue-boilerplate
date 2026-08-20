@@ -577,10 +577,35 @@ async function getChannelDefaults(id: number): Promise<ChannelDefaults> {
     }
     channelDefaultsCache = { value, expires: now + CHANNEL_DEFAULTS_TTL_MS }
     return value
-  } catch {
-    // Channel is non-critical: fall back to apikey-default pricing / config base.
-    return {}
+  } catch (cause) {
+    // Rethrow with context — never swallow. A bare `catch { return {} }` here
+    // collapsed three very different failures into one indistinguishable
+    // value: a DNS/transport failure, a 401 from a wrong api key, and "this
+    // channel genuinely has no catalogRootId". Downstream only the last one
+    // could be reported, so a mistyped endpoint or key surfaced as "channel N
+    // exposes no catalogRootId" (PWP-942 #9).
+    //
+    // Throwing also keeps the failure out of the memo above: the assignment to
+    // `channelDefaultsCache` never runs, so the next render retries instead of
+    // serving the swallowed `{}` for a full TTL.
+    throw new Error(
+      `Channel ${id} lookup failed — check SSR_GRAPHQL_ENDPOINT and SSR_API_KEY.`,
+      { cause },
+    )
   }
+}
+
+/**
+ * The channel's anonymous user, for the CLIENT to scope logged-out listings to.
+ *
+ * The SSR seed already sends it (see `listingUserId`). Without handing it to
+ * the client, the first client-side refetch asks a differently-scoped question
+ * and quietly replaces the correct server-rendered list — assortment rules,
+ * negative order lists in particular, are applied per user (PWP-942 #22).
+ */
+export async function resolveAnonymousUserId(): Promise<number | undefined> {
+  const { anonymousUserId } = await getChannelDefaults(channelId)
+  return anonymousUserId
 }
 
 /**
