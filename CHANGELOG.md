@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.12] - 2026-08-20
+
+### Added
+
+- **The channel's anonymous user is handed to the client (PWP-942 #22).**
+  `resolveAnonymousUserId()` resolves it server-side, `entry-server.ts` seeds it
+  alongside the catalog root, and `app.ts` exposes it on the package
+  `configuration`. Anonymous SSR and the client refetch now scope catalog
+  queries identically; previously the client asked an unscoped question and
+  quietly replaced a correctly-scoped product list with a different one.
+
+### Fixed
+
+- **A bad endpoint or api key was reported as a channel-config problem, and
+  memoised (PWP-942 #9).** `getChannelDefaults` swallowed every failure into
+  `{}`, so a DNS failure, a 401 and "this channel has no catalogRootId" were
+  indistinguishable downstream — and the empty result was cached for the full
+  TTL. It now throws with context, and the memo is never written on the failure
+  path, so the next render retries.
+- **`npm run clean` was Windows-only** — now a small Node script, so it works
+  on macOS and Linux.
+
 ## [1.11.11] - 2026-08-12
 
 ### Fixed
