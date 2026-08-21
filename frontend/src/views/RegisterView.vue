@@ -40,6 +40,7 @@ import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { track } from "@/lib/tracking/bus";
+import { trackLogin } from "@/lib/tracking/bootstrap";
 import { mergeAnonymousCart } from "@propeller-commerce/propeller-v2-vue-ui";
 import { useCart } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
@@ -93,7 +94,12 @@ async function handleAfterRegistration(
     { method: "password", account_type: accountType },
     `sign_up:${accountType}:${Math.floor(Date.now() / 5000)}`,
   );
-  track("login", { method: "password" }, `login:password:${Date.now()}`);
+  // Through the shared helper, so a registration that auto-logs-in publishes
+  // the same identity context a normal login does.
+  trackLogin(user as { contactId?: number; customerId?: number }, {
+    companyId: (user as Contact).company?.companyId ?? null,
+    language: languageStore.language,
+  });
 
   const cleanUser = user;
   authStore.setUser(cleanUser);

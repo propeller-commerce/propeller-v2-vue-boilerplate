@@ -309,7 +309,8 @@ import { restoreManagerCart } from '@/lib/cartHelpers'
 import { mergeAnonymousCart, fetchActiveCart as fetchActiveCartShared, initCart } from '@propeller-commerce/propeller-v2-vue-ui'
 
 import { AccountIconAndMenu, CartIconAndSidebar, CompanySwitcher, Menu as PropellerMenu, PriceToggle, SearchBar } from '@propeller-commerce/propeller-v2-vue-ui';
-import { useTranslations } from '@/lib/i18n/composable';
+import { useTranslations } from '@/lib/i18n/composable'
+import { trackLogin } from '@/lib/tracking/bootstrap';
 
 const companySwitcherLabels = useTranslations('CompanySwitcher');
 const priceToggleLabels = useTranslations('PriceToggle');
@@ -597,6 +598,14 @@ async function handleAfterLogin(
   }
 
   cartStore.setCart(targetCart ?? null)
+
+  // The header dropdown is its own `afterLogin` sink — it does NOT go through
+  // `useAfterLogin`. Without this call the most common way to log in emitted
+  // no `login` event at all (PWP-910).
+  trackLogin(cleanUser as { contactId?: number; customerId?: number }, {
+    companyId: contactCompany?.companyId ?? null,
+    language: userLang || languageStore.language,
+  })
 
   router.push(localizeHref('/account', userLang || languageStore.language))
 }
