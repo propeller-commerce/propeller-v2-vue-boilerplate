@@ -128,6 +128,7 @@ import { AddressCard } from '@propeller-commerce/propeller-v2-vue-ui';
 import { getCountries } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';
 import { track } from '@/lib/tracking/bus';
+import type { EventName } from '@/lib/tracking/taxonomy';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
@@ -209,7 +210,7 @@ function handleAddAddress(type: AddressType) {
  * Address events carry `owner_type` because the composable branches on company
  * vs customer input, so the two are genuinely different signals.
  */
-function trackAddress(name: string, address: { id?: unknown; type?: unknown }) {
+function trackAddress(name: EventName, address: { id?: unknown; type?: unknown }) {
   track(
     name,
     {
@@ -236,7 +237,7 @@ async function handleDeleteAddress(address: Address) {
 async function handleSetDefault(address: Address) {
   if (!address.id) return
   await setDefaultAddress(Number(address.id))
-  trackAddress('propeller.address_default_changed', address)
+  trackAddress('propeller.address_set_default', address)
   await authStore.refreshUser()
 }
 
