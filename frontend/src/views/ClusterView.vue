@@ -127,7 +127,7 @@
               <AddToFavorite
                 v-if="authStore.user"
                 :clusterId="clusterId"
-                :onFavoriteChanged="() => authStore.refreshUser()"
+                :onFavoriteChanged="(change) => { void authStore.refreshUser(); if (change) trackFavoriteChange(change); }"
                 :labels="addToFavoriteLabels"
               />
             </div>
@@ -202,7 +202,7 @@ import { stripHtml } from "@propeller-commerce/propeller-v2-vue-ui/shared";
 import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterJsonLd, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 import { track } from '@/lib/tracking/bus'
-import { trackAddToCart } from '@/lib/tracking/events'
+import { trackAddToCart, trackFavoriteChange } from '@/lib/tracking/events'
 
 const breadcrumbsLabels = useTranslations('Breadcrumbs');
 const productGalleryLabels = useTranslations('ProductGallery');

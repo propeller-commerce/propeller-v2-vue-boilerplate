@@ -43,6 +43,10 @@ For SSR: `useTranslations()` works in `entry-server.ts` because the router `befo
 
 - `propeller-v2-vue-ui@0.3.3+` — adds `labels?` to several components (`UserDetails`, `OrderItemCard`, `ProductGallery`, `GridFilters`, `ProductGrid`, `GridToolbar`, `PriceToggle`), plus forwarding props on `ProductGrid` / `ProductSlider` (`productCardLabels?`, `clusterCardLabels?`, `stockLabels?`, `addToCartLabels?`, `priceLabels?`) and `loginFormLabels?` on `AccountIconAndMenu`.
 - `propeller-v2-core-ui@0.2.2+` — owns the `TranslationProvider` interface (transitive via the UI package).
+- `propeller-v2-vue-ui@0.17.0+` — `onFavoriteChanged` / `onListChanged` report
+  WHAT changed rather than merely that something did. Without it the favourite
+  events cannot be emitted correctly: an add and a removal are indistinguishable,
+  and guessing the direction is worse than not reporting at all.
 
 <!-- chore: trigger a fresh CI build so the Mollie VITE_* build-time vars are baked into the bundle -->
 

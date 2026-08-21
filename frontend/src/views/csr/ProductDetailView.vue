@@ -84,7 +84,7 @@
               <AddToFavorite
                 v-if="authStore.user"
                 :productId="product.productId"
-                :onFavoriteChanged="() => authStore.refreshUser()"
+                :onFavoriteChanged="(change) => { void authStore.refreshUser(); if (change) trackFavoriteChange(change); }"
                 :labels="addToFavoriteLabels"
               />
             </div>
@@ -189,6 +189,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Cart, Cluster, CrossupsellType, Inventory, ProductInventory } from "@propeller-commerce/propeller-sdk-v2";
 import { useAuthStore } from "@/stores/auth";
+import { trackFavoriteChange } from '@/lib/tracking/events'
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
