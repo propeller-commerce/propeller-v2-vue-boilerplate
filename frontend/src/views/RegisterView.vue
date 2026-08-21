@@ -39,6 +39,8 @@ import { useCompanyStore } from "@/stores/company";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
+import { track } from "@/lib/tracking/bus";
+import { trackLogin } from "@/lib/tracking/bootstrap";
 import { mergeAnonymousCart } from "@propeller-commerce/propeller-v2-vue-ui";
 import { useCart } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
@@ -70,12 +72,34 @@ async function handleAfterRegistration(
   expiresAt?: string,
   anonymousCart?: Cart | null,
 ) {
+  // `registration_submitted` covers BOTH outcomes; `sign_up` only the one that
+  // ends signed in. Keeping them separate is what makes "how many registrations
+  // need manual approval" answerable — with one event it is not.
+  const accountType = (user as Contact).contactId != null ? "contact" : "customer";
+  track(
+    "registration_submitted",
+    { account_type: accountType, requires_approval: !accessToken },
+    `registration_submitted:${accountType}:${Math.floor(Date.now() / 5000)}`,
+  );
+
   // No token means the form was used with `automaticLogin: false`. The user
   // exists server-side but isn't signed in here — send them to the login page.
   if (!accessToken) {
     router.push(localizeHref("/login", languageStore.language));
     return;
   }
+
+  track(
+    "sign_up",
+    { method: "password", account_type: accountType },
+    `sign_up:${accountType}:${Math.floor(Date.now() / 5000)}`,
+  );
+  // Through the shared helper, so a registration that auto-logs-in publishes
+  // the same identity context a normal login does.
+  trackLogin(user as { contactId?: number; customerId?: number }, {
+    companyId: (user as Contact).company?.companyId ?? null,
+    language: languageStore.language,
+  });
 
   const cleanUser = user;
   authStore.setUser(cleanUser);

@@ -96,7 +96,7 @@
                 :className="'flex items-center w-full gap-2'"
                 :enableIncrementDecrement="true"
                 :onCartCreated="(cart: any) => cartStore.setCart(cart)"
-                :afterAddToCart="(cart: any) => { cartStore.setCart(cart); trackPreprEvent('AddToCart') }"
+                :afterAddToCart="handlePdpAddToCart"
                 :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
                 :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
                 :labels="addToCartLabels"
@@ -179,7 +179,8 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useHead } from "@unhead/vue";
-import { Cart, Cluster, CrossupsellType, Inventory, ProductInventory } from "@propeller-commerce/propeller-sdk-v2";
+import { Cart, type CartMainItem, Cluster, CrossupsellType, Inventory, ProductInventory } from "@propeller-commerce/propeller-sdk-v2";
+import { isContentHidden } from "@propeller-commerce/propeller-v2-core-ui";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
@@ -192,6 +193,7 @@ import {
   imageVariantFiltersLarge,
   imageSearchFilters,
   localizeHref,
+  portalMode,
 } from "@/lib/config";
 import { getLanguageString } from "@propeller-commerce/propeller-v2-vue-ui";
 import { resolveSeoTitle, resolveSeoDescription, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
@@ -207,6 +209,9 @@ import {
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
+import { track } from '@/lib/tracking/bus'
+import { itemOptions, trackAddToCart } from '@/lib/tracking/events'
+import { itemsFromProducts } from '@/lib/tracking/items'
 import { trackPreprEvent } from '@/lib/preprEvent';
 
 const t = useTranslations('ProductDetail');
@@ -390,6 +395,60 @@ async function loadProduct() {
 // param change (client-side nav to another product) still triggers a fetch.
 // Also discard the seed post-hydration so a later same-route navigation
 // fetches fresh (the seed would be stale by then).
+// ── PDP tracking (PWP-910) ───────────────────────────────────────────────────
+
+function handlePdpAddToCart(cart: Cart, item?: CartMainItem) {
+  cartStore.setCart(cart);
+  trackPreprEvent('AddToCart');
+  // Source `pdp` is what separates a considered add from a grid one-click —
+  // the single highest-value dimension in the taxonomy.
+  trackAddToCart(
+    { type: 'pdp', id: product.value?.productId ?? null },
+    item,
+    cart,
+    null,
+    languageStore.language,
+  );
+}
+
+// Keyed on the product id, so a re-render or an SPA re-entry cannot inflate it.
+watch(
+  product,
+  (current) => {
+    if (!current?.productId) return;
+    track(
+      'page_viewed',
+      {
+        page_type: 'product',
+        entity_type: 'product',
+        entity_id: current.productId,
+        entity_name: productName.value || null,
+      },
+      `page_viewed:product:${current.productId}`,
+    );
+    // Prices are suppressed in closed/semi-closed portals for the same reason
+    // the card suppresses them: an anonymous visitor must not learn them from
+    // the datalayer either.
+    const hidePrices = isContentHidden(portalMode, authStore.user as never);
+    const items = itemsFromProducts([current], itemOptions({
+      language: languageStore.language,
+      hidePrices,
+    }));
+    track(
+      'view_item',
+      {
+        product_id: current.productId,
+        sku: current.sku ?? null,
+        entity_name: productName.value || null,
+        items,
+        value: items[0]?.price ?? null,
+      },
+      `view_item:${current.productId}`,
+    );
+  },
+  { immediate: true },
+);
+
 onMounted(() => {
   if (!seededProduct) loadProduct();
   ssrCatalog.consumeSeed(route.fullPath);

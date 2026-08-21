@@ -127,6 +127,7 @@ import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
 import { AddressCard } from '@propeller-commerce/propeller-v2-vue-ui';
 import { getCountries } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';
+import { track } from '@/lib/tracking/bus';
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
@@ -204,19 +205,38 @@ function handleAddAddress(type: AddressType) {
   showAddModal.value = true
 }
 
+/**
+ * Address events carry `owner_type` because the composable branches on company
+ * vs customer input, so the two are genuinely different signals.
+ */
+function trackAddress(name: string, address: { id?: unknown; type?: unknown }) {
+  track(
+    name,
+    {
+      address_id: address?.id != null ? Number(address.id) : null,
+      address_type: (address?.type as string) ?? null,
+      owner_type: isContact(authStore.user as Contact | Customer | null) ? 'company' : 'customer',
+    },
+    `${name}:${address?.id ?? 'new'}:${Math.floor(Date.now() / 2000)}`,
+  )
+}
+
 async function handleEditAddress(address: Address) {
   await updateAddress(Number(address.id), address as Partial<AddressInput>)
+  trackAddress('propeller.address_updated', address)
   await authStore.refreshUser()
 }
 
 async function handleDeleteAddress(address: Address) {
   await deleteAddress(Number(address.id))
+  trackAddress('propeller.address_deleted', address)
   await authStore.refreshUser()
 }
 
 async function handleSetDefault(address: Address) {
   if (!address.id) return
   await setDefaultAddress(Number(address.id))
+  trackAddress('propeller.address_default_changed', address)
   await authStore.refreshUser()
 }
 
@@ -238,6 +258,7 @@ async function handleSaveNewAddress(address: any) {
     isDefault: (address.isDefault as YesNo) || YesNo.N,
     type: addModalType.value,
   })
+  trackAddress('propeller.address_created', { type: addModalType.value })
   await authStore.refreshUser()
   showAddModal.value = false
 }

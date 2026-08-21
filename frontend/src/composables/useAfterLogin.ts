@@ -19,6 +19,7 @@ import { useCompanyStore } from '@/stores/company'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { configuration } from '@/lib/config'
+import { trackLogin } from '@/lib/tracking/bootstrap'
 
 export function useAfterLogin() {
   const authStore = useAuthStore()
@@ -40,6 +41,8 @@ export function useAfterLogin() {
     refreshToken?: string,
     expiresAt?: string,
     anonymousCart?: Cart | null,
+    /** How the session was authenticated — 'password' or 'magic_token'. */
+    method: string = 'password',
   ): Promise<{ effectiveLanguage: string }> {
     authStore.setUser(user)
     if (accessToken) {
@@ -87,6 +90,12 @@ export function useAfterLogin() {
     }
 
     cartStore.setCart(targetCart ?? null)
+
+    trackLogin(user as { contactId?: number; customerId?: number }, {
+      companyId: companyStore.selectedCompany?.companyId ?? null,
+      language: languageStore.language,
+      method,
+    })
 
     return { effectiveLanguage: userLang || languageStore.language }
   }

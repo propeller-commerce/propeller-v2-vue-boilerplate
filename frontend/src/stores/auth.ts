@@ -4,6 +4,8 @@ import { type Contact, type Customer, PurchaseRole, UserService, type ViewerVari
 import { graphqlClient } from '@/lib/api'
 import { isBrowser, safeStorage, setCookie, deleteCookie } from '@/lib/ssr'
 import { configuration } from '@/lib/config'
+import { track } from '@/lib/tracking/bus'
+import { clearTrackingIdentity } from '@/lib/tracking/bootstrap'
 
 type User = Contact | Customer
 
@@ -125,6 +127,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    // Before the storage wipe, so the event still carries the outgoing
+    // identity. Emitted explicitly here rather than from a watcher on
+    // `isAuthenticated` — that watcher fires on every store construction.
+    track('logout', {}, `logout:${Date.now()}`)
+    clearTrackingIdentity()
+
     user.value = null
     token.value = null
     error.value = null

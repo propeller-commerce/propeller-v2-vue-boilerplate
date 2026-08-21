@@ -26,6 +26,9 @@ import {
   isOnAccountMethod,
 } from './src/server/mollie.js'
 import { getMspProvider, isMspEnabled } from './src/server/msp.js'
+import { ingestBatch, visitorCookie, VISITOR_COOKIE } from './src/server/trackingIngest.js'
+import { isTrackingConfigured, classifyDbError, STATUS_HINTS, todayLocal, addDays } from './src/server/tracking.js'
+import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS } from './src/server/trackingQueries.js'
 import { CartService } from '@propeller-commerce/propeller-sdk-v2'
 import {
   parseSetupRequest,
@@ -141,6 +144,10 @@ const ORDER_EDITOR_CLIENT_ID = 'order-editor'
 // single-instance; behind N instances each enforces its own slice, so the
 // effective ceiling is N × the limit. Move to Redis or a CDN edge limit if you
 // scale out.
+// Channel the events belong to. Mirrors VITE_CHANNEL_ID, which the client
+// reads -- kept unprefixed here because server code never sees import.meta.env.
+const TRACKING_CHANNEL_ID = parseInt(process.env.CHANNEL_ID || process.env.VITE_CHANNEL_ID || '1', 10)
+
 const RATE_LIMIT_WINDOW_MS = 60_000 // 1 min rolling window
 // Deliberately generous: a real shopper fires 4–8 GraphQL calls per page
 // navigation (menu, search, cart, price toggle, grid, PDP tabs), so a brisk
@@ -1224,6 +1231,93 @@ async function createServer() {
     )
     renderProd = (await import('./dist/server/entry-server.js')).render
   }
+
+  // ── Behaviour tracking (PWP-910) ──────────────────────────────────────────
+  // Registered before the SSR catch-all, with per-route body parsers so they
+  // never intercept the /api/graphql proxy body.
+  //
+  // `text/plain` is accepted deliberately: navigator.sendBeacon() sends that
+  // content type, and it is the only transport that survives the PSP redirect
+  // and tab close. Parsing JSON only would yield an empty body and a silent
+  // 202 with zero rows -- which looks exactly like success.
+  app.post(
+    '/api/track',
+    express.text({ type: ['application/json', 'text/plain'], limit: '128kb' }),
+    async (req, res) => {
+      try {
+        const cookies = parseCookies(req.headers.cookie || '')
+        const result = await ingestBatch({
+          rawBody: typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {}),
+          cookieVisitorId: cookies[VISITOR_COOKIE],
+          channelId: TRACKING_CHANNEL_ID,
+        })
+        // Minted here rather than during SSR: a Set-Cookie on an HTML response
+        // makes that response uncacheable at a CDN.
+        if (result.minted && result.visitorId) {
+          res.setHeader('Set-Cookie', visitorCookie(result.visitorId))
+        }
+      } catch (e) {
+        console.error('[track] ingest failed:', e instanceof Error ? e.message : e)
+      }
+      // 202 regardless: the caller is a fire-and-forget beacon, and a storefront
+      // must not care whether analytics is configured or healthy.
+      res.status(202).end()
+    }
+  )
+
+  // Dashboard metrics. `metric` selects a static named query from an allowlist --
+  // it is never interpolated into SQL. from/to/limit are validated and bound.
+  app.get('/api/tracker', async (req, res) => {
+    const metric = String(req.query.metric || '')
+    const runner = METRICS[metric]
+    if (!runner) {
+      res.status(400).json({ error: 'unknown metric', allowed: Object.keys(METRICS) })
+      return
+    }
+    const today = todayLocal()
+    const from = String(req.query.from || today)
+    const to = String(req.query.to || today)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      res.status(400).json({ error: 'from/to must be YYYY-MM-DD' })
+      return
+    }
+    const span = Math.round((Date.parse(to + 'T00:00:00Z') - Date.parse(from + 'T00:00:00Z')) / 86400000)
+    if (!Number.isFinite(span) || span < 0) {
+      res.status(400).json({ error: 'to must not precede from' })
+      return
+    }
+    // Answered before running anything: with no database every metric would
+    // return an empty array with a 200, and a dashboard full of honest zeros is
+    // indistinguishable from a quiet day.
+    if (!isTrackingConfigured()) {
+      res.status(503).json({
+        error: 'analytics database not configured',
+        status: 'not_configured',
+        hint: STATUS_HINTS.not_configured,
+        metric,
+      })
+      return
+    }
+    // Capped so a hand-edited or bookmarked URL cannot ask for a decade.
+    const safeTo = span > MAX_RANGE_DAYS ? addDays(from, MAX_RANGE_DAYS) : to
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), MAX_LIMIT)
+    try {
+      const data = await runner({ from, to: safeTo, limit, channelId: TRACKING_CHANNEL_ID })
+      res.setHeader('Cache-Control', 'no-store')
+      res.json({ metric, from, to: safeTo, data })
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'query failed'
+      // A setup problem is not a server fault: 503 with the fix attached, so the
+      // dashboard can say "run tracking:init" instead of relaying ER_NO_SUCH_TABLE.
+      const status = classifyDbError(e)
+      if (status) {
+        res.status(503).json({ error: message, status, hint: STATUS_HINTS[status], metric })
+        return
+      }
+      console.error('[tracker] query failed:', message)
+      res.status(500).json({ error: message, metric })
+    }
+  })
 
   // ── SSR catch-all ─────────────────────────────────────────────────────────
   app.use('*all', async (req, res) => {

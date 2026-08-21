@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-21
+
+### Added
+
+- **Behaviour tracking, GA4/GTM and a `/tracker` dashboard (PWP-910).** The
+  storefront emits its own event vocabulary on a subscribe-based bus
+  (`src/lib/tracking/`); two subscribers read that one stream — a batching POST
+  to `/api/track` that writes MySQL, and a GA4 mapper. A tenant who wants Segment
+  or Snowplow instead writes a third mapper and nothing else changes. This ports
+  propeller-next 1.14.0 event-for-event, so reports are comparable across all
+  three storefronts: 41 of the 47 taxonomy names are wired, covering identity,
+  auth, navigation, catalog, cart, checkout, purchase, the B2B surfaces and the
+  account long tail.
+
+  The core (`types`, `taxonomy`, `tracker`, `batch`, `items`) is framework-free
+  and copied verbatim from propeller-next so future syncs stay a plain diff;
+  `bus.ts` is the only file that knows about the framework, and it is where the
+  SSR guard lives — `tracker.ts` buffers events until a context lands, which on
+  the server would be an array that is never drained.
+
+- **`npm run tracking:init` — the analytics schema installer.** Nothing is
+  created automatically, not at install and not at first boot: DDL at boot races
+  across instances and needs privileges the app account usually does not have.
+  One command detects the engine and emits matching DDL for **MariaDB 10+,
+  MySQL 5.6+, MySQL 8 and Cloud SQL**; `--dry-run` reports without writing and
+  `--print-sql` emits the whole schema for a DBA to run by hand. Because MySQL
+  DDL cannot roll back it is resumable rather than transactional: every statement
+  is `IF NOT EXISTS` and each completed migration is recorded in a
+  `schema_migrations` ledger, so a hand-run script is *adopted* by a later
+  `tracking:init` rather than repeated.
+
+- **`/tracker` — nine dashboard sections** over a 13-metric API, with no charting
+  dependency: only the trend line is a real chart and it is a hand-rolled
+  `<polyline>`, because Recharts has no Vue port and any alternative would land
+  in two repos permanently. `/api/tracker` classifies driver errors into
+  `not_configured` / `unreachable` / `schema_missing` / `access_denied` / `tls`
+  and answers **503 with the fix attached**, so an unconfigured shop says which
+  of the three setup problems it is instead of showing nine empty panels.
+
+  **It is ungated by request — gate it before deploying anywhere shared.** It
+  exposes every account's behaviour and revenue to anyone with the URL.
+
+### Fixed
+
+- **Header logins emitted no `login` event.** `<LoginForm>` authenticates itself
+  and hands the user back through an `afterLogin` callback, so every surface that
+  renders one runs its own post-login sequence, and `AppHeader.handleAfterLogin`
+  is a full duplicate of `useAfterLogin` that never calls it. Attaching the event
+  to the composable covered `/login` and `/magic-login` and silently missed the
+  header — the most common way to sign in. There is now one `trackLogin()` in
+  `src/lib/tracking/bootstrap.ts` that every sink calls.
+
+- **`setSelectedCompany` reported a company switch on every B2B login** and
+  stamped the *previous* company on everything that followed it: it republished
+  the tracking context before assigning the new company, and its guard was
+  missing the `previousId != null` half. Both now match propeller-next.
+
+- **`src/router/index.ts` referenced an undeclared `targetLang`** in the auth
+  guard — a latent `ReferenceError` on the first guarded route.
+
 ## [1.11.12] - 2026-08-20
 
 ### Added

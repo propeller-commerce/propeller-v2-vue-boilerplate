@@ -112,25 +112,9 @@
             :onProductsResponse="handleProductsResponse"
             :onCategoryChange="handleCategoryChange"
             :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-            :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-            :onProductClick="
-              (product: Product) =>
-                router.push(
-                  configuration.urls.getProductUrl(
-                    product,
-                    languageStore.language,
-                  ),
-                )
-            "
-            :onClusterClick="
-              (cluster: Cluster) =>
-                router.push(
-                  configuration.urls.getClusterUrl(
-                    cluster,
-                    languageStore.language,
-                  ),
-                )
-            "
+            :afterAddToCart="handleAddToCart"
+            :onProductClick="handleProductClick"
+            :onClusterClick="handleClusterClick"
             :onProceedToCheckout="
               () =>
                 router.push(localizeHref('/checkout', languageStore.language))
@@ -168,7 +152,7 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useHead } from "@unhead/vue";
-import { type AttributeFilter, AttributeType, Cart, type Category, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from "@propeller-commerce/propeller-sdk-v2";
+import { type AttributeFilter, AttributeType, Cart, type CartMainItem, type Category, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from "@propeller-commerce/propeller-sdk-v2";
 import { type Availability, MIN_STOCK_THRESHOLD } from "@propeller-commerce/propeller-v2-core-ui";
 import { useAuthStore } from "@/stores/auth";
 import { useCartStore } from "@/stores/cart";
@@ -183,6 +167,8 @@ import { resolveSeoTitle, resolveSeoDescription, resolveSeoKeywords, resolveCano
 
 import { Breadcrumbs, CategoryDescription, GridFiltersPanel, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
+import { track } from '@/lib/tracking/bus'
+import { trackAddToCart, trackSelectItem, trackViewItemList } from '@/lib/tracking/events'
 
 const route = useRoute();
 const router = useRouter();
@@ -461,6 +447,73 @@ useHead({
     seoCanonical.value ? [{ rel: "canonical", href: seoCanonical.value }] : [],
   ),
 });
+
+// ── Category tracking (PWP-910) ──────────────────────────────────────────────
+//
+// The surface this view represents. Passed into the grid callbacks so an
+// add-to-cart from a category listing is distinguishable from the same product
+// added on its PDP.
+const categorySource = computed(() => ({
+  type: 'category' as const,
+  id: Number.isFinite(categoryId.value) ? categoryId.value : null,
+  name: getCategoryName() || null,
+  page: currentPage.value,
+}));
+
+// Self-reported `page_viewed` — carries the entity id and name, which is why
+// the generic router hook skips this route (`lib/tracking/pageType.ts`).
+watch(
+  [categoryId, category],
+  () => {
+    if (!Number.isFinite(categoryId.value)) return;
+    track(
+      'page_viewed',
+      {
+        page_type: 'category',
+        entity_type: 'category',
+        entity_id: categoryId.value,
+        entity_name: getCategoryName() || null,
+      },
+      `page_viewed:category:${categoryId.value}`,
+    );
+  },
+  { immediate: true },
+);
+
+// One `view_item_list` per rendered result set. `trackViewItemList` keys on the
+// source + page, so a re-render or a filter round-trip that returns the same
+// page does not inflate it.
+watch(
+  [productsResponse, itemsFound, currentPage],
+  () => {
+    if (filtersLoading.value || productsResponse.value === null) return;
+    trackViewItemList(
+      categorySource.value,
+      itemsFound.value,
+      seededItems.value.length,
+      seededItems.value,
+      { language: languageStore.language, offset: productsResponse.value?.offset },
+    );
+  },
+  { immediate: true },
+);
+
+function handleAddToCart(cart: Cart, item?: CartMainItem) {
+  cartStore.setCart(cart);
+  trackAddToCart(categorySource.value, item, cart, null, languageStore.language);
+}
+
+function handleProductClick(product: Product) {
+  // Before the navigation, not after: `router.push` tears this view down and
+  // the bus's flush timer does not wait for the unmount.
+  trackSelectItem(categorySource.value, product, null, languageStore.language);
+  router.push(configuration.urls.getProductUrl(product, languageStore.language));
+}
+
+function handleClusterClick(cluster: Cluster) {
+  trackSelectItem(categorySource.value, cluster, null, languageStore.language);
+  router.push(configuration.urls.getClusterUrl(cluster, languageStore.language));
+}
 
 // ── ProductGrid callbacks ─────────────────────────────────────────────────────
 

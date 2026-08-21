@@ -1,7 +1,7 @@
 {
   "name": "propeller-vue",
   "private": true,
-  "version": "1.11.12",
+  "version": "1.12.0",
   "type": "module",
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",
@@ -18,7 +18,9 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:tracking": "node --test --experimental-strip-types src/lib/tracking/*.test.ts",
+    "tracking:init": "node scripts/tracking-init.mjs"
   },
   "dependencies": {
     "@propeller-commerce/propeller-sdk-v2": "^0.16.0",
@@ -37,6 +39,7 @@
     "lodash.debounce": "^4.0.8",
     "lucide-vue-next": "^1.0.0",
     "marked": "^18.0.0",
+    "mysql2": "^3.23.4",
     "pinia": "^3.0.4",
     "qs": "^6.15.0",
     "swiper": "^12.1.3",
