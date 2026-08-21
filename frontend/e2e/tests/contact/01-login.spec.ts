@@ -44,7 +44,7 @@ test.describe('Contact — Login & auth state', () => {
 
     const loginPage = new LoginPage(page);
     await loginPage.emailInput.waitFor({ state: 'visible' });
-    await loginPage.login('d.krstev@propel.us', 'wrong_password_xyz');
+    await loginPage.login('nobody@example.com', 'wrong_password_xyz');
     await page.waitForTimeout(3000);
     // Should still be on login page
     await expect(page).toHaveURL(/\/login/);
