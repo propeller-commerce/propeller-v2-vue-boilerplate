@@ -104,7 +104,7 @@
               <AddToFavorite
                 v-if="authStore.user"
                 :productId="product.productId"
-                :onFavoriteChanged="() => authStore.refreshUser()"
+                :onFavoriteChanged="(change) => { void authStore.refreshUser(); if (change) trackFavoriteChange(change); }"
                 :labels="addToFavoriteLabels"
               />
             </div>
@@ -210,7 +210,7 @@ import {
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 import { track } from '@/lib/tracking/bus'
-import { itemOptions, trackAddToCart } from '@/lib/tracking/events'
+import { itemOptions, trackAddToCart, trackFavoriteChange } from '@/lib/tracking/events'
 import { itemsFromProducts } from '@/lib/tracking/items'
 import { trackPreprEvent } from '@/lib/preprEvent';
 

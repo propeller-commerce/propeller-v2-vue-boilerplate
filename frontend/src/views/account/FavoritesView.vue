@@ -8,7 +8,7 @@
       :labels="favoriteListsLabels"
       :showActions="true"
       :allowFavoriteListCreate="true"
-      :onListChanged="() => authStore.refreshUser()"
+      :onListChanged="(change) => { void authStore.refreshUser(); if (change) trackFavoriteListChange(change); }"
       :onListClick="(id: string | number) => { router.push(localizeHref(`/account/favorites/${id}`, languageStore.language)) }"
     />
   </div>
@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { trackFavoriteListChange } from '@/lib/tracking/events'
 import { useLanguageStore } from '@/stores/language'
 import { graphqlClient } from '@/lib/api'
 import { localizeHref } from '@/lib/config'
