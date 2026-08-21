@@ -1,0 +1,325 @@
+/**
+ * Route-level SSR data loaders.
+ *
+ * `entry-server.ts` calls a matched route's `meta.ssrPrefetch` after the
+ * router resolves. Each loader here fetches the shell data for one catalog
+ * route via the server seam (`src/lib/server.ts`) and stashes it in the
+ * `ssrCatalog` Pinia store keyed by route path — from there it serializes
+ * into `window.__INITIAL_STATE__` and the matching view picks it up.
+ *
+ * These run ONLY on the server (the seam reads `process.env`). The Vite SSR
+ * build tree-shakes this module out of the client bundle because nothing in
+ * the client entry imports it — it is referenced solely through route
+ * `meta.ssrPrefetch`, and `meta` values are plain data the client ignores.
+ *
+ * A loader never throws: a failed fetch leaves no seed, the view's
+ * `<ClientOnly>` island fetches client-side, and the page still renders its
+ * shell. SEO degrades gracefully to "no server data" rather than a 500.
+ */
+import type { RouteLocationNormalized } from 'vue-router'
+import type { SSRContext } from '@/lib/server-context'
+import { useSsrCatalogStore } from '@/stores/ssrCatalog'
+import { useAuthStore } from '@/stores/auth'
+import {
+  getListingInfra,
+  getServerInfra,
+  fetchProduct,
+  fetchCategory,
+  fetchSearch,
+  fetchCluster,
+  fetchCmsPage,
+  fetchCmsArticles,
+  fetchCmsArticle,
+  type ServerInfra,
+  type ListingFetchOptions,
+} from '@/lib/server'
+import { isHomeSlug } from '@/lib/cms/core'
+import { DEFAULT_LANGUAGE } from '@/lib/config'
+import { ProductSortField, SortOrder } from '@propeller-commerce/propeller-sdk-v2'
+import type { ProductTextFilterInput } from '@propeller-commerce/propeller-sdk-v2'
+import { AttributeType } from '@propeller-commerce/propeller-sdk-v2'
+import { parseAvailability } from '@/lib/listingParams'
+
+/**
+ * Browsing language for an SSR fetch: the URL's prefix wins, else the stored
+ * preference, else the default. Single resolver so no call site restates it.
+ */
+function routeLanguage(route: RouteLocationNormalized, ctx?: SSRContext): string {
+  const lang = (route.params.lang as string | undefined)?.toUpperCase()
+  if (lang) return lang
+  const cookie = ctx?.cookies?.['preferred_language']
+  return cookie ? cookie.toUpperCase() : DEFAULT_LANGUAGE
+}
+
+/** Query keys that are listing controls, not attribute filters. */
+const RESERVED_QUERY_KEYS = [
+  'page',
+  'minPrice',
+  'maxPrice',
+  'offset',
+  'sortField',
+  'sortOrder',
+  'availability',
+]
+
+/**
+ * Turn a route query into `ProductTextFilterInput[]` — the same parse the
+ * catalog views do client-side, so a refreshed filtered URL server-renders
+ * the *filtered* first page.
+ */
+function buildTextFilters(
+  query: RouteLocationNormalized['query'],
+): ProductTextFilterInput[] {
+  const out: ProductTextFilterInput[] = []
+  for (const [key, value] of Object.entries(query)) {
+    if (RESERVED_QUERY_KEYS.includes(key)) continue
+    const raw = Array.isArray(value) ? value[0] : value
+    if (typeof raw !== 'string') continue
+    let values: string[]
+    try {
+      const parsed = JSON.parse(raw)
+      values = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)]
+    } catch {
+      values = [raw]
+    }
+    if (values.length) {
+      out.push({ name: key, values, exclude: false, type: AttributeType.TEXT })
+    }
+  }
+  return out
+}
+
+/** Read a numeric query param. */
+function num(value: unknown): number | undefined {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (typeof raw !== 'string' || raw === '') return undefined
+  const n = Number.parseFloat(raw)
+  return Number.isFinite(n) ? n : undefined
+}
+
+/** Build `ListingFetchOptions` from a route's query string. */
+function listingOptions(
+  route: RouteLocationNormalized,
+  defaultSort: ProductSortField,
+): ListingFetchOptions {
+  const { availability, minStock } = parseAvailability(
+    route.query.availability as string | string[] | undefined,
+  )
+  return {
+    page: num(route.query.page) ?? 1,
+    offset: num(route.query.offset) ?? 12,
+    sortField: (route.query.sortField as ProductSortField) || defaultSort,
+    sortOrder: (route.query.sortOrder as SortOrder) || SortOrder.DESC,
+    textFilters: buildTextFilters(route.query),
+    priceFilterMin: num(route.query.minPrice),
+    priceFilterMax: num(route.query.maxPrice),
+    availability,
+    minStock,
+  }
+}
+
+/**
+ * Seed the Pinia `auth` store from the SSR-resolved infra so the server render
+ * of the catalog shell (account menu, contact pricing) reflects the logged-in
+ * user. The seeded state serializes into `__INITIAL_STATE__` and the client
+ * hydrates to it identically.
+ */
+function seedAuth(infra: ServerInfra, ctx: SSRContext): void {
+  if (infra.user) {
+    useAuthStore().hydrateFromServer(infra.user, ctx.cookies['access_token'] ?? null)
+  }
+}
+
+// ── Loaders ──────────────────────────────────────────────────────────────────
+
+/** Product detail page — fetch the product for SEO + above-the-fold. */
+export async function prefetchProduct(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const productId = Number.parseInt(route.params.productId as string, 10)
+  if (!Number.isFinite(productId)) return
+  const lang = routeLanguage(route, ctx)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const product = await fetchProduct(infra, productId, lang)
+  if (product) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'product', data: product })
+  }
+}
+
+/** Category page — fetch the category + its (possibly filtered) first page. */
+export async function prefetchCategory(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const categoryId = Number.parseInt(route.params.id as string, 10)
+  if (!Number.isFinite(categoryId)) return
+  const lang = routeLanguage(route, ctx)
+  const infra = await getListingInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const category = await fetchCategory(
+    infra,
+    categoryId,
+    listingOptions(route, ProductSortField.CATEGORY_ORDER),
+  )
+  if (category) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'category', data: category })
+  }
+}
+
+/** Search page — fetch the first page of results for the URL term. */
+export async function prefetchSearch(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const termParam = route.params.term
+  const term = Array.isArray(termParam)
+    ? termParam.join('/')
+    : (termParam as string) || ''
+  const lang = routeLanguage(route, ctx)
+  const infra = await getListingInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const products = await fetchSearch(
+    infra,
+    term,
+    listingOptions(route, ProductSortField.RELEVANCE),
+  )
+  if (products) {
+    useSsrCatalogStore().setSeed(route.fullPath, {
+      kind: 'search',
+      term,
+      data: products,
+    })
+  }
+}
+
+/**
+ * CMS catch-all (`:slug+`) — resolve the slug to a CMS page via the server
+ * `fetchCmsPage` seam. A real page seeds the store and keeps the 200; a genuine
+ * miss (provider returns null, or no CMS configured) sets 404 so crawlers
+ * deindex dead/typo URLs. The view renders `<CmsFallback>` on a miss.
+ */
+export async function prefetchCmsPage(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const slugParam = route.params.slug
+  const slug = Array.isArray(slugParam) ? slugParam.join('/') : String(slugParam || '')
+  // The home page is served at `/`, not this catch-all; never resolve it here.
+  if (!slug || isHomeSlug(slug)) {
+    ctx.status = 404
+    return
+  }
+  const lang = routeLanguage(route, ctx)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const extraHeaders = preprHeadersFrom(ctx)
+  const page = await fetchCmsPage(infra, slug, {
+    locale: previewLocaleFrom(ctx) || lang,
+    extraHeaders,
+    preview,
+    noStore: preview,
+  })
+  if (page) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms', data: page })
+  } else {
+    ctx.status = 404
+  }
+}
+
+/** Prepr personalization headers the server bridge forwarded (empty off-Prepr). */
+function preprHeadersFrom(ctx: SSRContext): Record<string, string> | undefined {
+  const h = ctx.preprHeaders
+  return h && Object.keys(h).length ? h : undefined
+}
+
+/** Previewed locale carried on the URL as `?preview_lang` (preview mode only). */
+function previewLocaleFrom(ctx: SSRContext): string | undefined {
+  if (ctx.cookies['prepr_preview'] !== '1') return undefined
+  const q = new URL(ctx.url, 'http://x').searchParams.get('preview_lang')
+  return q ? q.toUpperCase() : undefined
+}
+
+/**
+ * Home page (`/`) — resolve the Prepr `home` page (personalized). Seeds the
+ * `cms` seed so HomeView renders the Prepr blocks; when the CMS has no home
+ * page the seed is absent and HomeView shows its built-in fallback. A missing
+ * home is NOT a 404 (the home route always renders something).
+ */
+export async function prefetchHome(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const lang = routeLanguage(route, ctx)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const page = await fetchCmsPage(infra, 'home', {
+    locale: previewLocaleFrom(ctx) || lang,
+    extraHeaders: preprHeadersFrom(ctx),
+    preview,
+    noStore: preview || !!preprHeadersFrom(ctx),
+  })
+  if (page) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms', data: page })
+  }
+}
+
+/** Blog index (`/blog`) — fetch the article list. */
+export async function prefetchBlog(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const lang = routeLanguage(route, ctx)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const articles = await fetchCmsArticles(infra, lang, {
+    preview,
+    extraHeaders: preprHeadersFrom(ctx),
+  })
+  useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms-articles', data: articles })
+}
+
+/** Blog post (`/blog/:slug`) — fetch one article; 404 on a genuine miss. */
+export async function prefetchBlogPost(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const slug = String(route.params.slug || '')
+  if (!slug) {
+    ctx.status = 404
+    return
+  }
+  const lang = routeLanguage(route, ctx)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const preview = ctx.cookies['prepr_preview'] === '1'
+  const article = await fetchCmsArticle(infra, slug, lang, {
+    preview,
+    extraHeaders: preprHeadersFrom(ctx),
+  })
+  if (article) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cms-article', data: article })
+  } else {
+    ctx.status = 404
+  }
+}
+
+/** Cluster detail page — fetch the cluster (config-scoped attributes). */
+export async function prefetchCluster(
+  route: RouteLocationNormalized,
+  ctx: SSRContext,
+): Promise<void> {
+  const clusterId = Number.parseInt(route.params.clusterId as string, 10)
+  if (!Number.isFinite(clusterId)) return
+  const lang = routeLanguage(route, ctx)
+  const infra = await getServerInfra(ctx.cookies, lang)
+  seedAuth(infra, ctx)
+  const cluster = await fetchCluster(infra, clusterId, lang)
+  if (cluster) {
+    useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cluster', data: cluster })
+  }
+}

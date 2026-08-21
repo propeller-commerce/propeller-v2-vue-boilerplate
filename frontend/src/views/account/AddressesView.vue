@@ -1,0 +1,266 @@
+<template>
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <h1 class="text-3xl font-bold tracking-tight">{{ t.addressesTitle }}</h1>
+    </div>
+
+    <!-- Default Addresses -->
+    <div class="space-y-4 pb-10">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Default Billing -->
+        <div class="space-y-2">
+          <h2 class="font-semibold text-md">{{ t.defaultBillingAddress }}</h2>
+          <AddressCard
+            v-if="defaultAddresses.invoice"
+            :key="`inv-${defaultAddresses.invoice.id}`"
+            :showTypeBadge="false"
+            :labels="addressCardLabels"
+            :address="defaultAddresses.invoice"
+            :enableDelete="false"
+            :onEdit="handleEditAddress"
+            :onDelete="handleDeleteAddress"
+            :onSetDefault="handleSetDefault"
+            :countries="getCountries(languageStore.language)"
+          />
+          <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
+            <p class="text-sm text-muted-foreground">{{ t.noDefaultInvoiceAddress }}</p>
+            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.invoice)">{{ t.addOne }}</button>
+          </div>
+        </div>
+        <!-- Default Delivery -->
+        <div class="space-y-2">
+          <h2 class="font-semibold text-md">{{ t.defaultDeliveryAddress }}</h2>
+          <AddressCard
+            v-if="defaultAddresses.delivery"
+            :key="`del-${defaultAddresses.delivery.id}`"
+            :showTypeBadge="false"
+            :labels="addressCardLabels"
+            :address="defaultAddresses.delivery"
+            :enableDelete="false"
+            :onEdit="handleEditAddress"
+            :onDelete="handleDeleteAddress"
+            :onSetDefault="handleSetDefault"
+            :countries="getCountries(languageStore.language)"
+          />
+          <div v-else class="border border-dashed rounded-[var(--radius-container)] p-6 flex flex-col items-center justify-center text-center space-y-2">
+            <p class="text-sm text-muted-foreground">{{ t.noDefaultDeliveryAddress }}</p>
+            <button type="button" class="text-primary text-sm hover:underline" @click="handleAddAddress(AddressType.delivery)">{{ t.addOne }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Billing Addresses -->
+    <div class="space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">{{ t.additionalBillingAddresses }}</h2>
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(AddressType.invoice)">
+          + {{ t.addNew }}
+        </button>
+      </div>
+      <div v-if="billingAddresses.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <AddressCard
+          v-for="address in billingAddresses"
+          :key="address.id"
+          :showTypeBadge="false"
+          :labels="addressCardLabels"
+          :address="address"
+          :onEdit="handleEditAddress"
+          :onDelete="handleDeleteAddress"
+          :onSetDefault="handleSetDefault"
+          :countries="getCountries(languageStore.language)"
+        />
+      </div>
+      <p v-else class="text-muted-foreground italic text-sm">{{ t.noAdditionalBillingAddresses }}</p>
+    </div>
+
+    <!-- Additional Delivery Addresses -->
+    <div class="space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">{{ t.additionalDeliveryAddresses }}</h2>
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" @click="handleAddAddress(AddressType.delivery)">
+          + {{ t.addNew }}
+        </button>
+      </div>
+      <div v-if="deliveryAddresses.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <AddressCard
+          v-for="address in deliveryAddresses"
+          :key="address.id"
+          :showTypeBadge="false"
+          :labels="addressCardLabels"
+          :address="address"
+          :onEdit="handleEditAddress"
+          :onDelete="handleDeleteAddress"
+          :onSetDefault="handleSetDefault"
+          :countries="getCountries(languageStore.language)"
+        />
+      </div>
+      <p v-else class="text-muted-foreground italic text-sm">{{ t.noAdditionalDeliveryAddresses }}</p>
+    </div>
+
+    <!-- Add New Address Modal -->
+    <AddressCard
+      v-if="showAddModal"
+      :labels="addressCardLabels"
+      :address="null"
+      :addressType="addModalType"
+      :isNew="true"
+      :enableActions="false"
+      :onEdit="handleSaveNewAddress"
+      :onCancel="() => { showAddModal = false }"
+      :countries="getCountries(languageStore.language)"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { type Address, AddressType, type Company, YesNo } from '@propeller-commerce/propeller-sdk-v2';
+import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
+import { useAuthStore } from '@/stores/auth'
+import { useCompanyStore } from '@/stores/company'
+import { useLanguageStore } from '@/stores/language'
+import { graphqlClient } from '@/lib/api'
+import { useAddress } from '@propeller-commerce/propeller-v2-vue-ui'
+import type { AddressInput } from '@propeller-commerce/propeller-v2-vue-ui'
+import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
+import { AddressCard } from '@propeller-commerce/propeller-v2-vue-ui';
+import { getCountries } from "@/composables/shared/utils/countries";
+import { useTranslations } from '@/lib/i18n/composable';
+import { track } from '@/lib/tracking/bus';
+import type { EventName } from '@/lib/tracking/taxonomy';
+
+const authStore = useAuthStore()
+const companyStore = useCompanyStore()
+const languageStore = useLanguageStore()
+const addressCardLabels = useTranslations('AddressCard')
+const t = useTranslations('Account')
+
+// COUNTRIES imported from shared utils
+const showAddModal = ref(false)
+const addModalType = ref<AddressType>(AddressType.invoice)
+
+const userRef = computed(() => authStore.user as AnyUser)
+const companyIdRef = computed(() => companyStore.selectedCompany?.companyId)
+
+const { createAddress, updateAddress, deleteAddress, setDefaultAddress } = useAddress({
+  graphqlClient,
+  user: userRef,
+  companyId: companyIdRef,
+})
+
+// ── Display helpers (read-only, no SDK) ──────────────────────────────────────
+
+function isContact(u: Contact | Customer | null): u is Contact {
+  return u !== null && 'contactId' in u
+}
+
+function isCustomer(u: Contact | Customer | null): u is Customer {
+  return u !== null && 'customerId' in u
+}
+
+function getActiveCompany(): Company | null {
+  const u = userRef.value
+  if (!u || !isContact(u as Contact)) return null
+  const targetId = companyStore.selectedCompany?.companyId
+  if (targetId) {
+    const companiesRaw = (u as any).companies
+    const items = (companiesRaw?.items ?? companiesRaw) as Company[] | undefined
+    if (Array.isArray(items)) {
+      const found = items.find((c: Company) => c.companyId === targetId)
+      if (found) return found
+    }
+    if ((u as Contact).company?.companyId === targetId) return (u as Contact).company as Company
+  }
+  return ((u as Contact).company as Company | undefined) ?? null
+}
+
+function getAllAddresses(): Address[] {
+  const u = userRef.value
+  if (!u) return []
+  if (isContact(u as Contact)) return getActiveCompany()?.addresses || []
+  if (isCustomer(u as Customer)) return (u as Customer).addresses || []
+  return []
+}
+
+const defaultAddresses = computed(() => {
+  const addresses = getAllAddresses()
+  return {
+    invoice: addresses.find((a: Address) => a.type === AddressType.invoice && a.isDefault === YesNo.Y),
+    delivery: addresses.find((a: Address) => a.type === AddressType.delivery && a.isDefault === YesNo.Y),
+  }
+})
+
+const billingAddresses = computed(() =>
+  getAllAddresses().filter((a: Address) => a.type === AddressType.invoice && a.isDefault === YesNo.N)
+)
+
+const deliveryAddresses = computed(() =>
+  getAllAddresses().filter((a: Address) => a.type === AddressType.delivery && a.isDefault === YesNo.N)
+)
+
+// ── Handlers ─────────────────────────────────────────────────────────────────
+
+function handleAddAddress(type: AddressType) {
+  addModalType.value = type
+  showAddModal.value = true
+}
+
+/**
+ * Address events carry `owner_type` because the composable branches on company
+ * vs customer input, so the two are genuinely different signals.
+ */
+function trackAddress(name: EventName, address: { id?: unknown; type?: unknown }) {
+  track(
+    name,
+    {
+      address_id: address?.id != null ? Number(address.id) : null,
+      address_type: (address?.type as string) ?? null,
+      owner_type: isContact(authStore.user as Contact | Customer | null) ? 'company' : 'customer',
+    },
+    `${name}:${address?.id ?? 'new'}:${Math.floor(Date.now() / 2000)}`,
+  )
+}
+
+async function handleEditAddress(address: Address) {
+  await updateAddress(Number(address.id), address as Partial<AddressInput>)
+  trackAddress('propeller.address_updated', address)
+  await authStore.refreshUser()
+}
+
+async function handleDeleteAddress(address: Address) {
+  await deleteAddress(Number(address.id))
+  trackAddress('propeller.address_deleted', address)
+  await authStore.refreshUser()
+}
+
+async function handleSetDefault(address: Address) {
+  if (!address.id) return
+  await setDefaultAddress(Number(address.id))
+  trackAddress('propeller.address_set_default', address)
+  await authStore.refreshUser()
+}
+
+async function handleSaveNewAddress(address: any) {
+  await createAddress({
+    company: address.company || undefined,
+    gender: address.gender || undefined,
+    firstName: address.firstName || undefined,
+    middleName: address.middleName || undefined,
+    lastName: address.lastName || undefined,
+    email: address.email || undefined,
+    street: address.street || '',
+    number: address.number || undefined,
+    numberExtension: address.numberExtension || undefined,
+    postalCode: address.postalCode || '',
+    city: address.city || '',
+    country: address.country || 'NL',
+    notes: address.notes || undefined,
+    isDefault: (address.isDefault as YesNo) || YesNo.N,
+    type: addModalType.value,
+  })
+  trackAddress('propeller.address_created', { type: addModalType.value })
+  await authStore.refreshUser()
+  showAddModal.value = false
+}
+</script>

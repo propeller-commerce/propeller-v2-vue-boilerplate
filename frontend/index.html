@@ -1,0 +1,19 @@
+<!doctype html>
+<html<!--ssr-html-attrs-->>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!--
+      No static title tag here, deliberately. HTML uses the FIRST one in a
+      document and unhead renders the real one into the ssr-head slot below,
+      so a placeholder above it wins on every route — which is why every page
+      used to serve the same title. The default lives in App.vue's useHead().
+    -->
+    <!--ssr-head-->
+  </head>
+  <body<!--ssr-body-attrs-->>
+    <div id="app"><!--ssr-outlet--></div>
+    <!--ssr-state-->
+    <script type="module" src="/src/entry-client.ts"></script>
+  </body>
+</html>

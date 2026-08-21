@@ -1,0 +1,7 @@
+# Monorepo root — each app has its own .gitignore
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.env
