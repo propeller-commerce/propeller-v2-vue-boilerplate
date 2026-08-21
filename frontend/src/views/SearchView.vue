@@ -135,9 +135,9 @@
             :onPageChange="handleProductGridPageChange"
             :onProductsResponse="handleProductsResponse"
             :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-            :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
-            :onProductClick="(product: Product) => router.push(configuration.urls.getProductUrl(product, languageStore.language))"
-            :onClusterClick="(cluster: Cluster) => router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))"
+            :afterAddToCart="handleAddToCart"
+            :onProductClick="handleProductClick"
+            :onClusterClick="handleClusterClick"
             :onProceedToCheckout="() => router.push(localizeHref('/checkout', languageStore.language))"
             :onRequestQuoteClick="() => router.push(localizeHref('/checkout?mode=quote', languageStore.language))"
             :labels="productGridLabels"
@@ -167,7 +167,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
-import { type AttributeFilter, AttributeType, Cart, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
+import { type AttributeFilter, AttributeType, Cart, type CartMainItem, Cluster, Contact, Customer, Product, ProductSortField, type ProductsResponse, type ProductTextFilterInput, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
 import { type Availability, MIN_STOCK_THRESHOLD } from '@propeller-commerce/propeller-v2-core-ui';
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
@@ -182,6 +182,8 @@ import { buildJsonLdContext } from '@/lib/seo'
 
 import { GridFiltersPanel, GridPagination, GridTitle, GridToolbar, ItemListJsonLd, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
+import { track } from '@/lib/tracking/bus'
+import { trackAddToCart, trackSelectItem, trackViewItemList } from '@/lib/tracking/events'
 
 const route = useRoute()
 const router = useRouter()
@@ -401,6 +403,97 @@ useHead({
   ),
   meta: [{ name: 'robots', content: 'noindex, follow' }],
 })
+
+// ── Search tracking (PWP-910) ────────────────────────────────────────────────
+//
+// The surface this view represents. Passed into the grid callbacks so an
+// add-to-cart from search is distinguishable from the same product added on its
+// PDP — the single highest-value dimension in the taxonomy.
+const searchSource = computed(() => ({
+  type: 'search' as const,
+  name: searchTerm.value,
+  searchTerm: searchTerm.value,
+  page: currentPage.value,
+}))
+
+const activeFilterCount = computed(
+  () => Object.values(filters.value).filter((v) => v.length > 0).length,
+)
+
+watch(
+  [searchTerm, filtersLoading, productsResponse, itemsFound, currentPage],
+  () => {
+    if (!searchTerm.value || filtersLoading.value || productsResponse.value === null) return
+    // `itemsFound` updates on EVERY refetch — filter toggle, page change,
+    // language switch — not once per search. So the dedupe key carries the
+    // filters and the page: without it one fruitless search emits
+    // `search_no_results` five times while the user narrows filters, inflating
+    // the "searched and found nothing" signal by exactly the behaviour that
+    // proves they were trying.
+    const key = `${searchTerm.value}|${JSON.stringify(filters.value)}|${currentPage.value}`
+    track(
+      'search',
+      {
+        search_term: searchTerm.value,
+        results_count: itemsFound.value,
+        filters_active: activeFilterCount.value,
+        page: currentPage.value,
+      },
+      `search:${key}`,
+    )
+    // The rendered page rides along as GA4 `items[]`. It is the one thing the
+    // GA4 mapper cannot invent, and it is already in hand here.
+    trackViewItemList(
+      searchSource.value,
+      itemsFound.value,
+      seededItems.value.length,
+      seededItems.value,
+      { language: languageStore.language, offset: productsResponse.value?.offset },
+    )
+    if (itemsFound.value === 0) {
+      // `filters_active` separates the two causes: over-filtering is a UX
+      // problem, a bare term with no hits is an assortment gap. Different
+      // owner, different fix — and only the second matters to a rep.
+      track(
+        'search_no_results',
+        { search_term: searchTerm.value, filters_active: activeFilterCount.value },
+        `search_no_results:${key}`,
+      )
+    }
+  },
+  { immediate: true },
+)
+
+// Self-reported `page_viewed` — richer than the generic router hook, which
+// skips this route for exactly that reason (`lib/tracking/pageType.ts`).
+watch(
+  searchTerm,
+  (term) => {
+    track(
+      'page_viewed',
+      { page_type: 'search', entity_name: term || null, path: '/search' },
+      `page_viewed:search:${term ?? ''}`,
+    )
+  },
+  { immediate: true },
+)
+
+function handleAddToCart(cart: Cart, item?: CartMainItem) {
+  cartStore.setCart(cart)
+  trackAddToCart(searchSource.value, item, cart, null, languageStore.language)
+}
+
+function handleProductClick(product: Product) {
+  // Before the navigation, not after: `router.push` tears this view down, and
+  // the bus's queue is flushed on a timer that the unmount does not wait for.
+  trackSelectItem(searchSource.value, product, null, languageStore.language)
+  router.push(configuration.urls.getProductUrl(product, languageStore.language))
+}
+
+function handleClusterClick(cluster: Cluster) {
+  trackSelectItem(searchSource.value, cluster, null, languageStore.language)
+  router.push(configuration.urls.getClusterUrl(cluster, languageStore.language))
+}
 
 // ── ProductGrid callbacks ─────────────────────────────────────────────────────
 

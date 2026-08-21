@@ -483,6 +483,8 @@ import { useCompanyStore } from "@/stores/company";
 import { graphqlClient } from "@/lib/api";
 import { configuration, localizeHref } from "@/lib/config";
 import { useTranslations } from "@/lib/i18n/composable";
+import { track } from "@/lib/tracking/bus";
+import { cartItems as cartGa4Items, cartValue } from "@/lib/tracking/events";
 import { restoreManagerCart } from "@/lib/cartHelpers";
 import { isOnAccountMethod, activePspProvider, pspApiBase, pspStashKey } from "@/lib/payments";
 import { useCheckout } from "@propeller-commerce/propeller-v2-vue-ui";
@@ -731,13 +733,50 @@ watch(
 // method's (PWP-930) — the totals used to only refresh on Continue, which made
 // the grand total jump at step 4. CartPaymethods also fires this on mount to
 // report the cart's stored method; skip the mutation when nothing changed.
+// ── Checkout tracking (PWP-910) ──────────────────────────────────────────────
+//
+// `begin_checkout` once per CART, deliberately not per step transition: step 3
+// auto-advances when there is only one payment method, so keying on the step
+// would double-count exactly the carts that convert fastest.
+watch(
+  () => (cart.value as any)?.cartId as string | undefined,
+  (cartId) => {
+    if (!cartId) return;
+    track(
+      "begin_checkout",
+      {
+        // `cartValue` reads `totalGross` — the EX-VAT total in this SDK.
+        value: cartValue(cart.value as Cart | null),
+        item_count: (cart.value as any)?.items?.length ?? 0,
+        items: cartGa4Items(cart.value as Cart | null, languageStore.language),
+        coupon: (cart.value as any)?.actionCode ?? null,
+        is_quote_mode: isQuoteMode.value,
+      },
+      `begin_checkout:${cartId}`,
+    );
+    track("page_viewed", { page_type: "checkout" }, `page_viewed:checkout:${cartId}`);
+  },
+  { immediate: true },
+);
+
 async function handlePaymethodSelect(code: string) {
   selectedPayment.value = code;
   const c = cart.value as any;
   if (!c?.cartId || c.paymentData?.method === code) return;
   try {
     const updatedCart = await updateCartSettings(c.cartId, { paymentMethod: code });
-    if (updatedCart) cartStore.setCart(updatedCart);
+    if (updatedCart) {
+      cartStore.setCart(updatedCart);
+      track(
+        "add_payment_info",
+        {
+          payment_type: code,
+          value: cartValue(updatedCart),
+          items: cartGa4Items(updatedCart, languageStore.language),
+        },
+        `add_payment_info:${c.cartId}:${code}`,
+      );
+    }
   } catch (e) {
     // Non-fatal: the totals stay stale, but Continue re-sends the method.
     console.error("[checkout] persist payment method failed:", e);
@@ -766,6 +805,15 @@ async function handleStep3Continue() {
   if (updatedCart) {
     cartStore.setCart(updatedCart);
     currentStep.value = 4;
+    track(
+      "add_shipping_info",
+      {
+        shipping_tier: selectedCarrier.value ?? null,
+        value: cartValue(updatedCart),
+        items: cartGa4Items(updatedCart, languageStore.language),
+      },
+      `add_shipping_info:${(cart.value as any).cartId}:${selectedCarrier.value ?? ""}`,
+    );
   }
 }
 

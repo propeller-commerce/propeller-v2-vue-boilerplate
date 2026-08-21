@@ -87,6 +87,11 @@ function buildRoutes() {
         // The router's requiresAuth guard redirects direct/anonymous access to
         // /login; logging out while here navigates to '/' via AppHeader's logout.
         { path: 'quick-order', name: 'quick-order', meta: { requiresAuth: true }, component: () => import('@/views/QuickOrderView.vue') },
+        // Analytics dashboard (PWP-910). Client-rendered, noindex, and
+        // deliberately NOT behind requiresAuth: gating is a deploy-time
+        // decision the shop owner makes, and a `meta.requiresAuth` here would
+        // let any logged-in customer read every account's revenue.
+        { path: 'tracker', name: 'tracker', component: () => import('@/views/TrackerView.vue') },
 
         // ──────────────────────────────────────────────────────────────────
         // Legacy CSR shadow routes — pre-SSR copies of the four catalog
@@ -192,7 +197,11 @@ function registerGuards(router: Router): void {
       const auth = useAuthStore()
       if (!auth.isAuthenticated) {
         return {
-          path: localizeHref('/login', targetLang),
+          // The URL's own prefix wins over the store: a guard that redirected
+          // to the stored language would drop a visitor who deep-linked to
+          // /en/account onto the default-language login. `targetLang` was never
+          // declared here — a latent ReferenceError on the first guarded route.
+          path: localizeHref('/login', urlLang ?? language.language),
           query: { redirect: to.fullPath },
         }
       }

@@ -18,7 +18,7 @@
         :configuration="machineConfiguration"
         :cartId="cartStore.cartId || undefined"
         :onCartCreated="(cart: Cart) => cartStore.setCart(cart)"
-        :afterAddToCart="(cart: Cart) => cartStore.setCart(cart)"
+        :afterAddToCart="handleAddToCart"
         :onProductClick="onProductClick"
         :paginationLabels="paginationLabels"
         :filtersLabels="filtersLabels"
@@ -56,6 +56,9 @@ import {
   resolveInstallationIds,
 } from '@/lib/machines'
 import { useTranslations } from '@/lib/i18n/composable'
+import { track } from '@/lib/tracking/bus'
+import { trackAddToCart } from '@/lib/tracking/events'
+import { watch } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -75,6 +78,39 @@ const segments = computed<string[]>(() => {
 })
 // WP silently 404s past the last rewrite rule; be explicit.
 const tooDeep = computed(() => segments.value.length > MACHINE_MAX_DEPTH)
+
+// `machine_viewed` at the tree root, `spare_part_viewed` once the user has
+// drilled into a node — the DEPTH is the distinction, and only the second is a
+// parts-demand signal a rep can act on (PWP-910).
+watch(
+  segments,
+  (parts) => {
+    const name = parts.length > 1 ? 'propeller.spare_part_viewed' : 'propeller.machine_viewed'
+    track(
+      name,
+      {
+        machine_id: parts[0] ?? null,
+        node_id: parts[parts.length - 1] ?? null,
+        depth: parts.length,
+      },
+      `${name}:${parts.join('/') || 'root'}`,
+    )
+  },
+  { immediate: true },
+)
+
+function handleAddToCart(cart: Cart, item?: any) {
+  cartStore.setCart(cart)
+  // Source `machine` — a spare part added from a machine's parts tree is a
+  // different intent from the same SKU added off a category listing.
+  trackAddToCart(
+    { type: 'machine', name: segments.value.join('/') || null },
+    item,
+    cart,
+    null,
+    languageStore.language,
+  )
+}
 
 const source = computed(() => configuration.machines?.source)
 const sourceIds = computed(() =>

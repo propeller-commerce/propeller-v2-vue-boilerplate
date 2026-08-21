@@ -41,6 +41,7 @@ import type { AnyUser } from '@propeller-commerce/propeller-v2-vue-ui'
 import { FavoriteListDetails } from '@propeller-commerce/propeller-v2-vue-ui';
 import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useTranslations } from '@/lib/i18n/composable';
+import { track } from '@/lib/tracking/bus'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,6 +69,11 @@ async function handleItemDelete(itemId: string, itemType?: string) {
   } else {
     await removeFromList(listId, numericId, undefined)
   }
+  track(
+    'propeller.favorite_removed',
+    { list_id: Number(listId) || null, item_type: itemType ?? 'product', count: 1 },
+    `favorite_removed:${listId}:${itemId}:${Math.floor(Date.now() / 2000)}`,
+  )
   await authStore.refreshUser()
 }
 
@@ -80,6 +86,11 @@ async function handleItemsDelete(items: { id: string; type: 'product' | 'cluster
     listId,
     productIds.length ? productIds : undefined,
     clusterIds.length ? clusterIds : undefined,
+  )
+  track(
+    'propeller.favorite_removed',
+    { list_id: Number(listId) || null, count: items.length },
+    `favorite_removed:${listId}:bulk:${Math.floor(Date.now() / 2000)}`,
   )
   await authStore.refreshUser()
 }

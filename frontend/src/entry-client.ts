@@ -12,7 +12,8 @@ import './style.css'
 import { createApp } from './app'
 import { graphqlClient } from './lib/api'
 import { setCookie } from './lib/ssr'
-import { configuration } from './lib/config'
+import { channelId, configuration } from './lib/config'
+import { startTracking } from './lib/tracking/bootstrap'
 import { fetchActiveCart } from '@propeller-commerce/propeller-v2-vue-ui'
 import { useCartStore } from './stores/cart'
 import { useCompanyStore } from './stores/company'
@@ -89,4 +90,27 @@ router.isReady().then(() => {
   } else {
     cartStore.hydrateFromStorage()
   }
+
+  // 4. Analytics (PWP-910). LAST on purpose: the context it publishes carries
+  // the selected company and the resolved user, both of which the three
+  // reconciles above are what produce. Events fired before this point are
+  // buffered by the bus and flushed when the context lands, so nothing is lost
+  // by waiting — whereas starting earlier stamps an anonymous, company-less
+  // context on the first page of every session.
+  startTracking({
+    router,
+    channelId,
+    identity: () => {
+      const user = authStore.user as { contactId?: number; customerId?: number } | null
+      const contactId = user && 'contactId' in user ? (user.contactId ?? null) : null
+      const customerId = user && !('contactId' in user) ? (user.customerId ?? null) : null
+      return {
+        userMode: !user ? 'anonymous' : contactId != null ? 'b2b' : 'b2c',
+        contactId,
+        customerId,
+        companyId: companyStore.selectedCompany?.companyId ?? null,
+        language: useLanguageStore().language?.slice(0, 2).toUpperCase() ?? null,
+      }
+    },
+  })
 })

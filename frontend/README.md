@@ -46,6 +46,120 @@ For SSR: `useTranslations()` works in `entry-server.ts` because the router `befo
 
 <!-- chore: trigger a fresh CI build so the Mollie VITE_* build-time vars are baked into the bundle -->
 
+## Behaviour tracking (`/tracker`) and GA4
+
+The storefront emits its own event vocabulary on a tracking bus
+(`src/lib/tracking/`, PWP-910). Two subscribers read that one stream: a batching
+POST to `/api/track` (which writes MySQL) and a GA4 mapper. A tenant who wants
+Segment or Snowplow instead writes a third mapper against the same events —
+nothing else changes.
+
+Mirrors propeller-next's implementation event-for-event, so reports are
+comparable across all three storefronts.
+
+| Piece | Where |
+|---|---|
+| Framework-free core (taxonomy, queue, GA4 item mapping) | `src/lib/tracking/{types,taxonomy,tracker,batch,items}.ts` |
+| Browser facade + bootstrap | `src/lib/tracking/{bus,bootstrap,pageType}.ts` |
+| Typed emit helpers | `src/lib/tracking/events.ts` |
+| Ingest, metric queries, DDL | `src/server/tracking*.js` |
+| Schema installer | `scripts/tracking-init.mjs` |
+| Dashboard | `src/views/TrackerView.vue`, `src/components/tracker/` |
+
+### The analytics database
+
+**Optional.** With nothing configured the shop runs normally, `/api/track`
+answers 202 and `/tracker` says which of the three setup problems it is instead
+of showing empty charts.
+
+Nothing is created automatically — not at install, not at first boot: DDL at boot
+races across instances and needs production privileges the app account usually
+does not have. Point the `TRACKING_DB_*` variables in `.env` at a database (see
+`.env.example` for the URL / socket / TLS forms), then:
+
+```bash
+npm run tracking:init              # create the schema
+npm run tracking:init -- --dry-run # report what it would do, change nothing
+```
+
+Safe to run repeatedly, so it belongs in a deploy pipeline. It detects the engine
+and generates matching DDL — **MariaDB 10+, MySQL 5.6+, MySQL 8 and Cloud SQL**
+all work from the one command. Where there is no native JSON type `props` becomes
+`LONGTEXT`; where partitioning is disabled the table is created unpartitioned,
+which costs only the `DROP PARTITION` retention shortcut.
+
+MySQL DDL does not roll back, so the installer is **resumable** rather than
+transactional: every statement is `IF NOT EXISTS` and each completed migration is
+recorded in a `schema_migrations` ledger. Fix the problem, run it again, and it
+continues from where it stopped. If it cannot finish — most often because the
+account may not create databases, which is normal on Cloud SQL — it writes
+`tracking-schema.sql` and prints the grants the account actually holds. You can
+ask for that file up front from a machine with no route to the database at all:
+
+```bash
+npm run tracking:init -- --print-sql
+mysql -h <host> -u <user> -p < tracking-schema.sql
+```
+
+It writes the same ledger rows the installer would, so a later `tracking:init`
+**adopts** the result rather than repeating it.
+
+### Two things worth knowing before reading a report
+
+- **`value` is EX-VAT, with `tax` reported separately.** This SDK inverts the
+  usual naming — `gross` excludes VAT and `net` includes it — so the ex-VAT
+  figure is `total.gross` / `totalGross`. Matches the WordPress plugin.
+- **Cart quantity edits report the delta**, not the resulting line quantity:
+  raising a line 2 → 5 is `add_to_cart` with quantity 3.
+
+### GA4 / Google Tag Manager
+
+Off by default. With `VITE_USE_GA4=false` no script loads and no `dataLayer` is
+created — and because the flag is resolved at build time, a GA4-off build
+dead-code-eliminates the subscriber rather than shipping it dormant.
+
+```ini
+VITE_USE_GA4=false   # master switch
+VITE_GA4_KEY=        # G-XXXXXXXXXX — required when VITE_USE_GA4=true
+VITE_GTM_KEY=        # GTM-XXXXXXX — optional, and it CHANGES THE TRANSPORT
+```
+
+**The two transports are not interchangeable.** With `VITE_GTM_KEY` set we push
+`{event, ecommerce}` objects, which is what a container understands; without one
+we call `gtag('event', …)`, which is the only thing gtag.js understands. Sending
+the wrong one fails silently.
+
+**With a container, events only reach GA4 once a tag exists for them in GTM.**
+The property will otherwise show just Google's own automatic events while the
+storefront is pushing correctly. Build tags for the names in
+`src/lib/tracking/taxonomy.ts` — the GA4 names are those, with `propeller.`
+rewritten to `propeller_` (a dot is illegal in a GA4 event name).
+
+Verify with `npm run test:tracking`.
+
+### `/tracker` is ungated
+
+**Gate it before deploying anywhere shared.** It exposes every account's
+behaviour and revenue to anyone with the URL. It is `noindex` and client-only,
+which is not access control. Deliberately not behind the router's `requiresAuth`
+either — that would let any logged-in *customer* read it.
+
+### Changing the schema
+
+`src/server/trackingSchema.js` is the single source of truth. Migrations are
+append-only: an id that has shipped is frozen, because installs in the field have
+recorded it. Change an existing table with a new entry, never by editing an old
+one — the ledger stores a checksum per migration and warns when one was applied
+from different SQL than is now shipped.
+
+The server half is plain `.js` on purpose: `server.js` imports it statically and
+those imports bypass Vite entirely, so TypeScript, `import.meta.env` and `@/`
+aliases are all unavailable there. That is also why `src/server/trackingTaxonomy.js`
+duplicates the event allowlist — and why `taxonomy.test.ts` asserts the two copies
+are identical. Drift is silent in the worst direction: the ingest drops names it
+does not recognise, so an event added to one list and not the other simply never
+arrives.
+
 ## PunchOut (OCI + cXML)
 
 B2B e-procurement PunchOut, built on magic-token login and powered by
