@@ -39,22 +39,6 @@ export function createAppRouter(history?: RouterHistory): Router {
 function buildRoutes() {
   return [
     {
-      // The bare language prefix (`/en`) needs its own record with a REQUIRED
-      // `:lang` param. In the optional-prefix tree below, vue-router ranks the
-      // CMS catch-all (`/:lang?/:slug+`, two segments) above the home child
-      // (`/:lang?`, one segment), so `/en` matched cms-page with slug=['en'] —
-      // a 404 shell, and the `beforeEach` guard below then read lang='' and
-      // reset the store to the default language. Net effect: the language
-      // switcher looked dead from the homepage. A required param
-      // outranks the optional one, so this record wins for `/en` while
-      // `/en/<slug>` still falls through to the catch-all.
-      path: `/:lang(${langSegmentRegex})`,
-      component: () => import('@/components/layout/AppLayout.vue'),
-      children: [
-        { path: '', name: 'home-localized', meta: { ssrKey: 'home' }, component: () => import('@/views/HomeView.vue') },
-      ],
-    },
-    {
       // Optional language prefix. Default-language URLs (NL) stay unprefixed;
       // /en/... routes match this with params.lang = 'en'.
       path: `/:lang(${langSegmentRegex})?`,
@@ -161,6 +145,14 @@ function buildRoutes() {
     // A required (non-optional) `:lang` param outranks the catch-all and keeps
     // `params.lang`, which is what the guard reads. Its own name avoids the
     // duplicate-name warning; nothing navigates to 'home' by name.
+    //
+    // Registered EXACTLY ONCE. This record was duplicated verbatim at the top of
+    // the list, and `createRouter` adds routes one by one: adding a named route
+    // removes the earlier record with that name, which took the FIRST record's
+    // `home-localized` child away and left its parent behind with no children.
+    // `/en` then matched that childless parent and rendered AppLayout around an
+    // empty `<router-view>` — the shell, the header and the footer, and a `<main>`
+    // with nothing in it.
     {
       path: `/:lang(${langSegmentRegex})`,
       component: () => import('@/components/layout/AppLayout.vue'),

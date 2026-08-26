@@ -30,8 +30,17 @@ const URL_PATTERN = import.meta.env.VITE_URL_PATTERN || 'page/id/slug'
  * navigation. Keep this list in sync with the router's `:lang(...)` regex.
  */
 export const DEFAULT_LANGUAGE = (import.meta.env.VITE_DEFAULT_LANGUAGE || 'NL').toUpperCase()
-export const SUPPORTED_LANGUAGES = ['NL', 'EN'] as const
-export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
+/**
+ * Every language the shop ships. Hardcoding it meant a shop scaffolded with
+ * different locales still prefixed exactly `NL` and `EN`, so a locale it does
+ * carry got no prefix and one it doesn't got one. `VITE_LOCALES` is written by
+ * the scaffolder from `--locales`; the pair below is the boilerplate's own.
+ */
+export const SUPPORTED_LANGUAGES = ((import.meta.env.VITE_LOCALES || 'nl,en') as string)
+  .split(',')
+  .map((code) => code.trim().toUpperCase())
+  .filter(Boolean)
+export type SupportedLanguage = string
 
 /** Languages that get a URL prefix (everything except the default). */
 export const PREFIXED_LANGUAGES = SUPPORTED_LANGUAGES.filter((l) => l !== DEFAULT_LANGUAGE)

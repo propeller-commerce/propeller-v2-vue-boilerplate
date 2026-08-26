@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-08-26
+
+### Fixed
+
+- **`/en` rendered the shell around an empty `<main>`.** The localized-home
+  record was registered twice with the same name, and `createRouter` adds routes
+  one at a time: adding a named route removes the earlier record carrying that
+  name, which took the FIRST record's `home-localized` child away and left its
+  parent behind with no children. `/en` then matched that childless parent, so
+  the header and footer rendered around an empty `<router-view>` while `/` and
+  every deeper route (`/en/cart`) were fine. Registered once now.
+- **`SUPPORTED_LANGUAGES` was hardcoded `['NL','EN']`,** so a shop scaffolded
+  with other locales still prefixed exactly those two — a locale it shipped got
+  no prefix, and one it didn't got one. Derived from `VITE_LOCALES`, which the
+  scaffolder writes from `--locales`.
+
 ## [1.13.0] - 2026-08-21
 
 ### Added
