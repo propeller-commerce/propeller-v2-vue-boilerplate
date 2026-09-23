@@ -58,6 +58,7 @@ import {
   DEFAULT_LANGUAGE,
   configuration,
 } from './config'
+import { retypeTextFilters } from './listingParams'
 import { cms } from './cms'
 import { TAG_CMS, cmsPageTag, cmsArticleTag } from './cms/core'
 import type {
@@ -855,15 +856,29 @@ export async function fetchCategory(
   const tags = [tagFor('category'), tagFor('category', categoryId)]
   const services = withCacheTagsServices(infra, tags)
   return withAnonymousCache<Category | null>(infra, cacheKey, tags, async () => {
-    try {
-      const result = await services.category.getCategory({
+    const run = (input: CategoryProductSearchInput) =>
+      services.category.getCategory({
         categoryId,
         language: lang,
-        categoryProductSearchInput,
+        categoryProductSearchInput: input,
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
         imageSearchFilters: imageSearchFiltersGrid,
         imageVariantFilters: imageVariantFiltersMedium,
       })
+
+    try {
+      let result = await run(categoryProductSearchInput)
+      // The URL carries filter names and values but no attribute types, and the
+      // backend matches NOTHING when a type is wrong — no error, just an empty
+      // grid. Correct them against the facets we just got back and redo the query,
+      // but only when a type actually differed. See `retypeTextFilters` (PWP-992).
+      const retyped = retypeTextFilters(
+        categoryProductSearchInput.textFilters,
+        (result?.products as ProductsResponse | undefined)?.filters,
+      )
+      if (retyped) {
+        result = await run({ ...categoryProductSearchInput, textFilters: retyped })
+      }
       return result ? (toPlain(result) as Category) : null
     } catch (e) {
       if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
@@ -917,15 +932,29 @@ export async function fetchSearch(
   const tags = [tagFor('search')]
   const services = withCacheTagsServices(infra, tags)
   return withAnonymousCache<ProductsResponse | null>(infra, cacheKey, tags, async () => {
-    try {
-      const result = await services.category.getCategory({
+    const run = (input: CategoryProductSearchInput) =>
+      services.category.getCategory({
         categoryId: rootCategoryId,
         language: lang,
-        categoryProductSearchInput,
+        categoryProductSearchInput: input,
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
         imageSearchFilters: imageSearchFiltersGrid,
         imageVariantFilters: imageVariantFiltersMedium,
       })
+
+    try {
+      let result = await run(categoryProductSearchInput)
+      // The URL carries filter names and values but no attribute types, and the
+      // backend matches NOTHING when a type is wrong — no error, just an empty
+      // grid. Correct them against the facets we just got back and redo the query,
+      // but only when a type actually differed. See `retypeTextFilters` (PWP-992).
+      const retyped = retypeTextFilters(
+        categoryProductSearchInput.textFilters,
+        (result?.products as ProductsResponse | undefined)?.filters,
+      )
+      if (retyped) {
+        result = await run({ ...categoryProductSearchInput, textFilters: retyped })
+      }
       const products = result?.products as ProductsResponse | undefined
       return products ? (toPlain(products) as ProductsResponse) : null
     } catch (e) {

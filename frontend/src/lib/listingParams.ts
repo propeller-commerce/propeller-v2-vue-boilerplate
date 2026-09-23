@@ -10,7 +10,12 @@
  *     `sortOrder`, `availability` — handled explicitly, never a filter.
  */
 
-import { ProductSortField, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
+import {
+  ProductSortField,
+  SortOrder,
+  type AttributeType,
+  type ProductTextFilterInput,
+} from '@propeller-commerce/propeller-sdk-v2';
 import { type Availability, MIN_STOCK_THRESHOLD } from '@propeller-commerce/propeller-v2-core-ui';
 
 /** Reserved query keys — handled explicitly, never treated as a filter. */
@@ -196,4 +201,47 @@ export function buildListingSearchParams(
   if (listing.sortOrder !== defaultSortOrder) sp.set('sortOrder', String(listing.sortOrder));
   if (listing.term) sp.set('term', listing.term);
   return sp.toString();
+}
+
+/** The facet-list shape `retypeTextFilters` reads — a structural subset of the
+ *  SDK's `AttributeFilter`, so callers can pass the response array as-is. */
+interface FacetTypeSource {
+  type?: AttributeType | null
+  attributeDescription?: { name?: string | null; type?: AttributeType | null } | null
+}
+
+/**
+ * Correct the `type` on already-applied text filters against the facet list the
+ * backend returned, and hand back the corrected array — or `undefined` when
+ * every type already matched (the common case: nothing to redo).
+ *
+ * Attribute filters are typed (TEXT / ENUM / …) and the backend silently matches
+ * NOTHING when the type is wrong — no error, just zero results. The server
+ * builds its filters from the URL, which carries names and values but no types,
+ * so ENUM-backed facets server-rendered an empty listing on any refreshed,
+ * pasted or shared filtered URL. The client path never hit this: it resolves
+ * each type from the facet list it already holds.
+ *
+ * Facets come back correctly typed even on a zero-result response, so one
+ * corrected retry is enough and nothing extra is paid when the guess was right.
+ *
+ * Ported from propeller-next's lib/listingParams.ts — keep the three copies in
+ * step (PWP-992).
+ */
+export function retypeTextFilters(
+  applied: ProductTextFilterInput[] | undefined,
+  facets: readonly FacetTypeSource[] | undefined,
+): ProductTextFilterInput[] | undefined {
+  if (!applied?.length || !facets?.length) return undefined
+
+  let changed = false
+  const corrected = applied.map((filter) => {
+    const facet = facets.find((f) => f?.attributeDescription?.name === filter.name)
+    const real = facet?.type ?? facet?.attributeDescription?.type
+    if (!real || real === filter.type) return filter
+    changed = true
+    return { ...filter, type: real }
+  })
+
+  return changed ? corrected : undefined
 }
