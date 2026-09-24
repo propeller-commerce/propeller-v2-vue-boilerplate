@@ -4,8 +4,14 @@
       <button @click="router.back()" class="text-primary hover:underline text-sm">← {{ t.backToLists }}</button>
       <h1 class="text-3xl font-bold tracking-tight">{{ listName || t.loading }}</h1>
     </div>
+    <!-- Prices are scoped to the active company, and the component fetches on
+         mount — so remount on a company switch. `v-if` already holds this back
+         until the full user has loaded. -->
     <FavoriteListDetails
       v-if="authStore.user"
+      :key="companyStore.companyId ?? 'default'"
+      :user="authStore.user"
+      :companyId="companyStore.companyId ?? undefined"
       :labels="favoriteListDetailsLabels"
       :stockLabels="itemStockLabels"
       :addToCartLabels="addToCartLabels"
@@ -33,6 +39,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
+import { useCompanyStore } from '@/stores/company'
 import { usePriceStore } from '@/stores/price'
 import { graphqlClient } from '@/lib/api'
 import { configuration } from '@/lib/config'
@@ -47,6 +54,7 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+const companyStore = useCompanyStore()
 const priceStore = usePriceStore()
 const favoriteListDetailsLabels = useTranslations('FavoriteListDetails')
 const itemStockLabels = useTranslations('ItemStock')

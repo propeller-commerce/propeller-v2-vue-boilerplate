@@ -38,6 +38,8 @@ import {
   type SearchFieldsInput,
   type FilterAvailableAttributeInput,
   type ProductTextFilterInput,
+  type PriceCalculateProductInput,
+  type UserBulkPriceProductInput,
   type ProductPriceFilterInput,
   type ClusterConfigSetting,
   ProductStatus,
@@ -540,10 +542,44 @@ function resolveUserId(
  * `selected_company_id` cookie set by the consumer's company store.
  */
 function resolveCompanyId(infra: ServerInfra): number | undefined {
-  if (infra.selectedCompanyId !== undefined) return infra.selectedCompanyId
   const user = infra.user
   if (!user || !('contactId' in user)) return undefined
-  return (user as Contact).company?.companyId
+  const contact = user as Contact
+  // `selected_company_id` is a non-httpOnly cookie, so it is user-writable and
+  // can outlive the identity that set it. The API rejects a company the contact
+  // is not a member of ("Unauthorized use of companyId") — an error the fetch
+  // catch blocks do NOT swallow, so an unchecked value fails the page. Validate
+  // against the contact's companies and fall back to their default.
+  if (infra.selectedCompanyId !== undefined) {
+    const match = contact.companies?.items?.find(
+      (c) => c?.companyId === infra.selectedCompanyId,
+    )
+    if (match?.companyId !== undefined) return match.companyId
+  }
+  return contact.company?.companyId
+}
+
+/**
+ * Price scoping for a logged-in viewer: contact/customer plus the company they
+ * are acting for. Without it the backend prices for the bearer token's default
+ * company, so a contact who switched company saw their default company's prices
+ * while the cart charged the selected one's (PWP-1015).
+ *
+ * Returns `undefined` for anonymous visitors on purpose — they never reach this
+ * anyway (`withAnonymousCache` only caches when `infra.user` is null), and
+ * leaving their request bodies untouched keeps the cached shape stable.
+ */
+export function buildPriceInput(
+  infra: ServerInfra,
+): PriceCalculateProductInput | undefined {
+  const user = infra.user
+  if (!user) return undefined
+  const input: PriceCalculateProductInput = { taxZone: configuration.taxZone }
+  if ('contactId' in user) input.contactId = (user as Contact).contactId
+  else if ('customerId' in user) input.customerId = (user as Customer).customerId
+  const companyId = resolveCompanyId(infra)
+  if (companyId != null) input.companyId = companyId
+  return input
 }
 
 // ── Channel-derived anonymous defaults ───────────────────────────────────────
@@ -802,6 +838,7 @@ export async function fetchProduct(
   // `product:${id}` (surgical bust).
   const tags = [tagFor('product'), tagFor('product', productId)]
   const services = withCacheTagsServices(infra, tags)
+  const priceInput = buildPriceInput(infra)
   return withAnonymousCache<Product | null>(infra, cacheKey, tags, async () => {
     try {
       const result = await services.product.getProduct({
@@ -809,6 +846,14 @@ export async function fetchProduct(
         language: lang,
         imageSearchFilters,
         imageVariantFilters: imageVariantFiltersLarge,
+        // Logged-in only, so the anonymous body — and its cache entry — is
+        // unchanged. Anonymous renders never reach this branch anyway.
+        ...(priceInput
+          ? {
+              priceCalculateProductInput: priceInput,
+              userBulkPriceProductInput: priceInput as UserBulkPriceProductInput,
+            }
+          : {}),
       })
       return result ? (toPlain(result) as Product) : null
     } catch (e) {
@@ -855,6 +900,7 @@ export async function fetchCategory(
   const cacheKey = `category:${categoryId}:${lang}:${sortField}:${sortOrder}:${page}:${offset}:${stableListingKey(opts)}`
   const tags = [tagFor('category'), tagFor('category', categoryId)]
   const services = withCacheTagsServices(infra, tags)
+  const priceInput = buildPriceInput(infra)
   return withAnonymousCache<Category | null>(infra, cacheKey, tags, async () => {
     const run = (input: CategoryProductSearchInput) =>
       services.category.getCategory({
@@ -864,6 +910,8 @@ export async function fetchCategory(
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
         imageSearchFilters: imageSearchFiltersGrid,
         imageVariantFilters: imageVariantFiltersMedium,
+        // Logged-in only, so the anonymous body is unchanged.
+        ...(priceInput ? { priceCalculateProductInput: priceInput } : {}),
       })
 
     try {
@@ -931,6 +979,7 @@ export async function fetchSearch(
   // `tagFor('search')` busts all search-result entries at once.
   const tags = [tagFor('search')]
   const services = withCacheTagsServices(infra, tags)
+  const priceInput = buildPriceInput(infra)
   return withAnonymousCache<ProductsResponse | null>(infra, cacheKey, tags, async () => {
     const run = (input: CategoryProductSearchInput) =>
       services.category.getCategory({
@@ -940,6 +989,8 @@ export async function fetchSearch(
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
         imageSearchFilters: imageSearchFiltersGrid,
         imageVariantFilters: imageVariantFiltersMedium,
+        // Logged-in only, so the anonymous body is unchanged.
+        ...(priceInput ? { priceCalculateProductInput: priceInput } : {}),
       })
 
     try {
@@ -981,6 +1032,7 @@ export async function fetchCluster(
   const cacheKey = `cluster:${clusterId}:${lang}`
   const tags = [tagFor('cluster'), tagFor('cluster', clusterId)]
   const services = withCacheTagsServices(infra, tags)
+  const priceInput = buildPriceInput(infra)
   return withAnonymousCache<Cluster | null>(infra, cacheKey, tags, async () => {
     try {
       const clusterConfig = await services.cluster.getClusterConfig(clusterId)
@@ -998,6 +1050,13 @@ export async function fetchCluster(
             attributeDescription: { names: attributeNames },
           },
         }),
+        // Logged-in only, so the anonymous body is unchanged.
+        ...(priceInput
+          ? {
+              priceCalculateProductInput: priceInput,
+              userBulkPriceProductInput: priceInput as UserBulkPriceProductInput,
+            }
+          : {}),
       })
       return result ? (toPlain(result) as Cluster) : null
     } catch (e) {
