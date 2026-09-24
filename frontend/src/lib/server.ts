@@ -839,6 +839,8 @@ export async function fetchProduct(
   const tags = [tagFor('product'), tagFor('product', productId)]
   const services = withCacheTagsServices(infra, tags)
   const priceInput = buildPriceInput(infra)
+  const userId = await listingUserId(infra)
+  const companyId = resolveCompanyId(infra)
   return withAnonymousCache<Product | null>(infra, cacheKey, tags, async () => {
     try {
       const result = await services.product.getProduct({
@@ -846,6 +848,8 @@ export async function fetchProduct(
         language: lang,
         imageSearchFilters,
         imageVariantFilters: imageVariantFiltersLarge,
+        ...(userId !== undefined && { userId }),
+        ...(companyId !== undefined && { companyId }),
         // Logged-in only, so the anonymous body — and its cache entry — is
         // unchanged. Anonymous renders never reach this branch anyway.
         ...(priceInput
@@ -1033,6 +1037,8 @@ export async function fetchCluster(
   const tags = [tagFor('cluster'), tagFor('cluster', clusterId)]
   const services = withCacheTagsServices(infra, tags)
   const priceInput = buildPriceInput(infra)
+  const userId = await listingUserId(infra)
+  const companyId = resolveCompanyId(infra)
   return withAnonymousCache<Cluster | null>(infra, cacheKey, tags, async () => {
     try {
       const clusterConfig = await services.cluster.getClusterConfig(clusterId)
@@ -1045,6 +1051,8 @@ export async function fetchCluster(
         language: lang,
         imageSearchFilters: imageSearchFiltersGrid,
         imageVariantFilters: imageVariantFiltersLarge,
+        ...(userId !== undefined && { userId }),
+        ...(companyId !== undefined && { companyId }),
         ...(attributeNames.length > 0 && {
           attributeResultSearchInput: {
             attributeDescription: { names: attributeNames },
