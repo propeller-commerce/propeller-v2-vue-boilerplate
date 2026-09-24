@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-09-24
+
+Consumes vue-ui 0.22.0, and adds ESLint — this app had none.
+
+### Added
+
+- **ESLint.** `npm run lint` (and `lint:fix`). Flat config in
+  `frontend/eslint.config.mjs`: `eslint-plugin-vue` + `@vue/eslint-config-typescript`,
+  scoped to the rules that catch what the compiler cannot. `vue-tsc` never looks
+  inside a template, so an undefined component, a missing `:key` or a mutated
+  prop built green and failed at runtime.
+
+  The first run reports a backlog rather than a regression: **0 errors, 339
+  warnings** (223 `any`, 115 unused symbols). Warnings are deliberate — the
+  backlog is real but it is not a reason to fail a build that was green
+  yesterday. Two rules are off with the reason recorded in the config:
+  stylistic template formatting (it would rewrite most templates and bury the
+  real findings) and `vue/no-deprecated-filter`, which reads the `|` in a
+  TypeScript union assertion as a Vue 2 filter pipe and so is false positives
+  only.
+
+- `Machines` dictionary keys `quantityInMachine`, `searchParts` and
+  `machineNotFound` (en + nl).
+
+### Fixed
+
+- **"Qty in machine" and "Search parts…" showed in English on a Dutch shop.**
+  The package read them from `toolbarLabels`, so they belonged to no dictionary
+  anyone would think to translate. vue-ui 0.22.0 moves them to
+  `machineCardLabels`, which this app already passes. (PWP-995a)
+- **A machine listed in one language now opens.** `MachinesView` passes the new
+  `machineLanguages`, built from the generated locale registry, so a slug
+  authored only in NL resolves even though the tree language is EN. (PWP-993)
+- **Prices follow the VAT setting again.** Carried in from vue-ui 0.22.0: an
+  absent boolean prop read as `false` rather than "not given", so
+  `<PropellerProvider includeTax>` was ignored and every price rendered excl.
+  VAT. Also restores the machine grid's stock/price/add-to-cart defaults and
+  orderlist scoping.
+
 ## [1.16.0] - 2026-09-23
 
 Consumes SDK 0.17.0 and vue-ui 0.20.0 — spare-parts machines with no slug in
