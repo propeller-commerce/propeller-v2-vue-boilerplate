@@ -120,7 +120,11 @@ const sourceIds = computed(() =>
 const basePath = computed(() => localizeHref('/machines', languageStore.language))
 
 const listing = computed<MachineListingState>(() => ({
-  ...parseListingParams(route.query as Record<string, unknown>, MACHINE_SORT_FIELD_DEFAULT),
+  ...parseListingParams(
+    route.query as Record<string, unknown>,
+    MACHINE_SORT_FIELD_DEFAULT,
+    MACHINE_SORT_ORDER_DEFAULT,
+  ),
   term: (route.query.term as string) ?? '',
 }))
 

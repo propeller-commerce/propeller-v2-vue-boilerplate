@@ -143,10 +143,17 @@ function readScalarQuery(query: Record<string, any>, key: string): string | unde
  * Parse a route query into typed listing state — the fuller sibling of
  * `parseFiltersFromQuery`, adding page/offset/sort/price. Mirrors
  * propeller-next/lib/listingParams.ts so the machines view URL shape matches.
+ *
+ * `defaultSortOrder` must match the one given to `buildListingSearchParams`:
+ * the writer omits the param when it equals the default, so a reader
+ * defaulting to something else parses the written URL back as the wrong
+ * order — with DESC hardcoded here, an ASC-defaulted listing could never be
+ * sorted ascending.
  */
 export function parseListingParams(
   query: Record<string, any>,
   defaultSortField: ProductSortField,
+  defaultSortOrder: SortOrder = SortOrder.DESC,
 ): ListingParams {
   const filters = parseFiltersFromQuery(query);
   const minRaw = readScalarQuery(query, 'minPrice');
@@ -156,7 +163,7 @@ export function parseListingParams(
     page: Math.max(1, parseInt(readScalarQuery(query, 'page') || '1', 10) || 1),
     offset: parseInt(readScalarQuery(query, 'offset') || '12', 10) || 12,
     sortField: (readScalarQuery(query, 'sortField') as ProductSortField) || defaultSortField,
-    sortOrder: (readScalarQuery(query, 'sortOrder') as SortOrder) || SortOrder.DESC,
+    sortOrder: (readScalarQuery(query, 'sortOrder') as SortOrder) || defaultSortOrder,
     minPrice: minRaw ? parseFloat(minRaw) : undefined,
     maxPrice: maxRaw ? parseFloat(maxRaw) : undefined,
     filters,
