@@ -21,6 +21,10 @@ import { orderEditorGraphqlClient } from '@/lib/api'
 import { useTranslations } from '@/lib/i18n/composable'
 import { PurchaseAuthorizationConfigurator } from '@propeller-commerce/propeller-v2-vue-ui';
 import { track } from '@/lib/tracking/bus'
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.accountAuthorizationSettings });
 
 /**
  * Who may approve what, and up to which amount — a config change here silently

@@ -35,6 +35,10 @@ import { channelId, localizeHref } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable'
 import { orderFilterFromQuery, orderFilterToQuery, type OrderFilterForm } from '@/lib/orderFilters'
 import { OrderList } from '@propeller-commerce/propeller-v2-vue-ui';
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.accountQuotes });
 
 const router = useRouter()
 const route = useRoute()

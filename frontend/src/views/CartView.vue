@@ -102,6 +102,10 @@ import { track } from '@/lib/tracking/bus'
 // `cartItems` is already taken in this file by the template's own computed —
 // alias rather than rename the template binding.
 import { cartItems as cartGa4Items, cartValue, trackCartDiff } from '@/lib/tracking/events'
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.cart });
 
 const t = useTranslations('CartPage');
 const cartItemLabels = useTranslations('CartItem');

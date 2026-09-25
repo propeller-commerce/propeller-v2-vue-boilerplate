@@ -42,6 +42,10 @@ import { useTranslations } from '@/lib/i18n/composable'
 import { parseQuickOrderXlsx } from '@/lib/parseQuickOrderXlsx'
 import { track } from '@/lib/tracking/bus'
 import { cartItems } from '@/lib/tracking/events'
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.quickOrder });
 
 const cartStore = useCartStore()
 const companyStore = useCompanyStore()

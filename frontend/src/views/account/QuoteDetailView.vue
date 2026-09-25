@@ -183,6 +183,10 @@ import { useOrders } from "@propeller-commerce/propeller-v2-vue-ui";
 import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 import { OrderBonusItems, OrderItemCard, OrderSummary, OrderTotals, QuoteActions } from '@propeller-commerce/propeller-v2-vue-ui';
 import { getCountries } from "@/composables/shared/utils/countries";
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.accountQuoteDetail });
 
 // COUNTRIES imported from shared utils
 const route = useRoute();

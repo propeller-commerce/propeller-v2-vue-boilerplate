@@ -137,6 +137,10 @@ import type { Company } from '@propeller-commerce/propeller-sdk-v2'
 import { getCountries } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';
 import { channelId, localizeHref } from '@/lib/config'
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.account });
 
 const DASHBOARD_LIMIT = 3
 

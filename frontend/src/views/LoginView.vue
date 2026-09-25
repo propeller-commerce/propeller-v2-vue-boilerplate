@@ -24,6 +24,10 @@ import { localizeHref } from '@/lib/config'
 import { LoginForm } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 import { useAfterLogin } from '@/composables/useAfterLogin'
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.login });
 
 const router = useRouter()
 const route = useRoute()

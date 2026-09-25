@@ -147,6 +147,10 @@ import { useTranslations } from '@/lib/i18n/composable';
 import { track } from '@/lib/tracking/bus';
 import { orderItems } from '@/lib/tracking/events';
 import { getCountries } from "@/composables/shared/utils/countries";
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.accountOrderDetail });
 
 // COUNTRIES imported from shared utils
 const orderSummaryLabels = useTranslations('OrderSummary');

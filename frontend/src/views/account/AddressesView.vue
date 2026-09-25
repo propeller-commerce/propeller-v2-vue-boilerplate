@@ -129,6 +129,10 @@ import { getCountries } from "@/composables/shared/utils/countries";
 import { useTranslations } from '@/lib/i18n/composable';
 import { track } from '@/lib/tracking/bus';
 import type { EventName } from '@/lib/tracking/taxonomy';
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.accountAddresses });
 
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()

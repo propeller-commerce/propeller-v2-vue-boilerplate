@@ -49,6 +49,10 @@ import { FavoriteListDetails } from '@propeller-commerce/propeller-v2-vue-ui';
 import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2'
 import { useTranslations } from '@/lib/i18n/composable';
 import { track } from '@/lib/tracking/bus'
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.accountFavoriteDetail });
 
 const route = useRoute()
 const router = useRouter()

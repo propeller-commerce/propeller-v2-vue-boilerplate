@@ -19,6 +19,10 @@ import { graphqlClient } from '@/lib/api'
 import { ForgotPassword } from '@propeller-commerce/propeller-v2-vue-ui';
 import { localizeHref } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable';
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.forgotPassword });
 
 const router = useRouter()
 const languageStore = useLanguageStore()

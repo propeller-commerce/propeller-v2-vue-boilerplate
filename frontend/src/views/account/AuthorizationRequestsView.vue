@@ -24,6 +24,10 @@ import { graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { useTranslations } from '@/lib/i18n/composable'
 import { PurchaseAuthorizationRequests } from '@propeller-commerce/propeller-v2-vue-ui';
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.accountAuthorizationRequests });
 
 const router = useRouter()
 const authStore = useAuthStore()

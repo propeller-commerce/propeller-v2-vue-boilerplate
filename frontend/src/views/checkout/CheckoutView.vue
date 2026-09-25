@@ -492,6 +492,10 @@ import type { AnyUser } from "@propeller-commerce/propeller-v2-vue-ui";
 
 import { AddressCard, AddressSelector, CartCarriers, CartOverview, CartPaymethods, CartSummary, DeliveryDate, ItemsOverview } from '@propeller-commerce/propeller-v2-vue-ui';
 import { getCountries } from "@/composables/shared/utils/countries";
+import { useHead } from '@unhead/vue';
+
+const pageTitles = useTranslations('PageTitles');
+useHead({ title: () => pageTitles.value.checkout });
 
 const addressCardLabels = useTranslations('AddressCard');
 const addressSelectorLabels = useTranslations('AddressSelector');
