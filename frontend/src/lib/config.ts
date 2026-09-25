@@ -68,6 +68,15 @@ export const baseCategoryId: number | undefined = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
 })()
 export const menuDepth = parseInt(import.meta.env.VITE_MENU_DEPTH || '3', 10)
+// Product ids for the home page's featured slider. Empty = no featured block:
+// ids are tenant-specific, so a fresh scaffold ships none rather than another
+// tenant's (which render as "no products found").
+export const featuredProductIds: number[] = (
+  (import.meta.env.VITE_FEATURED_PRODUCT_IDS as string | undefined) || ''
+)
+  .split(',')
+  .map((s) => parseInt(s.trim(), 10))
+  .filter((n) => Number.isFinite(n) && n > 0)
 // Set VITE_CHANNEL_ID per environment to the channel orders/quotes are placed
 // on. The account order/quote lists filter by `channelIds: [channelId]`, so a
 // wrong value silently returns zero results.

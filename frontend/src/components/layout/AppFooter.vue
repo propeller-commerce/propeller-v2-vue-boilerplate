@@ -27,7 +27,6 @@
             <ul class="space-y-3 text-sm text-slate-400">
               <li><router-link :to="localizeHref('/', languageStore.language)" class="hover:text-white transition-colors">{{ t.allProducts }}</router-link></li>
               <li><router-link :to="localizeHref('/', languageStore.language)" class="hover:text-white transition-colors">{{ t.featured }}</router-link></li>
-              <li><router-link :to="localizeHref('/new-arrivals', languageStore.language)" class="hover:text-white transition-colors">{{ t.newArrivals }}</router-link></li>
             </ul>
           </div>
 

@@ -463,12 +463,10 @@ const categoriesMenuLabel = computed(() => headerLabels.value.browseCategories)
 const isContact = computed(() => !!(authStore.user && 'contactId' in authStore.user))
 // Quick order is available to any signed-in user (contact OR customer).
 const isLoggedIn = computed(() => !!(authStore.isAuthenticated && authStore.user))
+// Only routes this boilerplate actually ships. Campaign links (new arrivals,
+// sale, ...) belong to a shop's own nav once it has pages for them.
 const navLinks = computed(() => {
-  const links = [
-    { label: headerLabels.value.newArrivals, url: '/new-arrivals', highlight: false },
-    { label: headerLabels.value.bestSellers, url: '/best-sellers', highlight: false },
-    { label: headerLabels.value.sale, url: '/sale', highlight: true },
-  ]
+  const links: { label: string; url: string; highlight: boolean }[] = []
   if (isLoggedIn.value) {
     links.unshift({ label: headerLabels.value.quickOrder || 'Quick order', url: '/quick-order', highlight: false })
   }

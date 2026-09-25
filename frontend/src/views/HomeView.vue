@@ -25,7 +25,8 @@
       </div>
 
       <ProductSlider
-        :productIds="[140, 64, 1382, 142, 146, 145]"
+        v-if="featuredProductIds.length > 0"
+        :productIds="featuredProductIds"
         :taxZone="configuration.taxZone"
         :cartId="cartStore.cartId || undefined"
         :createCart="true"
@@ -77,7 +78,7 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { useCompanyStore } from "@/stores/company";
 import { graphqlClient, productService } from "@/lib/api";
-import { configuration, localizeHref } from "@/lib/config";
+import { configuration, localizeHref, featuredProductIds } from "@/lib/config";
 import { CmsPageRenderer } from "@propeller-commerce/propeller-v2-cms-vue";
 import PreprTrack from "@/components/cms/PreprTrack.vue";
 import { cmsBlockRenderers } from "@/components/cms/blockRenderers";
