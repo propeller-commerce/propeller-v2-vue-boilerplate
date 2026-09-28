@@ -26,6 +26,7 @@ import {
   isOnAccountMethod,
 } from './src/server/mollie.js'
 import { getMspProvider, isMspEnabled } from './src/server/msp.js'
+import { priceRequestHandler } from './src/server/priceRequest.js'
 import { ingestBatch, visitorCookie, VISITOR_COOKIE } from './src/server/trackingIngest.js'
 import { isTrackingConfigured, classifyDbError, STATUS_HINTS, todayLocal, addDays } from './src/server/tracking.js'
 import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS } from './src/server/trackingQueries.js'
@@ -1130,6 +1131,10 @@ async function createServer() {
   // more privileged key, so leaving it unthrottled while guarding
   // `/api/graphql` would just move the open relay one path over.
   app.use(['/api/graphql', '/api/order-editor'], rateLimitProxy)
+
+  // Quoted-price products are collected client-side and sent from here, so
+  // SMTP credentials stay server-side.
+  app.post('/api/price-request', express.json({ limit: '64kb' }), priceRequestHandler)
 
   app.post('/api/graphql', graphqlCachedHandler())
   app.use(
