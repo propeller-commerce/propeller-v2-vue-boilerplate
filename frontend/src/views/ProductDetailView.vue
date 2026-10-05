@@ -199,6 +199,7 @@ import { useCartStore } from "@/stores/cart";
 import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
+import { useMenuStore } from "@/stores/menu";
 import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient, productService } from "@/lib/api";
 import {
@@ -217,7 +218,9 @@ import {
   type Contact,
   type Customer,
   type Price,
+  type PriceCalculateProductInput,
   type Product,
+  type UserBulkPriceProductInput,
 } from "@propeller-commerce/propeller-sdk-v2";
 
 import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs, RequestPriceButton, isPriceOnRequest, usePriceRequest } from '@propeller-commerce/propeller-v2-vue-ui';
@@ -277,6 +280,7 @@ const cartStore = useCartStore();
 const companyStore = useCompanyStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
+const menuStore = useMenuStore();
 
 // SSR seed: the route's prefetch loader fetched the product server-side and
 // stashed it. Seeding `product` here means the whole detail block — gallery,
@@ -398,11 +402,47 @@ useHead({
   ),
 });
 
+/**
+ * Company the viewer is acting for, validated against their own companies —
+ * the selection lives in user-writable storage and the API rejects a company
+ * the contact isn't a member of ("Unauthorized use of companyId").
+ * Mirrors `resolveCompanyId` in lib/server.ts.
+ */
+function resolveCompanyId(): number | undefined {
+  const u = authStore.user as Contact | null;
+  if (!u || !('contactId' in u)) return undefined;
+  const selId = companyStore.companyId;
+  if (selId != null) {
+    const match = u.companies?.items?.find((c) => c?.companyId === selId);
+    if (match?.companyId !== undefined) return match.companyId;
+  }
+  return u.company?.companyId;
+}
+
 async function loadProduct() {
   loading.value = true;
   error.value = null;
   try {
     const productId = parseInt(route.params.productId as string);
+    // Scope exactly as the SSR fetch does, or this request prices for the
+    // contact's default company and skips assortment filtering — overwriting
+    // the correct server-rendered product (PWP-1015).
+    const user = authStore.user as Contact | Customer | null;
+    const companyId = resolveCompanyId();
+    const userId = user
+      ? ('contactId' in user
+          ? (user as Contact).contactId
+          : (user as Customer).customerId)
+      : menuStore.anonymousUserId ?? undefined;
+    const priceInput: PriceCalculateProductInput | undefined = user
+      ? {
+          taxZone: configuration.taxZone,
+          ...('contactId' in user
+            ? { contactId: (user as Contact).contactId }
+            : { customerId: (user as Customer).customerId }),
+          ...(companyId != null && { companyId }),
+        }
+      : undefined;
     const result = await productService.getProduct({
       productId,
       language: languageStore.language,
@@ -411,6 +451,12 @@ async function loadProduct() {
       // the first one and the gallery would render a single thumbnail.
       imageSearchFilters,
       imageVariantFilters: imageVariantFiltersLarge,
+      ...(userId !== undefined && { userId }),
+      ...(companyId !== undefined && { companyId }),
+      ...(priceInput && {
+        priceCalculateProductInput: priceInput,
+        userBulkPriceProductInput: priceInput as UserBulkPriceProductInput,
+      }),
     });
     product.value = result || null;
     if (!result) error.value = "Product not found";
@@ -488,6 +534,17 @@ watch(
   () => route.params.productId,
   (id, prev) => {
     if (id !== prev) loadProduct();
+  },
+);
+
+// Prices and assortment are company-scoped, so a switch while on the PDP has
+// to re-ask. `null -> id` is login hydration settling, which the SSR render
+// already covered — only a switch between two real companies refetches.
+watch(
+  () => companyStore.companyId,
+  (id, prev) => {
+    if (id == null || prev == null || id === prev) return;
+    loadProduct();
   },
 );
 </script>

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-10-05
+
+### Fixed
+
+- **The product page prices for the selected company and respects the
+  assortment.** The client-side `loadProduct()` sent no
+  `priceCalculateProductInput`, no `userId` and no `companyId`, while the SSR
+  fetch sent all three. The browser request therefore asked a
+  differently-scoped question and won: a contact in two companies saw the
+  server render the selected company's price and then be replaced by their
+  default company's a moment later, and a product outside the company's
+  orderlist rendered empty and then loaded in full with price and add to cart.
+  The client fetch now mirrors the server's scoping, validating the selected
+  company against the contact's own companies first — the selection lives in
+  user-writable storage and the API rejects a company the contact is not a
+  member of.
+- **Switching company on the product page re-fetches it.** Prices and
+  assortment are company-scoped but nothing watched the selection, so a switch
+  left the previous company's product on screen.
+
+### Changed
+
+- **Pin `propeller-v2-vue-ui` 0.28.0** (core-ui 0.11.0). Client-side listings
+  and `<ProductSlider>` stop ignoring the company's orderlist, cart quantity
+  steppers keep the line on the order grid, and add to cart recovers when the
+  remembered cart no longer exists.
+
 ## [1.18.0] - 2026-10-05
 
 ### Fixed
