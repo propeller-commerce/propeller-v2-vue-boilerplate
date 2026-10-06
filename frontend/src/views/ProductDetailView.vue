@@ -52,6 +52,7 @@
               :price="product.price as SDKProductPrice"
               :includeTax="priceStore.includeTax"
               :labels="productPriceLabels"
+              :priceOnRequest="priceOnRequest"
             />
 
             <div

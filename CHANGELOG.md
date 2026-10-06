@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-10-06
+
+### Fixed
+
+- **The product page shows the quote label instead of an amount for
+  price-on-request products.** `ProductPrice` has a `priceOnRequest` prop and
+  the page already resolved the flag for the request button, but never passed
+  it — so a quoted product rendered whatever sat in `price.gross`/`price.net`,
+  almost always € 0,00, beside a working "Prijs aanvragen" button.
+- **The cart line's delete button is named in the page language.** The button
+  carries an `aria-label`, but `deleteLabel` was missing from both
+  dictionaries, so assistive technology announced the English fallback on a
+  Dutch shop.
+- **Quick order names a price-on-request SKU in the page language.** The
+  `priceOnRequest` notice had no key in either dictionary.
+- **The checkout review maps `INVOICE_NET` to a readable name.** The payment
+  dictionary covered the `on_account` spellings only, so other codes fell
+  through to the raw enum.
+
+### Changed
+
+- **Pin `propeller-v2-vue-ui` 0.29.0.** The product heading now follows the
+  page language instead of falling back to Dutch, `OrderItemCard`'s
+  development warnings fire once per process rather than once per line, and
+  `SearchBar` resolves its placeholder from `labels`.
+
 ## [1.19.0] - 2026-10-05
 
 ### Fixed
