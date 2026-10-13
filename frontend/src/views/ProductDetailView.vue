@@ -8,6 +8,23 @@
         ></div>
       </div>
 
+      <!-- Not found — also covers a product outside the visitor's assortment,
+           so this must never echo the resolver's message. -->
+      <div v-else-if="notFound" class="text-center py-24">
+        <h1 class="text-3xl font-bold text-foreground mb-4">
+          {{ errorLabels.notFoundTitle }}
+        </h1>
+        <p class="text-muted-foreground mb-6">
+          {{ errorLabels.notFoundMessage }}
+        </p>
+        <button
+          @click="router.back()"
+          class="text-primary hover:underline"
+        >
+          {{ t.goBack }}
+        </button>
+      </div>
+
       <!-- Error -->
       <div v-else-if="error" class="text-center py-24 text-destructive">
         <p>{{ error }}</p>
@@ -233,6 +250,7 @@ import { trackPreprEvent } from '@/lib/preprEvent';
 
 const t = useTranslations('ProductDetail');
 const breadcrumbsLabels = useTranslations('Breadcrumbs');
+const errorLabels = useTranslations('ErrorPages');
 const productGalleryLabels = useTranslations('ProductGallery');
 const productPriceLabels = useTranslations('ProductPrice');
 const productBulkPricesLabels = useTranslations('ProductBulkPrices');
@@ -298,6 +316,13 @@ const product = ref<Product | null>(seededProduct);
 // seed (client-side nav) `onMounted` fetches and the spinner shows meanwhile.
 const loading = ref(!seededProduct);
 const error = ref<string | null>(null);
+const notFound = ref(false);
+
+/** A product the visitor may not see resolves to null or a not-found error. */
+function isProductNotFound(e: unknown): boolean {
+  const message = (e as { message?: string } | null)?.message ?? '';
+  return /not found|PRODUCT_NOT_FOUND/i.test(message);
+}
 
 const images = computed(
   () =>
@@ -423,6 +448,7 @@ function resolveCompanyId(): number | undefined {
 async function loadProduct() {
   loading.value = true;
   error.value = null;
+  notFound.value = false;
   try {
     const productId = parseInt(route.params.productId as string);
     // Scope exactly as the SSR fetch does, or this request prices for the
@@ -460,9 +486,13 @@ async function loadProduct() {
       }),
     });
     product.value = result || null;
-    if (!result) error.value = "Product not found";
+    if (!result) notFound.value = true;
   } catch (e: any) {
-    error.value = e?.message || "Failed to load product";
+    // A product outside the assortment throws rather than resolving to null,
+    // so treat it as not-found: the raw resolver message names a product the
+    // visitor may not see (PWP-1015).
+    if (isProductNotFound(e)) notFound.value = true;
+    else error.value = errorLabels.value.genericErrorMessage;
   } finally {
     loading.value = false;
   }

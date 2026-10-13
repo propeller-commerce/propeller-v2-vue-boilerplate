@@ -145,6 +145,10 @@ export async function prefetchProduct(
   const product = await fetchProduct(infra, productId, lang)
   if (product) {
     useSsrCatalogStore().setSeed(route.fullPath, { kind: 'product', data: product })
+  } else {
+    // Also covers a product outside the visitor's assortment, which resolves
+    // to null — without this the route renders 200 with no product.
+    ctx.status = 404
   }
 }
 
@@ -321,5 +325,7 @@ export async function prefetchCluster(
   const cluster = await fetchCluster(infra, clusterId, lang)
   if (cluster) {
     useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cluster', data: cluster })
+  } else {
+    ctx.status = 404
   }
 }

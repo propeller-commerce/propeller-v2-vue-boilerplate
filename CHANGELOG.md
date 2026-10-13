@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.1] - 2026-10-13
+
+### Fixed
+
+- **A product page for a record outside the visitor's assortment answered
+  HTTP 200 and printed the resolver's message.** The client fetch surfaced
+  `e.message` directly, so the page rendered "GraphQL operation failed
+  (product): Product with ID … not found" — naming a product the visitor is
+  not allowed to see. A missing or out-of-assortment product now renders the
+  translated not-found state, and only genuine failures show an error.
+- **SSR rendered 200 for those URLs.** `prefetchProduct` seeded nothing and let
+  the route fall through with a matched status, so a direct link returned 200
+  with an empty page. It now sets a 404, as the CMS loader already did.
+  `prefetchCluster` had the same gap.
+
 ## [1.21.0] - 2026-10-13
 
 ### Fixed
