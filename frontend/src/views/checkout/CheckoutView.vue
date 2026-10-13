@@ -421,6 +421,7 @@
                       handlePlaceOrder(reference, notes)
                   "
                   :labels="cartOverviewLabels"
+                  :paymethodLabels="paymethodNames"
                 />
               </template>
             </div>

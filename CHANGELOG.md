@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-10-13
+
+### Fixed
+
+- **The checkout review showed the raw payment code instead of the method
+  name.** `CartOverview` was never given `paymethodLabels`, so it had no
+  dictionary to resolve the code against — step 3 looked correct only because
+  `CartPaymethods` receives the labels separately.
+- **Bank transfer showed a raw payment code.** The payment-name dictionary had
+  no `bank_transfer` entry; added under every spelling the lower-cased code can
+  arrive in.
+- **The authorization-request detail now shows a breakdown that adds up**
+  (via vue-ui 0.30.0) — subtotal, discount, transaction costs, shipping and the
+  per-level VAT rows. Adds the `subtotal`, `discount`, `transactionCosts`,
+  `shippingCosts` and `vat` label keys.
+- **Cart quantity steppers no longer move the wrong way** (via vue-ui 0.30.0)
+  for a quantity that is off the `min + n*step` grid.
+
+### Changed
+
+- vue-ui `^0.29.0` → `^0.30.0` (core-ui 0.12.0 transitively).
+
 ## [1.20.0] - 2026-10-06
 
 ### Fixed
