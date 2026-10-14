@@ -36,5 +36,6 @@
   "submitButton": "Account aanmaken",
   "successMessage": "Uw account is succesvol aangemaakt.",
   "userTypeLabel": "Accounttype",
-  "vatNumber": "BTW-nummer"
+  "vatNumber": "BTW-nummer",
+  "pageTitle": "Account aanmaken"
 }

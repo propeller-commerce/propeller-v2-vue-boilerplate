@@ -105,10 +105,20 @@
               :labels="itemStockLabels"
             />
 
+            <!-- Semi-closed and not logged in: no quantity field and no
+                 add-to-cart, or an anonymous visitor can order at a price the
+                 page refuses to show them (PWP-1051). -->
+            <div v-if="hideForAnonymous" class="mt-4">
+              <LoginToOrderButton
+                :labels="addToCartLabels"
+                :onLoginClick="() => router.push(localizeHref('/login', languageStore.language))"
+              />
+            </div>
+
             <!-- Orderable first, then the display mode: a non-orderable
                  product gets no control, and a quoted price replaces
                  add-to-cart rather than joining it. -->
-            <div v-if="priceOnRequest && product.orderable !== 'N'" class="mt-4">
+            <div v-else-if="priceOnRequest && product.orderable !== 'N'" class="mt-4">
               <RequestPriceButton
                 :labels="priceRequestLabels"
                 :isAuthenticated="!!authStore.user"
@@ -241,7 +251,7 @@ import {
   type UserBulkPriceProductInput,
 } from "@propeller-commerce/propeller-sdk-v2";
 
-import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs, RequestPriceButton, isPriceOnRequest, usePriceRequest } from '@propeller-commerce/propeller-v2-vue-ui';
+import { AddToCart, AddToFavorite, Breadcrumbs, ItemStock, LoginToOrderButton, ProductBulkPrices, ProductBundles, ProductGallery, ProductInfo, ProductJsonLd, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs, RequestPriceButton, isPriceOnRequest, usePriceRequest } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 import { track } from '@/lib/tracking/bus'
 import { itemOptions, trackAddToCart, trackFavoriteChange } from '@/lib/tracking/events'
@@ -259,6 +269,11 @@ const addToCartLabels = useTranslations('AddToCart');
 const priceRequestLabels = useTranslations('PriceRequest');
 const priceRequest = usePriceRequest();
 const priceOnRequest = computed<boolean>(() => isPriceOnRequest(product.value as never));
+
+/** Semi-closed shop, nobody logged in — the same gate the cards already apply. */
+const hideForAnonymous = computed<boolean>(() =>
+  isContentHidden(portalMode, authStore.user as never, authStore.isAuthenticated),
+);
 
 /** Add to the quote list, then show it. */
 function handleRequestPrice(): void {

@@ -10,5 +10,6 @@
   "registerLink": "Account aanmaken",
   "registerText": "Nog geen account?",
   "invalidCredentials": "De ingevoerde gegevens komen niet overeen met onze administratie. Probeer het opnieuw.",
-  "submitButton": "Inloggen"
+  "submitButton": "Inloggen",
+  "pageTitle": "Welkom terug"
 }

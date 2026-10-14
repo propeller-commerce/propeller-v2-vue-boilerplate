@@ -138,6 +138,7 @@
               v-if="productsResponse"
               :products="productsResponse as ProductsResponse"
               :onPageChange="handleGridPaginationPageChange"
+              :pageHref="pageHref"
               variant="full"
               :labels="gridPaginationLabels"
             />
@@ -299,13 +300,11 @@ const viewMode = ref<"grid" | "list">("list");
 // Sync local state to URL — uses router.push so each navigation enters history
 // and the browser back button can restore the filtered view after visiting a product.
 let suppressQuerySync = false;
-function syncStateToUrl() {
-  // First user-driven change → hand control back to ProductGrid's internal
-  // fetcher. From this point on the SSR-seeded items are stale (the URL no
-  // longer matches them) and the grid must re-query.
-  markUserInteracted();
+/** The listing query for the current state, with `page` optionally overridden. */
+function buildListingQuery(pageOverride?: number): Record<string, string> {
+  const page = pageOverride ?? currentPage.value;
   const query: Record<string, string> = {};
-  if (currentPage.value > 1) query.page = String(currentPage.value);
+  if (page > 1) query.page = String(page);
   for (const [key, values] of Object.entries(filters.value)) {
     if (values.length > 0) query[key] = JSON.stringify(values);
   }
@@ -316,6 +315,20 @@ function syncStateToUrl() {
   if (offset.value !== 12) query.offset = String(offset.value);
   if (sortField.value !== ProductSortField.CATEGORY_ORDER) query.sortField = sortField.value;
   if (sortOrder.value !== SortOrder.DESC) query.sortOrder = sortOrder.value;
+  return query;
+}
+
+/** The href for a page of the current listing, everything else unchanged. */
+function pageHref(page: number): string {
+  return router.resolve({ path: route.path, query: buildListingQuery(page) }).href;
+}
+
+function syncStateToUrl() {
+  // First user-driven change → hand control back to ProductGrid's internal
+  // fetcher. From this point on the SSR-seeded items are stale (the URL no
+  // longer matches them) and the grid must re-query.
+  markUserInteracted();
+  const query = buildListingQuery();
   const currentJson = JSON.stringify(route.query);
   const nextJson = JSON.stringify(query);
   if (currentJson === nextJson) return;

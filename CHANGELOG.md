@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-10-14
+
+### Fixed
+
+- **A semi-closed shop still offered add-to-cart to an anonymous visitor.** The
+  product page hid the price but kept the quantity field and the button, so a
+  click put the product in the cart at a price the page refused to show
+  (PWP-1051). The page now shows a log-in button, as the category cards already
+  did. Reported against nuxt; this app had the same gap.
+- **The login, register and forgot-password pages had no `h1`** — the only
+  heading was the component's own `h2` (PWP-1054).
+- **A product outside the visitor's assortment answered 200 and printed the
+  resolver's message**, naming a product they may not see (PWP-1015).
+- **The mobile menu button had no accessible name** (PWP-1056).
+- The middle-name field is labelled "Middle name" in English (PWP-1053).
+
+### Changed
+
+- Pagination below a listing renders links rather than buttons, at all five
+  call sites, so a page can be opened in a new tab and its URL copied
+  (PWP-1060). The href preserves the current filters, price range,
+  availability, offset and sort.
+- vue-ui `^0.30.0` → `^0.31.0` (core-ui 0.13.0 transitively).
+
 ## [1.21.1] - 2026-10-13
 
 ### Fixed
