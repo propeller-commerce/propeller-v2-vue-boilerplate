@@ -7,6 +7,7 @@ import { useLanguageStore } from '@/stores/language'
 import { usePriceStore } from '@/stores/price'
 import { useCompanyStore } from '@/stores/company'
 import { PREPR_ENABLED } from '@/lib/preprEvent'
+import { portalMode } from '@/lib/config'
 import PreprPreviewBar from '@/components/cms/PreprPreviewBar.vue'
 import PreprSegmentsSync from '@/components/cms/PreprSegmentsSync.vue'
 
@@ -118,7 +119,7 @@ watch(
     :company-id="validatedCompanyId"
     :language="language.language"
     :include-tax="price.includeTax"
-    portal-mode="open"
+    :portal-mode="portalMode"
   >
     <router-view :key="viewKey" />
     <template v-if="PREPR_ENABLED">

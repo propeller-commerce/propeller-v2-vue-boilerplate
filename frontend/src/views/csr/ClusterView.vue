@@ -50,7 +50,7 @@
                 />
               </div>
 
-              <div v-if="(selectedProduct as any)?.inventory" class="my-4">
+              <div v-if="(selectedProduct as any)?.inventory && !hideForAnonymous" class="my-4">
                 <ItemStock
                   :inventory="(selectedProduct as any).inventory"
                   :showAvailability="false"
@@ -93,7 +93,13 @@
               </div>
             </template>
 
-            <div class="flex items-center gap-2">
+            <div v-if="hideForAnonymous" class="mt-4">
+              <LoginToOrderButton
+                :labels="addToCartLabels"
+                :onLoginClick="() => router.push(localizeHref('/login', languageStore.language))"
+              />
+            </div>
+            <div v-else class="flex items-center gap-2">
               <AddToCart
                 :product="selectedProduct"
                 :cluster="cluster as any"
@@ -182,9 +188,10 @@ import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
-import { configuration, localizeHref } from "@/lib/config";
+import { configuration, localizeHref, portalMode } from "@/lib/config";
+import { isContentHidden } from "@propeller-commerce/propeller-v2-core-ui";
 
-import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterOptions, ItemStock, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
+import { AddToCart, AddToFavorite, Breadcrumbs, ClusterConfigurator, ClusterInfo, ClusterOptions, ItemStock, LoginToOrderButton, ProductBulkPrices, ProductGallery, ProductPrice, ProductShortDescription, ProductSlider, ProductTabs } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 
 const breadcrumbsLabels = useTranslations('Breadcrumbs');
@@ -208,6 +215,11 @@ const cartStore = useCartStore();
 const companyStore = useCompanyStore();
 const priceStore = usePriceStore();
 const languageStore = useLanguageStore();
+
+/** Semi-closed shop, nobody logged in — the same gate the product page applies. */
+const hideForAnonymous = computed<boolean>(() =>
+  isContentHidden(portalMode, authStore.user as never, authStore.isAuthenticated),
+);
 
 const clusterId = computed(() => parseInt(route.params.clusterId as string));
 const cluster = ref<any>(null);

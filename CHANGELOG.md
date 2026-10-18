@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.1] - 2026-10-18
+
+### Fixed
+
+- **A semi-closed shop still showed prices and add-to-cart to an anonymous
+  visitor outside the product page's own gate.** `App.vue` passed
+  `portal-mode="open"` to `PropellerProvider`, so the PDP price, related
+  products and category cards ignored `VITE_PORTAL_MODE` (PWP-1051). The
+  provider now receives the configured mode.
+- **The cluster page offered stock and add-to-cart to an anonymous visitor in a
+  semi-closed shop.** It now shows the log-in button instead, as the product
+  page does, on both the SSR and the CSR cluster view.
+- The log-in button read "Log in to order" on a Dutch shop: the `AddToCart`
+  dictionaries had no `loginToOrder` key (PWP-1051).
+
 ## [1.22.0] - 2026-10-14
 
 ### Fixed
