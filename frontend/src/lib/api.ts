@@ -8,14 +8,11 @@ import {
 } from '@propeller-commerce/propeller-sdk-v2'
 import { createServices } from '@propeller-commerce/propeller-v2-vue-ui'
 
-// Use /api/graphql proxy in development (Vite proxy adds apikey server-side).
-// The SDK still needs the key for its internal config, but the proxy handles headers.
+// Proxy mode: server.js injects the API key; the browser never holds one.
 const endpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/api/graphql'
 
 const clientConfig: GraphQLClientConfig = {
   endpoint,
-  apiKey: import.meta.env.VITE_API_KEY || '',
-  orderEditorApiKey: import.meta.env.VITE_ORDER_EDITOR_API_KEY || '',
   timeout: parseInt(import.meta.env.VITE_TIMEOUT || '30000', 10),
   headers: {},
 }

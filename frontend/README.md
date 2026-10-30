@@ -141,12 +141,17 @@ rewritten to `propeller_` (a dot is illegal in a GA4 event name).
 
 Verify with `npm run test:tracking`.
 
-### `/tracker` is ungated
+### Access to `/tracker`
 
-**Gate it before deploying anywhere shared.** It exposes every account's
-behaviour and revenue to anyone with the URL. It is `noindex` and client-only,
-which is not access control. Deliberately not behind the router's `requiresAuth`
-either — that would let any logged-in *customer* read it.
+The dashboard and every `/api/tracker*` route sit behind HTTP Basic auth, set in
+`server.js` before the SSR catch-all. Set `TRACKER_ACCESS_SECRET` in the server
+environment: the browser prompts for credentials, any username works, and the
+password is the secret. Without the variable both answer 404, so a deploy that
+never configured it exposes nothing. It is not behind the router's
+`requiresAuth` — that would let any logged-in *customer* read it.
+
+A cron or script calling a tracker endpoint sends the same Basic credentials,
+e.g. `curl -u tracker:"$TRACKER_ACCESS_SECRET" 'https://shop.example.com/api/tracker?metric=health'`.
 
 ### Changing the schema
 
@@ -163,6 +168,40 @@ duplicates the event allowlist — and why `taxonomy.test.ts` asserts the two co
 are identical. Drift is silent in the worst direction: the ingest drops names it
 does not recognise, so an event added to one list and not the other simply never
 arrives.
+
+## CMS contact form
+
+The CMS `ContactForm` block posts to `POST /api/contact` in `server.js`, which
+mails the message through the same mail layer as price requests (`MAIL_PROVIDER`,
+`SMTP_*`). The recipient is `CONTACT_TO_EMAIL` only — never taken from the
+request — with the visitor as reply-to. Without it the endpoint answers 503 and
+the form shows an error instead of a false success.
+
+## Form protection
+
+`POST /api/contact` and `POST /api/price-request` always run a honeypot (a
+hidden `website` field; filled in, the request answers as a success but sends
+nothing) and an in-memory per-IP rate limit: 5 contact and 10 price requests per
+10 minutes, then 429 with `Retry-After`. Counters live per server instance, so
+several instances each allow the full budget.
+
+reCAPTCHA v3 is opt-in: set both `RECAPTCHA_SECRET_KEY` and
+`VITE_RECAPTCHA_SITE_KEY` (optionally `RECAPTCHA_MIN_SCORE`, default `0.5`).
+The script loads only on pages with a protected form, and the server rejects a
+missing or low-scoring token (400) and fails closed when Google is unreachable
+(503). It sets Google cookies, so EU shops need cookie consent first.
+
+## Strapi preview
+
+With `CMS_PROVIDER=strapi`, Strapi's side-by-side preview opens
+`/api/preview?secret=…&slug=…&status=draft|published&locale=…` in an iframe. Set
+`STRAPI_PREVIEW_SECRET` to the Strapi app's `PREVIEW_SECRET` and point its
+`CLIENT_URL` at this storefront. The route sets an httpOnly preview cookie (or
+clears it for the Published tab) and redirects to the page, which then reads
+drafts from Strapi uncached. While the secret is set, HTML responses send
+`Content-Security-Policy: frame-ancestors 'self' <Strapi origin>` (origin of
+`STRAPI_API_URL`). Over HTTPS the cookie is `SameSite=None; Secure` so it works
+inside the cross-site admin iframe; `/api/preview/exit` leaves preview.
 
 ## PunchOut (OCI + cXML)
 

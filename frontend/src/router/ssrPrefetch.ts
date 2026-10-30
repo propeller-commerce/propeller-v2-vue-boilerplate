@@ -218,7 +218,7 @@ export async function prefetchCmsPage(
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
-  const preview = ctx.cookies['prepr_preview'] === '1'
+  const preview = inPreview(ctx)
   const extraHeaders = preprHeadersFrom(ctx)
   const page = await fetchCmsPage(infra, slug, {
     locale: previewLocaleFrom(ctx) || lang,
@@ -239,9 +239,14 @@ function preprHeadersFrom(ctx: SSRContext): Record<string, string> | undefined {
   return h && Object.keys(h).length ? h : undefined
 }
 
+/** CMS preview (draft) mode, as verified by server.js. */
+function inPreview(ctx: SSRContext): boolean {
+  return ctx.cmsPreview === true
+}
+
 /** Previewed locale carried on the URL as `?preview_lang` (preview mode only). */
 function previewLocaleFrom(ctx: SSRContext): string | undefined {
-  if (ctx.cookies['prepr_preview'] !== '1') return undefined
+  if (!inPreview(ctx)) return undefined
   const q = new URL(ctx.url, 'http://x').searchParams.get('preview_lang')
   return q ? q.toUpperCase() : undefined
 }
@@ -259,7 +264,7 @@ export async function prefetchHome(
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
-  const preview = ctx.cookies['prepr_preview'] === '1'
+  const preview = inPreview(ctx)
   const page = await fetchCmsPage(infra, 'home', {
     locale: previewLocaleFrom(ctx) || lang,
     extraHeaders: preprHeadersFrom(ctx),
@@ -279,7 +284,7 @@ export async function prefetchBlog(
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
-  const preview = ctx.cookies['prepr_preview'] === '1'
+  const preview = inPreview(ctx)
   const articles = await fetchCmsArticles(infra, lang, {
     preview,
     extraHeaders: preprHeadersFrom(ctx),
@@ -300,7 +305,7 @@ export async function prefetchBlogPost(
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
   seedAuth(infra, ctx)
-  const preview = ctx.cookies['prepr_preview'] === '1'
+  const preview = inPreview(ctx)
   const article = await fetchCmsArticle(infra, slug, lang, {
     preview,
     extraHeaders: preprHeadersFrom(ctx),

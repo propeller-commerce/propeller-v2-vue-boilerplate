@@ -1,0 +1,13 @@
+{
+  "name": "Name",
+  "namePlaceholder": "Your name",
+  "email": "Email",
+  "emailPlaceholder": "your@email.com",
+  "message": "Message",
+  "messagePlaceholder": "Your message...",
+  "send": "Send Message",
+  "sending": "Sending...",
+  "sendError": "Your message could not be sent. Please try again later.",
+  "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+  "captchaFailed": "We could not verify that you are human. Please try again."
+}

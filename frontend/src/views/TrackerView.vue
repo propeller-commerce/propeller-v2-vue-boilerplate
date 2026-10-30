@@ -2,7 +2,7 @@
   <!-- Client-only: this page self-fetches /api/tracker, which on the server
        would mean a self-request with the wrong base URL and no cookies, plus a
        database round trip per render of a page nobody crawls. -->
-  <div v-if="mounted" class="viz-root min-h-screen">
+  <div v-if="mounted && allowed" class="viz-root min-h-screen">
     <div class="flex flex-col lg:flex-row">
       <aside
         class="lg:w-60 lg:min-h-screen border-b lg:border-b-0 lg:border-r p-4 shrink-0"
@@ -118,9 +118,7 @@ import { POLL_MS } from '@/composables/useMetric'
 /**
  * /tracker — sidebar, date range, section switch.
  *
- * ponytail: ungated by request — GATE BEFORE DEPLOY. This page exposes every
- * account's behaviour and revenue to anyone with the URL, which is fine on a
- * local box and is not fine anywhere shared.
+ * Gated server-side by TRACKER_ACCESS_SECRET (src/server/trackerAuth.js).
  *
  * The range picker is a pair of native `<input type="date">` — no picker
  * library for something the platform already ships.
@@ -162,6 +160,7 @@ const route = useRoute()
 const router = useRouter()
 
 const mounted = ref(false)
+const allowed = ref(false)
 const today = localISO()
 const from = ref(localISO(6))
 const to = ref(today)
@@ -181,7 +180,14 @@ function applyPreset(p: { days: number }) {
   to.value = today
 }
 
-onMounted(() => {
+// The API is the gate; a client-side visit without credentials renders nothing.
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/tracker?metric=health', { cache: 'no-store' })
+    allowed.value = res.status !== 401 && res.status !== 404
+  } catch {
+    allowed.value = false
+  }
   mounted.value = true
 })
 

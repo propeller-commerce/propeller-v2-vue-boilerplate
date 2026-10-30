@@ -5,7 +5,7 @@ import { resolve } from 'path'
 /**
  * Vite config for the SSR build.
  *
- * The `/api/graphql` + `/api/order-editor` proxies that used to live here are
+ * The `/api/graphql` proxy that used to live here is
  * gone — `server.js` (the Node SSR server) owns proxying now, in dev *and*
  * prod, so the API key is injected server-side in both. Vite runs in
  * middleware mode under that server; this config no longer starts a standalone

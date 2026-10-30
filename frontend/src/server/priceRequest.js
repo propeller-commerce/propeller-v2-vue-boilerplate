@@ -7,6 +7,7 @@ import {
   sectionHeading,
 } from './mail/template.js';
 import { getTranslations, labeller } from './mail/locales.js';
+import { guardForm } from './formGuard.js';
 
 /**
  * Price-request submission. Same contract and payload as the Next and Nuxt
@@ -43,7 +44,7 @@ function readItems(raw) {
     .slice(0, MAX_ITEMS);
 }
 
-export async function priceRequestHandler(req, res) {
+async function handlePriceRequest(req, res, getMail) {
   const body = req.body && typeof req.body === 'object' ? req.body : null;
   if (!body) {
     res.status(400).json({ error: 'Invalid JSON' });
@@ -80,7 +81,7 @@ export async function priceRequestHandler(req, res) {
   const shop = labeller(getTranslations(SHOP_LANGUAGE, 'PriceRequest'));
   const shopper = labeller(getTranslations(shopperLanguage, 'PriceRequest'));
 
-  const mail = getMailProvider();
+  const mail = getMail();
   const count = items.length;
 
   // ── The shop's copy ───────────────────────────────────────────────────────
@@ -192,3 +193,17 @@ export async function priceRequestHandler(req, res) {
 
   res.json({ ok: true });
 }
+
+export function createPriceRequestHandler({ getMail = getMailProvider, limiter, verifyCaptcha } = {}) {
+  return async function priceRequestHandler(req, res) {
+    const proceed = await guardForm(req, res, {
+      route: 'price-request',
+      action: 'price_request',
+      limiter,
+      verifyCaptcha,
+    });
+    if (proceed) await handlePriceRequest(req, res, getMail);
+  };
+}
+
+export const priceRequestHandler = createPriceRequestHandler();

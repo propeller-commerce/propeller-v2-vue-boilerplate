@@ -29,6 +29,11 @@
             <label for="contact-message-a" class="text-sm font-medium">{{ t.message }}</label>
             <textarea id="contact-message-a" v-model="message" name="message" required rows="4" :placeholder="t.messagePlaceholder" :class="inputClass" />
           </div>
+          <div aria-hidden="true" :style="honeypotStyle">
+            <label for="contact-website-a">Website</label>
+            <input id="contact-website-a" v-model="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+          <p v-if="failed" role="alert" class="text-sm text-destructive">{{ errorLabel }}</p>
           <button type="submit" :disabled="loading" :class="buttonClass">
             {{ loading ? (t.sending || t.send) : t.send }}
           </button>
@@ -84,6 +89,11 @@
                 <label for="contact-message-b" class="text-sm font-medium">{{ t.message }}</label>
                 <textarea id="contact-message-b" v-model="message" name="message" required rows="4" :placeholder="t.messagePlaceholder" :class="inputClass" />
               </div>
+              <div aria-hidden="true" :style="honeypotStyle">
+                <label for="contact-website-b">Website</label>
+                <input id="contact-website-b" v-model="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+              </div>
+              <p v-if="failed" role="alert" class="text-sm text-destructive">{{ errorLabel }}</p>
               <button type="submit" :disabled="loading" :class="buttonClass">
                 {{ loading ? (t.sending || t.send) : t.send }}
               </button>
@@ -96,20 +106,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { CmsContactForm } from '@/lib/cms/types'
 import { useTranslations } from '@/lib/i18n/composable'
+import { getRecaptchaToken, loadRecaptcha } from '@/lib/recaptcha'
 
 const props = defineProps<{ block: CmsContactForm }>()
 
 const t = useTranslations('ContactForm')
 const submitted = ref(false)
 const loading = ref(false)
+const failed = ref<false | 'send' | 'rateLimited' | 'captcha'>(false)
+const errorLabel = computed(() => {
+  if (failed.value === 'rateLimited') {
+    return t.value.rateLimited || 'Too many attempts. Please wait a few minutes and try again.'
+  }
+  if (failed.value === 'captcha') {
+    return t.value.captchaFailed || 'We could not verify that you are human. Please try again.'
+  }
+  return t.value.sendError || 'Your message could not be sent. Please try again later.'
+})
 const hasSplitLayout = computed(() => !!(props.block.phone || props.block.email))
 
 const name = ref('')
 const email = ref('')
 const message = ref('')
+// Honeypot: hidden from people, bots fill it in.
+const website = ref('')
+const honeypotStyle = 'position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden'
+
+onMounted(() => {
+  void loadRecaptcha()
+})
 
 const inputClass =
   'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
@@ -117,9 +145,35 @@ const buttonClass =
   'inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-11 px-8 text-base font-medium hover:bg-primary/90 transition-colors w-full disabled:opacity-50'
 
 async function handleSubmit() {
+  if (loading.value) return
   loading.value = true
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-  loading.value = false
-  submitted.value = true
+  failed.value = false
+  try {
+    const recaptchaToken = await getRecaptchaToken('contact')
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name.value,
+        email: email.value,
+        message: message.value,
+        website: website.value,
+        recaptchaToken,
+      }),
+    })
+    if (res.ok) {
+      submitted.value = true
+    } else if (res.status === 429) {
+      failed.value = 'rateLimited'
+    } else {
+      const data = await res.json().catch(() => ({}))
+      const code = data?.error
+      failed.value = code === 'captcha_failed' || code === 'captcha_unavailable' ? 'captcha' : 'send'
+    }
+  } catch {
+    failed.value = 'send'
+  } finally {
+    loading.value = false
+  }
 }
 </script>

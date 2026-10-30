@@ -72,10 +72,8 @@ function buildRoutes() {
         // /login; logging out while here navigates to '/' via AppHeader's logout.
         { path: 'quick-order', name: 'quick-order', meta: { requiresAuth: true }, component: () => import('@/views/QuickOrderView.vue') },
         { path: 'price-request', name: 'price-request', meta: { requiresAuth: true }, component: () => import('@/views/PriceRequestView.vue') },
-        // Analytics dashboard. Client-rendered, noindex, and
-        // deliberately NOT behind requiresAuth: gating is a deploy-time
-        // decision the shop owner makes, and a `meta.requiresAuth` here would
-        // let any logged-in customer read every account's revenue.
+        // Analytics dashboard. Not requiresAuth (that would admit any customer):
+        // server.js gates it and /api/tracker* with HTTP Basic (TRACKER_ACCESS_SECRET).
         { path: 'tracker', name: 'tracker', component: () => import('@/views/TrackerView.vue') },
 
         // ──────────────────────────────────────────────────────────────────

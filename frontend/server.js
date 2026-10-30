@@ -6,7 +6,7 @@
  *            loads `src/entry-server.ts` fresh per request.
  *   - PROD : serves the built client assets from `dist/client/` and loads the
  *            pre-built `dist/server/entry-server.js`.
- *   - Both : proxies `/api/graphql` and `/api/order-editor` to the upstream
+ *   - Both : proxies `/api/graphql` to the upstream
  *            Propeller API with the `apikey` header injected server-side —
  *            the same shield the old Vite dev proxy provided, now in prod too.
  *
@@ -19,7 +19,6 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
-import { createProxyMiddleware } from 'http-proxy-middleware'
 import {
   getMollieProvider,
   isMollieEnabled,
@@ -27,6 +26,10 @@ import {
 } from './src/server/mollie.js'
 import { getMspProvider, isMspEnabled } from './src/server/msp.js'
 import { priceRequestHandler } from './src/server/priceRequest.js'
+import { contactHandler } from './src/server/contact.js'
+import { clientIp } from './src/server/rateLimit.js'
+import { trackerGate } from './src/server/trackerAuth.js'
+import { shouldUseOrderEditorKey } from './src/server/orderEditorRouting.js'
 import { ingestBatch, visitorCookie, VISITOR_COOKIE } from './src/server/trackingIngest.js'
 import { isTrackingConfigured, classifyDbError, STATUS_HINTS, todayLocal, addDays } from './src/server/tracking.js'
 import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS } from './src/server/trackingQueries.js'
@@ -57,8 +60,14 @@ import {
   isPreprEnabled,
   resolvePreprRequest,
   preprUidCookie,
-  previewSecret,
 } from './src/server/cms.js'
+import {
+  resolvePreviewRequest,
+  resolvePreviewExit,
+  isCmsPreviewActive,
+  frameHeaders,
+  STRAPI_PREVIEW_COOKIE,
+} from './src/server/preview.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -97,45 +106,17 @@ const isProd = process.env.NODE_ENV === 'production'
 const PORT = Number(process.env.PORT) || 5173
 const HOST = process.env.HOST || '127.0.0.1'
 
-// Upstream + keys. The SSR_* vars are the canonical server-side names; we fall
-// back to the legacy VITE_* vars so an unchanged .env still works.
+// Upstream + keys. Keys are server-only: never give them a VITE_ prefix.
 const UPSTREAM =
   process.env.SSR_GRAPHQL_PROXY_TARGET ||
   process.env.VITE_GRAPHQL_PROXY_TARGET ||
   'https://api.staging.helice.cloud/v2/graphql'
-const API_KEY = process.env.SSR_API_KEY || process.env.VITE_API_KEY || ''
-const ORDER_EDITOR_API_KEY =
-  process.env.SSR_ORDER_EDITOR_API_KEY ||
-  process.env.VITE_ORDER_EDITOR_API_KEY ||
-  ''
-
-const upstreamUrl = new URL(UPSTREAM)
-
-// Propeller mutations the backend authorizes ONLY against the dedicated
-// "order editor" API key. Sending them with the general key returns the
-// GraphQL error "Forbidden resource". The browser SDK posts everything to
-// /api/graphql (proxy mode, no key in the body), so this server must pick the
-// right key per operation — mirrors the nextDemo proxy + the SDK's own
-// DEFAULT_ORDER_EDITOR_MUTATIONS. Keep in sync if the SDK list changes.
-const ORDER_EDITOR_MUTATIONS = new Set([
-  'orderSetStatus',
-  'passwordResetLink',
-  'triggerQuoteSendRequest',
-  'triggerOrderSendConfirm',
-])
-
-// Operations that route to the order key ONLY when the caller identifies as the
-// order-editor client. `contactRegister` is used by BOTH public self-registration
-// (general key) AND authorization-settings "add contact" (order key) — the
-// operationName is identical, so the caller signals intent via the SDK's
-// `clientId` (sent as the `X-Client-ID` header in proxy mode) and the proxy
-// routes accordingly. The header is server-internal: not forwarded upstream.
-const ORDER_EDITOR_OPT_IN_MUTATIONS = new Set(['contactRegister'])
-const ORDER_EDITOR_CLIENT_ID = 'order-editor'
+const API_KEY = process.env.SSR_API_KEY || ''
+const ORDER_EDITOR_API_KEY = process.env.SSR_ORDER_EDITOR_API_KEY || ''
 
 // ── Proxy hardening: per-IP rate limit + body cap ───────────────────────────
 //
-// `/api/graphql` and `/api/order-editor` inject an API key server-side, so an
+// `/api/graphql` injects an API key server-side, so an
 // unthrottled proxy is an open, unauthenticated relay to the upstream GraphQL
 // API — anyone who can reach the site can drive it at any rate. These are the
 // Vue mirror of propeller-next's app/api/graphql/route.ts limits; they don't
@@ -210,22 +191,7 @@ function isRateLimited(ip, limit) {
 }
 
 /**
- * Best-effort client IP. `x-forwarded-for` is set by the reverse proxy in
- * front of this server; a client can spoof it, so the worst case is an
- * attacker spreading their own budget across forged IPs — still bounded by
- * upstream, and the honest single-IP flood (the reported case) is stopped.
- */
-function clientIp(req) {
-  const xff = req.headers['x-forwarded-for']
-  const xffStr = Array.isArray(xff) ? xff[0] : xff
-  if (xffStr) return xffStr.split(',')[0].trim()
-  const xri = req.headers['x-real-ip']
-  if (xri) return Array.isArray(xri) ? xri[0] : xri
-  return req.socket?.remoteAddress || 'unknown'
-}
-
-/**
- * Express middleware — mounted on BOTH key-injecting proxies. The auth tier is
+ * Express middleware — mounted on the key-injecting proxy. The auth tier is
  * gated on a structurally valid, non-expired JWT (see looksLikeValidJwt), so
  * presenting any `access_token` cookie value doesn't buy the higher ceiling.
  */
@@ -483,22 +449,16 @@ function graphqlCachedHandler() {
       try { parsed = JSON.parse(rawBody.toString('utf-8')) } catch {}
       const opType = parsed ? gqlOperationType(parsed.query) : 'mutation'
 
-      // Route order-editor mutations to the dedicated key (else upstream
-      // returns "Forbidden resource"). Falls back to the general key when the
-      // order key isn't configured — surfacing the same error rather than a
-      // silent mismatch.
+      // Order-editor key only for the allowlisted single-field mutations, decided
+      // from the parsed document (see src/server/orderEditorRouting.js).
       const operationName = gqlOperationName(parsed)
-      // The order-editor client (authorization-settings "add contact") sets the
-      // SDK `clientId`, sent as `X-Client-ID`. Public self-registration uses the
-      // default client (no clientId) and stays on the general key.
       const clientIdHeader = req.headers['x-client-id']
-      const orderEditorOptIn =
-        (Array.isArray(clientIdHeader) ? clientIdHeader[0] : clientIdHeader) === ORDER_EDITOR_CLIENT_ID
       const useOrderKey =
         !!ORDER_EDITOR_API_KEY &&
-        !!operationName &&
-        (ORDER_EDITOR_MUTATIONS.has(operationName) ||
-          (orderEditorOptIn && ORDER_EDITOR_OPT_IN_MUTATIONS.has(operationName)))
+        shouldUseOrderEditorKey(parsed, {
+          clientId: Array.isArray(clientIdHeader) ? clientIdHeader[0] : clientIdHeader,
+          hasSession: looksLikeValidJwt(upstreamBearer),
+        })
       const apiKey = useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY
 
       // Only anonymous catalog queries are cacheable. An authenticated request
@@ -581,6 +541,9 @@ function graphqlCachedHandler() {
 async function createServer() {
   const app = express()
 
+  // Basic-auth gate for /tracker and /api/tracker*; first so nothing else serves them.
+  app.use(trackerGate)
+
   // ── /api/revalidate — surgical cache invalidation ─────────────────────────
   //
   // POST with `X-Revalidate-Secret: $REVALIDATE_SECRET` and JSON body
@@ -647,53 +610,26 @@ async function createServer() {
     })
   })
 
-  // ── /api/preview + /api/cms-revalidate — Prepr CMS endpoints ──────────────
+  // ── /api/preview + /api/cms-revalidate — CMS endpoints ───────────────────
   //
-  // All gated on Prepr being the active CMS (isPreprEnabled). For Strapi/none
-  // they 404, so a non-Prepr shop exposes no CMS surface. Registered BEFORE the
-  // `*all` SSR catch-all. (Next mirror: app/api/preview, app/api/cms-revalidate.)
+  // Preview serves Prepr, or Strapi when STRAPI_PREVIEW_SECRET is set; the
+  // revalidate webhook is Prepr-only. Otherwise they 404, so a shop without a
+  // CMS preview exposes no CMS surface. Registered BEFORE the `*all` SSR
+  // catch-all. (Next mirror: app/api/preview, app/api/cms-revalidate.)
 
-  // Enter draft mode: verify the secret, set a `prepr_preview` cookie the SSR
-  // loaders read (to fetch draft content via the preview token), and redirect to
-  // the page — carrying the segment/AB/locale switches so the previewed variant
-  // resolves. Prepr's preview URL:
-  //   /api/preview?secret=<PREPR_PREVIEW_SECRET>&slug=/{slug}&locale={locale}
+  // Enter (or, for Strapi's Published tab, leave) draft mode: verify the secret,
+  // set the preview cookie the SSR loaders read and redirect to the page with the
+  // previewed locale (and Prepr's segment/AB switches). Preview URLs:
+  //   Prepr:  /api/preview?secret=<PREPR_PREVIEW_SECRET>&slug=/{slug}&locale={locale}
+  //   Strapi: built by the Strapi app's config/admin.ts from its PREVIEW_SECRET
   app.get('/api/preview', (req, res) => {
-    if (!isPreprEnabled()) {
-      res.status(404).end('Not found')
-      return
-    }
-    if ((req.query.secret || '') !== previewSecret()) {
-      res.status(401).end('Invalid preview secret')
-      return
-    }
-    const slug = String(req.query.slug || req.query.redirect || '/')
-    // The home page is served at `/`, not the CMS catch-all.
-    const HOME = ['home', 'home-personalized', 'index', 'home-generic']
-    const bare = slug.replace(/^\/+/, '').toLowerCase()
-    const base = bare === '' || HOME.includes(bare)
-      ? '/'
-      : slug.startsWith('/') ? slug : `/${slug}`
-    res.cookie('prepr_preview', '1', { path: '/', httpOnly: false, sameSite: 'lax' })
-    const params = new URLSearchParams()
-    const rawLocale = req.query.locale || req.query.lang
-    if (rawLocale) params.set('preview_lang', String(rawLocale).split('-')[0].toUpperCase())
-    for (const key of ['prepr_preview_segment', 'prepr_preview_ab']) {
-      if (req.query[key]) params.set(key, String(req.query[key]))
-    }
-    const qs = params.toString()
-    res.redirect(302, qs ? `${base}${base.includes('?') ? '&' : '?'}${qs}` : base)
+    const r = resolvePreviewRequest(req.query)
+    sendPreviewResult(req, res, r)
   })
 
   // Exit draft mode: clear the cookie and return to the page (or home).
   app.get('/api/preview/exit', (req, res) => {
-    if (!isPreprEnabled()) {
-      res.status(404).end('Not found')
-      return
-    }
-    res.clearCookie('prepr_preview', { path: '/' })
-    const slug = String(req.query.redirect || '/')
-    res.redirect(302, slug.startsWith('/') ? slug : `/${slug}`)
+    sendPreviewResult(req, res, resolvePreviewExit(req.query))
   })
 
   // Prepr publish webhook → bust the CMS cache. Mirrors /api/revalidate but for
@@ -1127,37 +1063,16 @@ async function createServer() {
   // Why a hand-rolled handler and not the proxy library: the library streams
   // the response and doesn't expose a clean hook to capture the body, which
   // we need to store. With `fetch` we get the response as a buffer for free.
-  // Rate limit BOTH key-injecting proxies. `/api/order-editor` carries the
-  // more privileged key, so leaving it unthrottled while guarding
-  // `/api/graphql` would just move the open relay one path over.
-  app.use(['/api/graphql', '/api/order-editor'], rateLimitProxy)
+  app.use('/api/graphql', rateLimitProxy)
 
   // Quoted-price products are collected client-side and sent from here, so
   // SMTP credentials stay server-side.
   app.post('/api/price-request', express.json({ limit: '64kb' }), priceRequestHandler)
 
+  // CMS contact-form block; recipient is CONTACT_TO_EMAIL only.
+  app.post('/api/contact', express.json({ limit: '16kb' }), contactHandler)
+
   app.post('/api/graphql', graphqlCachedHandler())
-  app.use(
-    '/api/order-editor',
-    createProxyMiddleware({
-      target: upstreamUrl.origin,
-      changeOrigin: true,
-      pathRewrite: { '^/api/order-editor': '' },
-      on: {
-        proxyReq: (proxyReq, req) => {
-          proxyReq.setHeader('apikey', ORDER_EDITOR_API_KEY)
-          proxyReq.setHeader('Content-Type', 'application/json')
-          const auth = req.headers['authorization']
-          if (auth) {
-            proxyReq.setHeader(
-              'Authorization',
-              Array.isArray(auth) ? auth[0] : auth,
-            )
-          }
-        },
-      },
-    }),
-  )
 
   /** @type {import('vite').ViteDevServer | undefined} */
   let vite
@@ -1347,11 +1262,14 @@ async function createServer() {
       // the visitor id + Prepr-* headers and forward them to the render so CMS
       // loaders can fetch personalized/preview content server-side.
       const prepr = resolvePreprRequest(req)
+      const cookies = parseCookies(cookieHeader)
+      const cmsPreview = isCmsPreviewActive(cookies)
       const ssrContext = {
         cookieHeader,
-        cookies: parseCookies(cookieHeader),
+        cookies,
         url,
         preprHeaders: prepr.headers,
+        cmsPreview,
       }
 
       const result = await render(url, ssrContext)
@@ -1388,8 +1306,10 @@ async function createServer() {
 
       res
         .status(result.status)
-        .set({ 'Content-Type': 'text/html; charset=utf-8' })
-        .end(html)
+        .set({ 'Content-Type': 'text/html; charset=utf-8', ...frameHeaders() })
+      // Drafts must never land in a shared or CDN cache.
+      if (cmsPreview) res.set('Cache-Control', 'private, no-store')
+      res.end(html)
     } catch (err) {
       // Let Vite rewrite the stack to original source in dev.
       if (vite) vite.ssrFixStacktrace(err)
@@ -1399,6 +1319,23 @@ async function createServer() {
   })
 
   return app
+}
+
+/** Apply a preview decision: status body, or cookie + redirect. */
+function sendPreviewResult(req, res, r) {
+  if (r.status !== 302) {
+    res.status(r.status).end(r.body)
+    return
+  }
+  const { name, value, clear } = r.cookie
+  // Strapi's admin frames the storefront cross-site, which needs SameSite=None.
+  const secure = req.protocol === 'https' || /^https\b/.test(req.get('x-forwarded-proto') || '')
+  const options = name === STRAPI_PREVIEW_COOKIE
+    ? { path: '/', httpOnly: true, sameSite: secure ? 'none' : 'lax', secure }
+    : { path: '/', httpOnly: false, sameSite: 'lax' }
+  if (clear) res.clearCookie(name, options)
+  else res.cookie(name, value, options)
+  res.redirect(302, r.location)
 }
 
 /** Parse a Cookie header into a name→value map. */

@@ -19,12 +19,24 @@
  * that trade.
  */
 
-/**
- * `import.meta.env` exists only under Vite. Under the bare Node test runner it
- * is undefined, and reading `.VITE_X` off it would throw at module load.
- */
-const env: Record<string, string | undefined> =
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+// Name each variable: a bare `import.meta.env` makes Vite inline every VITE_* var.
+// The try covers the Node test runner, where `import.meta.env` is undefined.
+const read = (get: () => string | undefined): string | undefined => {
+  try {
+    return get();
+  } catch {
+    return undefined;
+  }
+};
+
+const env = {
+  VITE_BASE_CATEGORY_ID: read(() => import.meta.env.VITE_BASE_CATEGORY_ID),
+  VITE_TRACKING_ENABLED: read(() => import.meta.env.VITE_TRACKING_ENABLED),
+  VITE_USE_GA4: read(() => import.meta.env.VITE_USE_GA4),
+  VITE_GA4_KEY: read(() => import.meta.env.VITE_GA4_KEY),
+  VITE_GTM_KEY: read(() => import.meta.env.VITE_GTM_KEY),
+  VITE_CURRENCY_CODE: read(() => import.meta.env.VITE_CURRENCY_CODE),
+};
 
 export interface TrackingConfig {
   enabled: boolean;

@@ -230,8 +230,8 @@ export function createServerClient(
   }
   const config: GraphQLClientConfig = {
     endpoint,
-    apiKey: opts.apiKey ?? env('SSR_API_KEY', 'VITE_API_KEY'),
-    orderEditorApiKey: env('SSR_ORDER_EDITOR_API_KEY', 'VITE_ORDER_EDITOR_API_KEY'),
+    apiKey: opts.apiKey ?? env('SSR_API_KEY'),
+    orderEditorApiKey: env('SSR_ORDER_EDITOR_API_KEY'),
     securityMode: 'direct',
     timeout: 30000,
     getAccessToken: opts.getAccessToken,

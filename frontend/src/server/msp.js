@@ -54,8 +54,7 @@ const MSP_ORDER_EDITOR_MUTATIONS = [
  * added to the order-editor set so they authenticate with that key. No bearer
  * token: these run as the server, not a logged-in user.
  *
- * Reads the same `SSR_*` vars `server.js` uses for its proxy keys, falling back
- * to the legacy `VITE_*` names so an unchanged `.env` still works.
+ * Reads the same `SSR_*` vars `server.js` uses for its proxy keys.
  */
 function createMspGraphqlClient() {
   return new GraphQLClient({
@@ -63,10 +62,9 @@ function createMspGraphqlClient() {
       process.env.SSR_GRAPHQL_ENDPOINT ||
       process.env.VITE_GRAPHQL_PROXY_TARGET ||
       '',
-    apiKey: process.env.SSR_API_KEY || process.env.VITE_API_KEY || '',
+    apiKey: process.env.SSR_API_KEY || '',
     orderEditorApiKey:
       process.env.SSR_ORDER_EDITOR_API_KEY ||
-      process.env.VITE_ORDER_EDITOR_API_KEY ||
       '',
     securityMode: 'direct',
     timeout: 30000,

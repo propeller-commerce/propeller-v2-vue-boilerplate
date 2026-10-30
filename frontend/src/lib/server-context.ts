@@ -30,6 +30,8 @@ export interface SSRContext {
    * server-side. Empty on non-Prepr providers. Lowercased header names.
    */
   preprHeaders?: Record<string, string>
+  /** CMS preview (draft) mode, set by `server.js` from the verified preview cookie. */
+  cmsPreview?: boolean
   /**
    * Cookies a loader / the server wants set on the RESPONSE (the read side is
    * `cookies` above). `server.js`'s `*all` handler applies these via

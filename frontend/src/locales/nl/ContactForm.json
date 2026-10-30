@@ -1,0 +1,13 @@
+{
+  "name": "Naam",
+  "namePlaceholder": "Uw naam",
+  "email": "E-mail",
+  "emailPlaceholder": "uw@email.com",
+  "message": "Bericht",
+  "messagePlaceholder": "Uw bericht...",
+  "send": "Bericht verzenden",
+  "sending": "Bezig met verzenden...",
+  "sendError": "Uw bericht kon niet worden verzonden. Probeer het later opnieuw.",
+  "rateLimited": "Te veel pogingen. Wacht een paar minuten en probeer het opnieuw.",
+  "captchaFailed": "We konden niet bevestigen dat u een mens bent. Probeer het opnieuw."
+}

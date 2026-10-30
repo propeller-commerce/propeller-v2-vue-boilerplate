@@ -31,12 +31,13 @@
  * and cannot be paid for, so it must never reach checkout. Login-only via the
  * router's requiresAuth guard, because a quote is addressed to someone.
  */
-import { ref } from 'vue'
-import { PriceRequestList, usePriceRequest } from '@propeller-commerce/propeller-v2-vue-ui'
+import { onMounted, ref } from 'vue'
+import { PriceRequestList, usePriceRequest, type PriceRequestSubmitExtras } from '@propeller-commerce/propeller-v2-vue-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { useTranslations } from '@/lib/i18n/composable'
 import { useHead } from '@unhead/vue'
+import { getRecaptchaToken, loadRecaptcha } from '@/lib/recaptcha'
 
 const pageTitles = useTranslations('PageTitles')
 useHead({ title: () => pageTitles.value.priceRequest })
@@ -44,9 +45,14 @@ useHead({ title: () => pageTitles.value.priceRequest })
 const t = useTranslations('PriceRequest')
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
+let lastErrorCode = ''
+
+onMounted(() => {
+  void loadRecaptcha()
+})
 
 const priceRequest = usePriceRequest({
-  onSubmit: async (items, comment) => {
+  onSubmit: async (items, comment, extras?: PriceRequestSubmitExtras) => {
     const user = authStore.user as {
       email?: string
       firstName?: string
@@ -54,6 +60,8 @@ const priceRequest = usePriceRequest({
       companyName?: string
       phone?: string
     } | null
+    lastErrorCode = ''
+    const recaptchaToken = await getRecaptchaToken('price_request')
     const res = await fetch('/api/price-request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -65,21 +73,33 @@ const priceRequest = usePriceRequest({
         name: [user?.firstName, user?.lastName].filter(Boolean).join(' '),
         company: user?.companyName ?? '',
         phone: user?.phone ?? '',
+        recaptchaToken,
+        website: extras?.website ?? '',
       }),
     })
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      throw new Error(body?.error || 'failed')
+      lastErrorCode = res.status === 429 ? 'rate_limited' : body?.error || 'failed'
+      throw new Error(lastErrorCode)
     }
   },
 })
 
 const sendError = ref('')
 
-async function handleSubmit(comment: string): Promise<boolean> {
+async function handleSubmit(comment: string, extras?: PriceRequestSubmitExtras): Promise<boolean> {
   sendError.value = ''
-  const ok = await priceRequest.submit(comment)
-  if (!ok) sendError.value = t.value.sendFailed || 'Could not send the request'
+  const ok = await priceRequest.submit(comment, extras)
+  if (ok) return ok
+  if (lastErrorCode === 'rate_limited') {
+    sendError.value =
+      t.value.rateLimited || 'Too many attempts. Please wait a few minutes and try again.'
+  } else if (lastErrorCode === 'captcha_failed' || lastErrorCode === 'captcha_unavailable') {
+    sendError.value =
+      t.value.captchaFailed || 'We could not verify that you are human. Please try again.'
+  } else {
+    sendError.value = t.value.sendFailed || 'Could not send the request'
+  }
   return ok
 }
 </script>

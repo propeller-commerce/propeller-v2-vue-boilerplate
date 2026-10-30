@@ -83,9 +83,7 @@ function createPunchoutAdminClient() {
   // (falling back to the general key if unset).
   const adminKey =
     process.env.SSR_ORDER_EDITOR_API_KEY ||
-    process.env.VITE_ORDER_EDITOR_API_KEY ||
     process.env.SSR_API_KEY ||
-    process.env.VITE_API_KEY ||
     ''
   return new GraphQLClient({
     endpoint: process.env.SSR_GRAPHQL_ENDPOINT || process.env.VITE_GRAPHQL_PROXY_TARGET || '',
@@ -113,7 +111,7 @@ function readAttributeStringValues(value) {
 export function createAuthedClient(bearer) {
   return new GraphQLClient({
     endpoint: process.env.SSR_GRAPHQL_ENDPOINT || process.env.VITE_GRAPHQL_PROXY_TARGET || '',
-    apiKey: process.env.SSR_API_KEY || process.env.VITE_API_KEY || '',
+    apiKey: process.env.SSR_API_KEY || '',
     securityMode: 'direct',
     timeout: 30000,
     ...(bearer ? { headers: { Authorization: `Bearer ${bearer}` } } : {}),

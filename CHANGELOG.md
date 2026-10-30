@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-10-30
+
+### Upgrade
+
+- **Rename the API-key variables.** `VITE_API_KEY` → `SSR_API_KEY` and
+  `VITE_ORDER_EDITOR_API_KEY` → `SSR_ORDER_EDITOR_API_KEY`. The server no longer
+  reads the `VITE_*` names, so an unrenamed `.env` runs with no key. **Rotate
+  both keys** if they were ever set as `VITE_*` at build time: they were
+  inlined into the published browser JavaScript.
+- Set `TRACKER_ACCESS_SECRET` to keep using `/tracker`; without it the
+  dashboard and its API answer 404.
+- Set `CONTACT_TO_EMAIL` for the CMS contact-form block to deliver mail.
+
+### Security
+
+- **The storefront can no longer be framed by other sites.** Pages now send
+  `frame-ancestors 'none'` and `X-Frame-Options: DENY` (clickjacking), as the
+  Next boilerplate does. A Prepr shop allows `https://*.prepr.io` and a Strapi
+  shop with preview on allows the Strapi origin, through CSP only.
+- **The tracker dashboard and its data API were open to anyone** (PWP-1077).
+  `/tracker` (every sub-path and language prefix) and every `/api/tracker*`
+  route now require HTTP Basic auth: any username, the password is
+  `TRACKER_ACCESS_SECRET`, compared in constant time. Unset → 404.
+- **The GraphQL proxy chose the order-editor key from the client-sent
+  `operationName`** (PWP-1078), so any query named like an order-editor
+  mutation ran with the privileged key. The proxy now parses the document and
+  elevates only a single operation whose single top-level field is on the
+  allowlist; `contactRegister` additionally needs the order-editor client id
+  and a signed-in session. The unused `/api/order-editor` pass-through, which
+  added the order-editor key to every request, is removed.
+- **The build inlined API keys into the browser bundle** (PWP-1079). The
+  browser client no longer reads `VITE_API_KEY` / `VITE_ORDER_EDITOR_API_KEY`
+  (the SDK runs in proxy mode and ignored them), and the tracking config no
+  longer reads `import.meta.env` as a whole object, which made Vite inline every
+  `VITE_*` setting into the bundle.
+
+### Added
+
+- **Abuse protection on `/api/contact` and `/api/price-request`.** A per-IP
+  rate limit (5 contact and 10 price requests per 10 minutes, per server
+  instance) answers 429 `rate_limited` with `Retry-After`. A filled-in
+  `website` honeypot answers as a success but sends nothing; the contact form
+  carries the hidden field.
+- The price-request page forwards the `website` honeypot from `PriceRequestList`
+  (vue-ui 0.32.0) in its POST body, sending an empty string when the installed
+  package does not supply it yet.
+- **Optional reCAPTCHA v3** on both endpoints, on only when
+  `RECAPTCHA_SECRET_KEY` and `VITE_RECAPTCHA_SITE_KEY` are both set
+  (`RECAPTCHA_MIN_SCORE`, default `0.5`). The script loads lazily on the
+  contact form and the price-request page only. A missing, invalid or
+  low-scoring token answers 400 `captcha_failed`; an unreachable Google answers
+  503 `captcha_unavailable`.
+- Translated `rateLimited` and `captchaFailed` errors (`en`, `nl`) on the
+  contact form and the price-request page.
+- **Strapi side-by-side preview.** With `CMS_PROVIDER=strapi` and
+  `STRAPI_PREVIEW_SECRET` set (equal to the Strapi app's `PREVIEW_SECRET`),
+  `/api/preview` turns preview on for `status=draft` and off for
+  `status=published`, then redirects to the page in the edited locale. Pages,
+  the CMS catch-all and the blog then read Strapi drafts (`status=draft`)
+  without any cache. The preview cookie carries a value derived from the
+  secret, so a hand-set cookie does not unlock drafts.
+- While Strapi preview is enabled, HTML responses send
+  `Content-Security-Policy: frame-ancestors 'self' <Strapi origin>` so the
+  Strapi admin can frame the storefront. Preview responses are `no-store`.
+- `/api/preview` rejects protocol-relative and absolute slugs (`//host`,
+  `https://…`) instead of redirecting off-site, for Prepr too.
+
+### Fixed
+
+- **The CMS contact-form block showed success but sent nothing** (PWP-1085). It
+  now posts to the new `POST /api/contact`, which mails `CONTACT_TO_EMAIL` with
+  the visitor as reply-to, and shows a translated error unless the send
+  succeeded. The block's labels gain `en` / `nl` dictionaries.
+
+### Changed
+
+- `server.js` takes its client-IP helper from `src/server/rateLimit.js`.
+- `graphql` `^16.14.2` added as a direct dependency.
+- `npm run test:server` runs the server unit tests.
+- Pins vue-ui 0.32.0 (MachineGrid skeletons and props, the search error state,
+  the price-request honeypot).
+
 ## [1.22.1] - 2026-10-18
 
 ### Fixed
