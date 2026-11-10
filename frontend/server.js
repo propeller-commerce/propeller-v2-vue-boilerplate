@@ -29,7 +29,14 @@ import { priceRequestHandler } from './src/server/priceRequest.js'
 import { contactHandler } from './src/server/contact.js'
 import { clientIp } from './src/server/rateLimit.js'
 import { trackerGate } from './src/server/trackerAuth.js'
-import { shouldUseOrderEditorKey } from './src/server/orderEditorRouting.js'
+import {
+  createdOrderId,
+  LAST_ORDER_COOKIE,
+  LAST_ORDER_MAX_AGE,
+  shouldUseOrderEditorKey,
+  signLastOrder,
+  verifyLastOrder,
+} from './src/server/orderEditorRouting.js'
 import { ingestBatch, visitorCookie, VISITOR_COOKIE } from './src/server/trackingIngest.js'
 import { isTrackingConfigured, classifyDbError, STATUS_HINTS, todayLocal, addDays } from './src/server/tracking.js'
 import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS } from './src/server/trackingQueries.js'
@@ -449,8 +456,9 @@ function graphqlCachedHandler() {
       try { parsed = JSON.parse(rawBody.toString('utf-8')) } catch {}
       const opType = parsed ? gqlOperationType(parsed.query) : 'mutation'
 
-      // Order-editor key only for the allowlisted single-field mutations, decided
-      // from the parsed document (see src/server/orderEditorRouting.js).
+      // Order-editor key only for the allowlisted single-field mutations and a
+      // guest's own just-placed order, decided from the parsed document (see
+      // src/server/orderEditorRouting.js).
       const operationName = gqlOperationName(parsed)
       const clientIdHeader = req.headers['x-client-id']
       const useOrderKey =
@@ -458,6 +466,11 @@ function graphqlCachedHandler() {
         shouldUseOrderEditorKey(parsed, {
           clientId: Array.isArray(clientIdHeader) ? clientIdHeader[0] : clientIdHeader,
           hasSession: looksLikeValidJwt(upstreamBearer),
+          isAnonymous: !isAuthenticated,
+          lastOrderId: verifyLastOrder(
+            parseCookies(req.headers.cookie || '')[LAST_ORDER_COOKIE],
+            ORDER_EDITOR_API_KEY,
+          ),
         })
       const apiKey = useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY
 
@@ -468,7 +481,7 @@ function graphqlCachedHandler() {
       // account-identity query, never anonymous-cacheable even if it somehow
       // arrives without a token.
       const cacheable =
-        !isAuthenticated && opType === 'query' && operationName !== 'viewer'
+        !isAuthenticated && !useOrderKey && opType === 'query' && operationName !== 'viewer'
       const key = cacheable ? gqlCacheKey(rawBody) : null
 
       if (cacheable) {
@@ -494,10 +507,23 @@ function graphqlCachedHandler() {
             'Content-Type': 'application/json',
             ...(upstreamBearer ? { Authorization: `Bearer ${upstreamBearer}` } : {}),
           },
-          body: rawBody,
+          // Elevated requests forward exactly what was classified.
+          body: useOrderKey ? JSON.stringify(parsed) : rawBody,
         })
         const respBuf = Buffer.from(await upstreamResp.arrayBuffer())
         const contentType = upstreamResp.headers.get('content-type') || 'application/json'
+
+        const newOrderId =
+          ORDER_EDITOR_API_KEY && upstreamResp.ok ? createdOrderId(parsed, respBuf.toString('utf-8')) : null
+        if (newOrderId) {
+          res.cookie(LAST_ORDER_COOKIE, signLastOrder(newOrderId, ORDER_EDITOR_API_KEY), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' || req.secure,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: LAST_ORDER_MAX_AGE * 1000,
+          })
+        }
 
         // Only cache 2xx responses — a 4xx/5xx might be a transient upstream
         // error and we don't want to pin it for 24 h.

@@ -1,7 +1,7 @@
 {
   "name": "propeller-vue",
   "private": true,
-  "version": "1.23.2",
+  "version": "1.23.3",
   "type": "module",
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",
@@ -23,6 +23,7 @@
     "test:e2e:report": "playwright show-report",
     "test:tracking": "node --test --experimental-strip-types src/lib/tracking/*.test.ts",
     "test:server": "node --test src/server/*.test.js",
+    "test:catalog": "node --test --experimental-strip-types src/lib/catalog/*.test.ts",
     "tracking:init": "node scripts/tracking-init.mjs"
   },
   "dependencies": {

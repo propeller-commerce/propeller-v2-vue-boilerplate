@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.3] - 2026-11-10
+
+### Security
+
+- **A semi-closed shop no longer sends prices to visitors who are not logged
+  in** (PWP-1051). The prices were hidden on screen but still in the page
+  source. The server-side product, category, search and cluster fetches now clear `price`, `bulkPrices`, `surcharges`, bundle
+  prices, the amounts in `priceData` and the listing's `minPrice` /
+  `maxPrice` when the portal mode is `semi-closed` and nobody is logged in.
+  Logged-in visitors get the full data as before.
+
+### Fixed
+
+- **The guest thank-you page loads the order** (PWP-1078). It showed "Geen
+  toegang" because the proxy never let a guest read the order just placed. As
+  in the Next and Nuxt boilerplates, the proxy now sets a signed httpOnly
+  `propeller_last_order` cookie when `cartProcess` returns an order id, and an
+  anonymous `order` query for exactly that id uses the order-editor key. That
+  response is never cached.
+- **The search error is translated** (PWP-1074). The `SearchBar`
+  dictionaries gain `searchError`, so a failed search reads "Zoeken is nu niet
+  beschikbaar. Probeer het opnieuw." on Dutch shops instead of the English
+  fallback.
+
 ## [1.23.2] - 2026-11-04
 
 ### Changed

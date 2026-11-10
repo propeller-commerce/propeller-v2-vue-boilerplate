@@ -49,7 +49,7 @@ import {
   channelService,
 } from '@propeller-commerce/propeller-sdk-v2'
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-vue-ui/shared'
-import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui'
+import { buildInventoryFilter, isContentHidden, type Availability } from '@propeller-commerce/propeller-v2-core-ui'
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,
@@ -61,6 +61,8 @@ import {
   configuration,
 } from './config'
 import { retypeTextFilters } from './listingParams'
+import { hidePrices } from './catalog/hidePrices'
+import { portalMode } from './config'
 import { cms } from './cms'
 import { TAG_CMS, cmsPageTag, cmsArticleTag } from './cms/core'
 import type {
@@ -281,6 +283,11 @@ function withCacheTags(infra: ServerInfra, extraTags: readonly string[]): GraphQ
 function withCacheTagsServices(infra: ServerInfra, extraTags: readonly string[]): Services {
   if (!infra.cacheable || extraTags.length === 0) return infra.services
   return createServices(withCacheTags(infra, extraTags))
+}
+
+// Semi-closed shops must not send prices to visitors who are not logged in.
+function forViewer<T>(infra: ServerInfra, data: T): T {
+  return isContentHidden(portalMode, infra.user) ? hidePrices(data) : data
 }
 
 // ── Per-request infra (mirrors the PropellerProvider value object) ───────────
@@ -859,7 +866,7 @@ export async function fetchProduct(
             }
           : {}),
       })
-      return result ? (toPlain(result) as Product) : null
+      return result ? forViewer(infra, toPlain(result) as Product) : null
     } catch (e) {
       if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
         return null
@@ -931,7 +938,7 @@ export async function fetchCategory(
       if (retyped) {
         result = await run({ ...categoryProductSearchInput, textFilters: retyped })
       }
-      return result ? (toPlain(result) as Category) : null
+      return result ? forViewer(infra, toPlain(result) as Category) : null
     } catch (e) {
       if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
         return null
@@ -1011,7 +1018,7 @@ export async function fetchSearch(
         result = await run({ ...categoryProductSearchInput, textFilters: retyped })
       }
       const products = result?.products as ProductsResponse | undefined
-      return products ? (toPlain(products) as ProductsResponse) : null
+      return products ? forViewer(infra, toPlain(products) as ProductsResponse) : null
     } catch (e) {
       if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
         return null
@@ -1066,7 +1073,7 @@ export async function fetchCluster(
             }
           : {}),
       })
-      return result ? (toPlain(result) as Cluster) : null
+      return result ? forViewer(infra, toPlain(result) as Cluster) : null
     } catch (e) {
       if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
         return null
