@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.6] - 2026-11-12
+
+### Fixed
+
+- **Password reset, registration, the specifications tab, English
+  breadcrumbs and the cart's quote button now work** (PWP-971). Pins
+  `@propeller-commerce/propeller-v2-vue-ui` `^0.33.3`, whose `ForgotPassword`,
+  `RegisterForm`, `ProductTabs`, `Breadcrumbs` and `CartSummary` take the
+  GraphQL client, language, configuration and user from the provider when a
+  page leaves the prop out, as this app does.
+
+### Changed
+
+- **Every develop deploy now runs the storefront tests** (PWP-971). After
+  `deploy:dev` answers, the pipeline starts this app's suite in
+  `qa/storefront-testing` and goes red when it does.
+
 ## [1.23.5] - 2026-11-12
 
 ### Fixed
