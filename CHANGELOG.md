@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.7] - 2026-11-12
+
+### Fixed
+
+- **English breadcrumbs link to a working page.** A category with no English
+  slug was linked as `/en/category/1714` and answered 404. Pins
+  `@propeller-commerce/propeller-sdk-v2` `^0.19.1`, whose category path now
+  carries every language's slug, so the link falls back to the first one.
+  The category heading of a category with no name in the active language
+  falls back to the URL slug instead of rendering empty, as on Nuxt.
+- **Forgot password no longer reveals which addresses have an account.** Pins
+  `@propeller-commerce/propeller-v2-vue-ui` `^0.33.4`: every request shows
+  the same confirmation.
+- **The product URL follows the language.** After a language switch, or on a
+  stale slug, the product page swaps in the product's slug for the active
+  language, as Next does.
+- **Authorization settings and requests are manager-only.** A contact without
+  the authorization-manager role who typed the URL got the manager component;
+  the pages now render nothing for them, as the menu already hid the links.
+
 ## [1.23.6] - 2026-11-12
 
 ### Fixed

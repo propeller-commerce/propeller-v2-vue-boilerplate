@@ -572,9 +572,25 @@ watch(
   { immediate: true },
 );
 
+// The URL carries the product's own slug in the active language (else its
+// first), as Next's PDP does: after a language switch or on a stale typed slug
+// the right one is swapped in. Same route record, so nothing reloads.
+const productPath = computed(() => {
+  const p = product.value;
+  if (!p) return null;
+  const path = configuration.urls.getProductUrl(p, languageStore.language);
+  return path.includes(`/product/${p.productId}/`) ? path : null;
+});
+
 onMounted(() => {
   if (!seededProduct) loadProduct();
   ssrCatalog.consumeSeed(route.fullPath);
+  // Registered after the seed is consumed: the swap changes route.fullPath.
+  watch(productPath, (path) => {
+    if (path && decodeURI(route.path) !== decodeURI(path)) {
+      void router.replace({ path, query: route.query, hash: route.hash });
+    }
+  }, { immediate: true });
 });
 watch(
   () => route.params.productId,

@@ -4,7 +4,7 @@
       <h1 class="text-3xl font-bold tracking-tight">{{ t.authorizationSettingsTitle }}</h1>
     </div>
     <PurchaseAuthorizationConfigurator
-      v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
+      v-if="authStore.user && isContact(authStore.user) && companyStore.companyId && authStore.isAuthManagerForCompany(authStore.user, companyStore.companyId)"
       :afterPurchaseAuthorizationCreate="(pac: PurchaseAuthorizationConfig) => trackPac('created', pac)"
       :afterPurchaseAuthorizationUpdate="(pac: PurchaseAuthorizationConfig) => trackPac('updated', pac)"
       :afterPurchaseAuthorizationDelete="() => trackPac('deleted', null)"

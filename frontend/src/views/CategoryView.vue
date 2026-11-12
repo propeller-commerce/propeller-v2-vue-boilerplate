@@ -401,11 +401,15 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
     })),
 );
 
+// A category with no name in this language (names are fetched for the active
+// language only) falls back to the URL slug, as propeller-nuxt does, so the
+// grid heading is never empty.
 function getCategoryName(): string {
-  if (!category.value) return "";
+  const slug = String(route.params.slug ?? "");
+  if (!category.value) return slug;
   const nameArr = category.value.names ?? [];
   const match = nameArr.find((n) => n.language === languageStore.language);
-  return match?.value || nameArr[0]?.value || "";
+  return match?.value || nameArr[0]?.value || slug;
 }
 
 // SEO <head> — driven by the (SSR-seeded) category. Reactive: a client-side

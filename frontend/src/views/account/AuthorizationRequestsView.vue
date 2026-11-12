@@ -4,7 +4,7 @@
       <h1 class="text-3xl font-bold tracking-tight">{{ t.authorizationRequestsTitle }}</h1>
     </div>
     <PurchaseAuthorizationRequests
-      v-if="authStore.user && isContact(authStore.user) && companyStore.companyId"
+      v-if="authStore.user && isContact(authStore.user) && companyStore.companyId && authStore.isAuthManagerForCompany(authStore.user, companyStore.companyId)"
       :afterAcceptRequest="handleAfterAccept"
       :afterDeleteRequest="handleAfterReject"
       :labels="purchaseAuthorizationRequestsLabels"

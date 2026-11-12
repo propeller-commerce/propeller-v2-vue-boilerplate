@@ -309,12 +309,14 @@ const activeTextFilters = computed<ProductTextFilterInput[]>(() =>
     })),
 );
 
+// No name in this language → the URL slug, so the heading is never empty.
 function getCategoryName(): string {
-  if (!category.value) return "";
+  const slug = String(route.params.slug ?? "");
+  if (!category.value) return slug;
   const nameArr =
     (category.value as any).name || (category.value as any).names || [];
   const match = nameArr.find((n: any) => n.language === languageStore.language);
-  return match?.value || nameArr[0]?.value || "";
+  return match?.value || nameArr[0]?.value || slug;
 }
 
 // ── ProductGrid callbacks ─────────────────────────────────────────────────────
