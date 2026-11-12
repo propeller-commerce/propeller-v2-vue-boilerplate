@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.5] - 2026-11-12
+
+### Fixed
+
+- **A magic link no longer ends on the login page while the contact is
+  logged in** (PWP-1066). Logging in sets the company, which remounts the
+  page, so `MagicLoginView` sent its one-time token a second time; the API
+  refused it as already used, and depending on timing the shop went to
+  `/login?magic_expired=1`. The sign-in now runs once per token, and a
+  remounted view waits for that result.
+- **The order subtotal no longer includes the shipping costs** (PWP-1070).
+  Pins `@propeller-commerce/propeller-v2-vue-ui` `^0.33.2`, whose
+  `OrderTotals` takes the shipping and transaction costs out of the subtotal.
+
 ## [1.23.4] - 2026-11-12
 
 ### Fixed

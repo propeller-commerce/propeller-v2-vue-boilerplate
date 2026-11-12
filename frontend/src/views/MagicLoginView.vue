@@ -27,6 +27,7 @@ import { configuration, localizeHref } from '@/lib/config'
 import { useLanguageStore } from '@/stores/language'
 import { useAfterLogin } from '@/composables/useAfterLogin'
 import { track } from '@/lib/tracking/bus'
+import { onceForToken } from '@/lib/auth/magicLoginOnce'
 
 const router = useRouter()
 const route = useRoute()
@@ -38,24 +39,24 @@ const failed = ref(false)
 onMounted(async () => {
   const token = (route.query.mtoken as string) || ''
   const redirect = (route.query.redirect as string) || ''
-  const expired = () => router.replace(`${localizeHref('/login', languageStore.language)}?magic_expired=1`)
 
-  if (!token) {
+  const target = token ? await onceForToken(token, () => signIn(token, redirect)) : null
+  if (!target) {
     failed.value = true
-    expired()
+    router.replace(`${localizeHref('/login', languageStore.language)}?magic_expired=1`)
     return
   }
+  router.replace(target)
+})
 
+/** Exchanges the token and runs the post-login steps; returns the page to go to, or null. */
+async function signIn(token: string, redirect: string): Promise<string | null> {
   // Clear any stale token so the exchange is anonymous (matches the WP flow) and
   // a magic link can hand off to a DIFFERENT contact than the one signed in.
   graphqlClient.clearAccessToken()
 
   const res = await magicLogin(token)
-  if (!res.ok || !res.data.user) {
-    failed.value = true
-    expired()
-    return
-  }
+  if (!res.ok || !res.data.user) return null
 
   // A magic token is how a punchout buyer arrives from their procurement
   // system, so the session start is worth its own event — `login` alone cannot
@@ -74,6 +75,6 @@ onMounted(async () => {
     null,
     'magic_token',
   )
-  router.replace(redirect || localizeHref('/', effectiveLanguage))
-})
+  return redirect || localizeHref('/', effectiveLanguage)
+}
 </script>
