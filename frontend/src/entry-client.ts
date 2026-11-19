@@ -11,7 +11,6 @@ import '@propeller-commerce/propeller-v2-vue-ui/styles.css'
 import './style.css'
 import { createApp } from './app'
 import { graphqlClient } from './lib/api'
-import { setCookie } from './lib/ssr'
 import { channelId, configuration } from './lib/config'
 import { startTracking } from './lib/tracking/bootstrap'
 import { fetchActiveCart } from '@propeller-commerce/propeller-v2-vue-ui'
@@ -20,16 +19,10 @@ import { useCompanyStore } from './stores/company'
 import { useAuthStore } from './stores/auth'
 import { useLanguageStore } from './stores/language'
 
-// Restore the access token so authenticated API calls work after a reload.
-// Client-only: this is the localStorage half of the two-stage auth model.
-const storedToken =
-  localStorage.getItem('accessToken') || localStorage.getItem('auth_token')
-if (storedToken) {
-  graphqlClient.setAccessToken(storedToken)
-  // Re-mirror the token into the SSR cookie. This also migrates users who
-  // logged in before the cookie existed: their next navigation server-renders
-  // personalised HTML instead of waiting for a re-login.
-  setCookie('access_token', storedToken)
+// The session is an httpOnly cookie now (lib/api.ts). Tokens an older build left
+// in localStorage are never read again: drop them.
+for (const key of ['accessToken', 'access_token', 'auth_token', 'refreshToken', 'expiresAt']) {
+  localStorage.removeItem(key)
 }
 
 const { app, router, pinia } = createApp()
@@ -58,14 +51,8 @@ router.isReady().then(() => {
   // the default company and shows the wrong company's cart.
   useCompanyStore().hydrateFromStorage()
 
-  // 2. Auth reconcile. The server may have rendered anonymously (no/expired auth
-  // cookie) while localStorage still holds a valid session. `refreshUser`
-  // re-validates the token and refreshes the profile.
-  if (storedToken) {
-    const auth = useAuthStore()
-    if (!auth.token) auth.setToken(storedToken)
-    if (!auth.user) void auth.refreshUser()
-  }
+  // 2. Auth needs no reconcile: the server read the httpOnly session cookie and
+  // seeded the auth store (hydrateFromServer), which __INITIAL_STATE__ restored.
 
   // 3. Cart reconcile. For an AUTHENTICATED user, fetch the server's active cart
   // scoped to the (now-correct) selected company and use that — the persisted

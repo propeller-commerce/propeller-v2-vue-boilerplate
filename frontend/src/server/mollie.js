@@ -35,9 +35,9 @@ import { GraphQLClient } from '@propeller-commerce/propeller-sdk-v2'
  * plus the payment mutations.
  */
 const MOLLIE_ORDER_EDITOR_MUTATIONS = [
-  // SDK defaults (must be repeated — this option replaces, not extends):
+  // SDK defaults (must be repeated — this option replaces, not extends),
+  // minus passwordResetLink:
   'orderSetStatus',
-  'passwordResetLink',
   'triggerQuoteSendRequest',
   'triggerOrderSendConfirm',
   // Payment mutations the Mollie flow issues, gated the same way:

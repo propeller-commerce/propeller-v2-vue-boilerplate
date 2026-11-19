@@ -11,16 +11,69 @@ import { createServices } from '@propeller-commerce/propeller-v2-vue-ui'
 // Proxy mode: server.js injects the API key; the browser never holds one.
 const endpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/api/graphql'
 
+// ── Session ────────────────────────────────────────────────────────────────
+// The session lives in httpOnly cookies set by the server (POST/DELETE
+// /api/auth/session); the /api/graphql proxy turns the cookie into the upstream
+// Bearer. Browser code never stores or reads a token, so a script injected into
+// the page can't carry the session off.
+
+let sessionWrite: Promise<unknown> = Promise.resolve()
+
+function sessionRequest(method: 'POST' | 'DELETE', body?: object, query = ''): Promise<unknown> {
+  return fetch(`/api/auth/session${query}`, {
+    method,
+    keepalive: true,
+    ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+  }).catch(() => undefined)
+}
+
+/** Hand the tokens a login just returned to the server, which keeps them in httpOnly cookies. */
+export function startSession(accessToken: string, refreshToken?: string): Promise<unknown> {
+  return (sessionWrite = sessionRequest('POST', { accessToken, refreshToken }))
+}
+
+/**
+ * Drop the session cookies (logout), with the last-order, registration and punchout
+ * cookies. `keepPunchoutPending`: magic-login, right before the token exchange that
+ * activates the pending punchout entry.
+ */
+export function endSession({ keepPunchoutPending = false } = {}): Promise<unknown> {
+  return (sessionWrite = sessionRequest('DELETE', undefined, keepPunchoutPending ? '?keep=punchout-pending' : ''))
+}
+
+/**
+ * The SDK client, with its token hooks pointed at the session cookies. The
+ * package's login, magic-login and registration flows call `setAccessToken`
+ * with the token they just received and then query as that user; the base
+ * class would put it in localStorage.
+ */
+class SessionGraphQLClient extends GraphQLClient {
+  override setAccessToken(token: string): void {
+    if (token) void startSession(token)
+    else void endSession()
+  }
+
+  override clearAccessToken(): void {
+    void endSession()
+  }
+}
+
 const clientConfig: GraphQLClientConfig = {
   endpoint,
   timeout: parseInt(import.meta.env.VITE_TIMEOUT || '30000', 10),
   headers: {},
+  // No Authorization header: the proxy reads the cookie. A request waits for a
+  // pending session write, so the one right after a login carries the new cookie.
+  getAccessToken: async () => {
+    await sessionWrite
+    return undefined
+  },
 }
 
 // This app owns the GraphQL transport. The propeller-v2-vue-ui package ships
 // no client and no endpoint — we build the client here and hand it, plus the
 // `services` bundle below, to <App> via providePropeller().
-export const graphqlClient = new GraphQLClient(clientConfig)
+export const graphqlClient = new SessionGraphQLClient(clientConfig)
 
 /**
  * A sibling client identified as the "order-editor" caller via the SDK's
@@ -33,7 +86,7 @@ export const graphqlClient = new GraphQLClient(clientConfig)
  * `PurchaseAuthorizationConfigurator`'s `graphqlClient` prop.
  */
 export const ORDER_EDITOR_CLIENT_ID = 'order-editor'
-export const orderEditorGraphqlClient = new GraphQLClient({
+export const orderEditorGraphqlClient = new SessionGraphQLClient({
   ...clientConfig,
   clientId: ORDER_EDITOR_CLIENT_ID,
 })

@@ -13,6 +13,7 @@
  */
 
 import crypto from 'node:crypto'
+import { clientIp } from './rateLimit.js'
 
 const PREPR_UID_COOKIE = '__prepr_uid'
 const SEGMENTS_COOKIE = 'prepr-segments'
@@ -21,11 +22,6 @@ const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_c
 /** True when Prepr is the active CMS. Gates the whole Prepr bridge. */
 export function isPreprEnabled() {
   return (process.env.CMS_PROVIDER || process.env.VITE_CMS_PROVIDER || '').trim().toLowerCase() === 'prepr'
-}
-
-/** Shared secret guarding the preview route. */
-export function previewSecret() {
-  return process.env.PREPR_PREVIEW_SECRET || 'prepr-preview'
 }
 
 /**
@@ -68,10 +64,8 @@ export function resolvePreprRequest(req) {
   }
   if (previewAb) headers['prepr-abtesting'] = previewAb
 
-  const ip =
-    firstStr(req.headers['cf-connecting-ip']) ||
-    (firstStr(req.headers['x-forwarded-for']) || '').split(',')[0].trim()
-  if (ip) headers['prepr-visitor-ip'] = ip
+  const ip = firstStr(req.headers['cf-connecting-ip']) || clientIp(req)
+  if (ip && ip !== 'unknown') headers['prepr-visitor-ip'] = ip
 
   for (const key of UTM_KEYS) {
     const value = firstStr(query[key])

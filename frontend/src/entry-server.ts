@@ -118,7 +118,7 @@ export async function render(
     try {
       const infra = await getServerInfra(ssrContext.cookies)
       if (infra.user) {
-        useAuthStore(pinia).hydrateFromServer(infra.user, authToken)
+        useAuthStore(pinia).hydrateFromServer(infra.user)
         // Seed the active company from the contact's default company so the
         // dashboard (which reads addresses + company info off `activeCompany`,
         // not off `user.company`) renders them on a refresh. The client

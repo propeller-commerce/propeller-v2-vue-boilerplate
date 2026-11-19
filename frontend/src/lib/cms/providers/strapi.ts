@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import { sanitizeRichText } from '../../../server/sanitizeRichText.js';
 import type {
   CmsProvider,
   CmsFetchArgs,
@@ -99,7 +100,8 @@ function normalizeBlock(strapiUrl: string, raw: any): CmsBlock | null {
         secondaryCtaUrl: raw.secondaryCtaUrl || null,
       };
     case 'rich-text':
-      return { _type: 'rich-text', body: raw.body ? marked.parse(raw.body, { async: false }) as string : '' };
+      // marked passes raw HTML through: sanitise what editors wrote before it reaches v-html (#21).
+      return { _type: 'rich-text', body: raw.body ? sanitizeRichText(marked.parse(raw.body, { async: false })) : '' };
     case 'media':
       return { _type: 'media', file: normalizeImage(strapiUrl, raw.file) };
     case 'quote':

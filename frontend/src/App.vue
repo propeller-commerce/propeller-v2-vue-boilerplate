@@ -35,7 +35,7 @@ const validatedCompanyId = computed<number | undefined>(() => {
   // An anonymous request carries no bearer token, so the backend cannot
   // authorize a company-scoped catalog read and rejects it outright. Keep the
   // selection only while a session exists and its profile is still loading.
-  if (!u) return auth.token ? selId : undefined
+  if (!u) return auth.hasSession ? selId : undefined
   const candidates = [...(u.companies?.items ?? []), ...(u.company ? [u.company] : [])]
   if (selId != null && candidates.some((c) => c?.companyId === selId)) return selId
   return u.company?.companyId ?? undefined
@@ -46,9 +46,9 @@ const validatedCompanyId = computed<number | undefined>(() => {
 // then scopes anonymous catalog reads to a company the request cannot
 // authorize. Drop it once auth has settled on anonymous.
 watch(
-  () => [auth.isLoading, auth.token, auth.user, company.companyId] as const,
-  ([loading, token, user, selected]) => {
-    if (loading || token || user || selected == null) return
+  () => [auth.isLoading, auth.hasSession, auth.user, company.companyId] as const,
+  ([loading, session, user, selected]) => {
+    if (loading || session || user || selected == null) return
     company.clearSelectedCompany()
   },
   { immediate: true },
@@ -115,7 +115,7 @@ watch(
 <template>
   <PropellerProvider
     :user="auth.user ?? null"
-    :is-authenticated="!!auth.token"
+    :is-authenticated="auth.hasSession"
     :company-id="validatedCompanyId"
     :language="language.language"
     :include-tax="price.includeTax"

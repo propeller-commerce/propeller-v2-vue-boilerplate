@@ -8,6 +8,7 @@ import {
   resolvePreviewRequest,
   resolvePreviewExit,
   frameHeaders,
+  previewBase,
   strapiPreviewToken,
 } from './preview.js'
 
@@ -72,6 +73,27 @@ test('protocol-relative slugs are rejected', () => {
   }
 })
 
+test('a leading tab or newline cannot smuggle a protocol-relative URL (#16)', () => {
+  for (const slug of ['\t//evil.com', '\n//evil.com', '/\t/evil.com', '\r\n/\\evil.com', '\u0000//evil.com']) {
+    assert.equal(previewBase(slug), null, JSON.stringify(slug))
+    assert.equal(resolvePreviewRequest({ secret: 's3cret', slug }, strapiEnv).status, 400, JSON.stringify(slug))
+    assert.equal(resolvePreviewExit({ redirect: slug }, strapiEnv).location, '/', JSON.stringify(slug))
+  }
+  assert.equal(previewBase('/ab\tout'), '/about')
+})
+
+test('a single leading backslash cannot become /\\host on either route (#14)', () => {
+  for (const slug of ['\\evil.test', '\t\\evil.test', '/\\evil.test', '\\/evil.test', '\n\\evil.test/x']) {
+    assert.equal(previewBase(slug), null, JSON.stringify(slug))
+    assert.equal(resolvePreviewRequest({ secret: 's3cret', slug }, strapiEnv).status, 400, JSON.stringify(slug))
+    assert.equal(resolvePreviewExit({ redirect: slug }, strapiEnv).location, '/', JSON.stringify(slug))
+  }
+  // Ordinary slugs keep working.
+  assert.equal(resolvePreviewExit({ redirect: 'about' }, strapiEnv).location, '/about')
+  assert.equal(resolvePreviewExit({ redirect: '/en/about?x=1' }, strapiEnv).location, '/en/about?x=1')
+  assert.equal(resolvePreviewExit({}, strapiEnv).location, '/')
+})
+
 test('absolute URLs never become an off-site redirect', () => {
   const r = resolvePreviewRequest({ secret: 's3cret', slug: 'https://evil.com' }, strapiEnv)
   assert.ok(r.status === 400 || (r.location && r.location.startsWith('/') && !r.location.startsWith('//')))
@@ -84,17 +106,37 @@ test('strapi locale is normalised to the storefront short code', () => {
   assert.equal(en.location, '/?preview_lang=EN')
 })
 
+const preprEnv = { CMS_PROVIDER: 'prepr', PREPR_PREVIEW_SECRET: 'pp', COOKIE_SIGNING_SECRET: 'cookie-key' }
+
 test('prepr path keeps its secret and segment passthrough', () => {
-  const env = { CMS_PROVIDER: 'prepr', PREPR_PREVIEW_SECRET: 'pp' }
   const r = resolvePreviewRequest(
     { secret: 'pp', slug: 'home-personalized', locale: 'en-US', prepr_preview_segment: 'seg' },
-    env,
+    preprEnv,
   )
   assert.equal(r.status, 302)
   assert.equal(r.location, '/?preview_lang=EN&prepr_preview_segment=seg')
   assert.equal(r.cookie.name, 'prepr_preview')
-  assert.equal(r.cookie.value, '1')
-  assert.equal(resolvePreviewRequest({ secret: 'x', slug: '/' }, env).status, 401)
+  assert.notEqual(r.cookie.value, '1')
+  assert.equal(isCmsPreviewActive({ prepr_preview: r.cookie.value }, preprEnv), true)
+  assert.equal(resolvePreviewRequest({ secret: 'x', slug: '/' }, preprEnv).status, 401)
+})
+
+test('prepr preview fails closed without its secret; no default value (V2)', () => {
+  const noSecret = { CMS_PROVIDER: 'prepr', COOKIE_SIGNING_SECRET: 'cookie-key' }
+  assert.equal(resolvePreviewRequest({ secret: 'prepr-preview', slug: '/' }, noSecret).status, 404)
+  assert.equal(resolvePreviewRequest({ secret: '', slug: '/' }, noSecret).status, 404)
+  // A cookie signed while the secret was set stops working once it is removed.
+  const { cookie } = resolvePreviewRequest({ secret: 'pp', slug: '/' }, preprEnv)
+  assert.equal(isCmsPreviewActive({ prepr_preview: cookie.value }, noSecret), false)
+  // Without any signing key nothing can be signed: 503, not an unsigned cookie.
+  assert.equal(resolvePreviewRequest({ secret: 'pp', slug: '/' }, { CMS_PROVIDER: 'prepr', PREPR_PREVIEW_SECRET: 'pp' }).status, 503)
+})
+
+test('a hand-set or foreign prepr_preview cookie unlocks nothing (V2)', () => {
+  assert.equal(isCmsPreviewActive({ prepr_preview: '1' }, preprEnv), false)
+  const { cookie } = resolvePreviewRequest({ secret: 'pp', slug: '/' }, preprEnv)
+  assert.equal(isCmsPreviewActive({ prepr_preview: cookie.value }, { ...preprEnv, COOKIE_SIGNING_SECRET: 'other-key' }), false)
+  assert.equal(isCmsPreviewActive({ prepr_preview: cookie.value.replace(/.$/, (c) => (c === '0' ? '1' : '0')) }, preprEnv), false)
 })
 
 test('exit clears the active provider cookie', () => {
@@ -144,8 +186,8 @@ test('each provider honours only its own preview cookie', () => {
   const token = strapiPreviewToken('s3cret')
   assert.equal(isCmsPreviewActive({ prepr_preview: '1' }, strapiEnv), false)
   assert.equal(isCmsPreviewActive({ [STRAPI_PREVIEW_COOKIE]: token }, strapiEnv), true)
-  const prepr = { CMS_PROVIDER: 'prepr' }
-  assert.equal(isCmsPreviewActive({ prepr_preview: '1' }, prepr), true)
-  assert.equal(isCmsPreviewActive({ [STRAPI_PREVIEW_COOKIE]: token }, prepr), false)
-  assert.equal(isCmsPreviewActive({ prepr_preview: '1' }, { CMS_PROVIDER: 'none' }), false)
+  const signed = resolvePreviewRequest({ secret: 'pp', slug: '/' }, preprEnv).cookie.value
+  assert.equal(isCmsPreviewActive({ prepr_preview: signed }, preprEnv), true)
+  assert.equal(isCmsPreviewActive({ [STRAPI_PREVIEW_COOKIE]: token }, preprEnv), false)
+  assert.equal(isCmsPreviewActive({ prepr_preview: signed }, { CMS_PROVIDER: 'none' }), false)
 })

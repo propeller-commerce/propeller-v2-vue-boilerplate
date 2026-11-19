@@ -8,6 +8,8 @@ import {
 } from './mail/template.js';
 import { getTranslations, labeller } from './mail/locales.js';
 import { guardForm } from './formGuard.js';
+import { errorSummary } from './httpGuards.js';
+import { CONFIRMATION_DAILY_CAP, formLimiter } from './rateLimit.js';
 
 /**
  * Price-request submission. Same contract and payload as the Next and Nuxt
@@ -44,7 +46,7 @@ function readItems(raw) {
     .slice(0, MAX_ITEMS);
 }
 
-async function handlePriceRequest(req, res, getMail) {
+async function handlePriceRequest(req, res, getMail, limiter) {
   const body = req.body && typeof req.body === 'object' ? req.body : null;
   if (!body) {
     res.status(400).json({ error: 'Invalid JSON' });
@@ -138,12 +140,26 @@ async function handlePriceRequest(req, res, getMail) {
       }),
     });
   } catch (e) {
-    console.error('[api/price-request] send to shop failed:', e);
+    // Codes only: SMTP errors quote addresses (#15).
+    console.error('[api/price-request] send to shop failed:', errorSummary(e));
     res.status(502).json({ error: 'Failed to send the request' });
     return;
   }
 
   // ── The shopper's confirmation, in their own language ─────────────────────
+  // At most CONFIRMATION_DAILY_CAP per address, whatever IP asks: the form
+  // would otherwise mail shop-branded text to any address on request (#10).
+  // Past the cap the shop still gets the request; only the copy is skipped.
+  const cap = limiter.hit(
+    `price-request:email:${email.toLowerCase()}`,
+    CONFIRMATION_DAILY_CAP.limit,
+    CONFIRMATION_DAILY_CAP.windowMs,
+  );
+  if (!cap.ok) {
+    res.json({ ok: true });
+    return;
+  }
+
   const shopperTable = productTable(items, {
     code: shopper('emailColCode', 'Article no. / SKU'),
     name: shopper('emailColName', 'Product'),
@@ -188,7 +204,7 @@ async function handlePriceRequest(req, res, getMail) {
       }),
     });
   } catch (e) {
-    console.error('[api/price-request] confirmation to shopper failed:', e);
+    console.error('[api/price-request] confirmation to shopper failed:', errorSummary(e));
   }
 
   res.json({ ok: true });
@@ -202,7 +218,7 @@ export function createPriceRequestHandler({ getMail = getMailProvider, limiter, 
       limiter,
       verifyCaptcha,
     });
-    if (proceed) await handlePriceRequest(req, res, getMail);
+    if (proceed) await handlePriceRequest(req, res, getMail, limiter ?? formLimiter);
   };
 }
 

@@ -29,6 +29,7 @@ import { localizeHref } from '@/lib/config'
 import { LoginForm } from '@propeller-commerce/propeller-v2-vue-ui';
 import { useTranslations } from '@/lib/i18n/composable';
 import { useAfterLogin } from '@/composables/useAfterLogin'
+import { localPath } from '@/lib/auth/localPath'
 import { useHead } from '@unhead/vue';
 
 const pageTitles = useTranslations('PageTitles');
@@ -50,7 +51,8 @@ async function handleLoginSuccess(
   anonymousCart?: Cart | null,
 ) {
   const { effectiveLanguage } = await runAfterLogin(user, accessToken, refreshToken, expiresAt, anonymousCart)
-  const redirect = (route.query.redirect as string) || localizeHref('/account', effectiveLanguage)
+  // Same-site paths only (#14).
+  const redirect = localPath(route.query.redirect) ?? localizeHref('/account', effectiveLanguage)
   router.push(redirect)
 }
 </script>

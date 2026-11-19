@@ -22,6 +22,7 @@ import type {
   CmsRichText,
   CmsMedia,
 } from '../types';
+import { sanitizeRichText } from '../../../server/sanitizeRichText.js';
 
 // ── Locale helper ──
 
@@ -196,7 +197,8 @@ function normalizeBlock(raw: any): CmsBlock | CmsBlock[] | null {
   switch (typename) {
     case 'Text': {
       // Prepr rich-text block; `html` holds the rendered headings/paragraphs.
-      const html = raw.html || '';
+      // Editor HTML, rendered with v-html on the shop's origin: allowlist it (#21).
+      const html = sanitizeRichText(raw.html);
       return html.trim() ? ({ _type: 'rich-text', body: html } as CmsRichText) : null;
     }
     case 'Assets': {

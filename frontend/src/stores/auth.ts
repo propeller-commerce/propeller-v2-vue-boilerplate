@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { type Contact, type Customer, PurchaseRole, UserService, type ViewerVariables } from '@propeller-commerce/propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api'
-import { isBrowser, safeStorage, setCookie, deleteCookie } from '@/lib/ssr'
+import { endSession, graphqlClient, startSession } from '@/lib/api'
+import { isBrowser, safeStorage } from '@/lib/ssr'
 import { configuration } from '@/lib/config'
 import { track } from '@/lib/tracking/bus'
 import { clearTrackingIdentity } from '@/lib/tracking/bootstrap'
@@ -45,19 +45,16 @@ function loadUserFromStorage(): User | null {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  // On the server `safeStorage` returns null → the store starts anonymous and
-  // the client reconciles real auth state from localStorage during hydration.
+  // On the server `safeStorage` returns null → the store starts anonymous; the
+  // SSR seed (hydrateFromServer) and __INITIAL_STATE__ carry the real state.
   const user = ref<User | null>(loadUserFromStorage())
-  const token = ref<string | null>(safeStorage.getItem('accessToken') || safeStorage.getItem('auth_token'))
+  // Whether this browser holds a session cookie. The token itself is httpOnly
+  // (see lib/api.ts): set by the server, never readable here.
+  const hasSession = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
-
-  // Restore graphqlClient auth on init
-  if (token.value) {
-    graphqlClient.setAccessToken(token.value)
-  }
+  const isAuthenticated = computed(() => hasSession.value && !!user.value)
 
   // Session timeout (30 min inactivity)
   let sessionTimer: ReturnType<typeof setTimeout> | null = null
@@ -101,19 +98,14 @@ export const useAuthStore = defineStore('auth', () => {
     safeStorage.removeItem('auth_user')
   }
 
-  function setToken(t: string | null) {
-    token.value = t
-    if (t) {
-      safeStorage.setItem('accessToken', t)
-      graphqlClient.setAccessToken(t)
-      // Mirror the token into a cookie so the SSR server can read it on the
-      // next navigation and render personalised, contact-priced HTML.
-      setCookie('access_token', t)
-    } else {
-      safeStorage.removeItem('accessToken')
-      safeStorage.removeItem('auth_token')
-      deleteCookie('access_token')
-    }
+  /**
+   * Start the session for the tokens a login or registration just returned: the
+   * server stores them in httpOnly cookies. GraphQL calls made meanwhile wait for
+   * that write (lib/api.ts), so they already run as the new user.
+   */
+  function setSession(accessToken: string, refreshToken?: string) {
+    hasSession.value = true
+    void startSession(accessToken, refreshToken)
   }
 
   function clearError() {
@@ -134,7 +126,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearTrackingIdentity()
 
     user.value = null
-    token.value = null
+    hasSession.value = false
     error.value = null
 
     // Clear localStorage except menuData
@@ -142,10 +134,8 @@ export const useAuthStore = defineStore('auth', () => {
     safeStorage.clear()
     if (menuData) safeStorage.setItem('menuData', menuData)
 
-    // Drop the SSR auth cookie too — `safeStorage.clear()` only touches
-    // localStorage, so without this the server would still render as the
-    // logged-in user after a logout.
-    deleteCookie('access_token')
+    // The session cookies are httpOnly: only the server can drop them.
+    void endSession()
 
     if (isBrowser) {
       window.dispatchEvent(new CustomEvent('userLoggedOut'))
@@ -155,10 +145,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function refreshUser(): Promise<void> {
-    const storedToken = safeStorage.getItem('accessToken')
-    if (!storedToken) return
+    if (!hasSession.value) return
     try {
-      graphqlClient.setAccessToken(storedToken)
       const userService = new UserService(graphqlClient)
       // Request the tracked company/customer attributes so the machines root can
       // read MY_INSTALLATIONS off the hydrated company. Mirrors propeller-next's
@@ -173,7 +161,6 @@ export const useAuthStore = defineStore('auth', () => {
         const plain = sanitizeUser(JSON.parse(JSON.stringify(viewerData, (_k, v) => v)))
         safeStorage.setItem('user', JSON.stringify(plain))
         user.value = plain
-        if (!token.value) token.value = storedToken
         // Re-point the company store at the fresh company copy. The dashboard
         // reads addresses + company info off `companyStore.selectedCompany`, a
         // separate snapshot — without this, an address edit (which calls
@@ -214,12 +201,12 @@ export const useAuthStore = defineStore('auth', () => {
   // there are no other tabs, and no `window`, during a server render.
   if (isBrowser) {
     const onLoggedIn = () => {
-      const storedToken = safeStorage.getItem('accessToken')
       const storedUser = safeStorage.getItem('user')
-      if (storedToken && storedUser) {
+      if (storedUser) {
         try {
           user.value = sanitizeUser(JSON.parse(storedUser))
-          token.value = storedToken
+          // The session cookie is shared by every tab of this origin.
+          hasSession.value = true
         } catch (e) {
           console.error('Failed to parse stored user on userLoggedIn event:', e)
         }
@@ -227,7 +214,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     const onLoggedOut = () => {
       user.value = null
-      token.value = null
+      hasSession.value = false
     }
 
     // The same-document `userLoggedIn` event fires only in the tab that logged
@@ -242,7 +229,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Cross-tab: another tab logged in/out. Route to the same handlers. The
     // logged-in tab reads freshly-written localStorage (login/register persist
-    // token+user before broadcasting), so onLoggedIn rehydrates here.
+    // the user before broadcasting), so onLoggedIn rehydrates here.
     authChannel?.addEventListener('message', (e: MessageEvent) => {
       if (e.data === 'logout') onLoggedOut()
       else if (e.data === 'login') onLoggedIn()
@@ -254,18 +241,19 @@ export const useAuthStore = defineStore('auth', () => {
    * prefetch loaders: the server reads the `access_token` cookie and resolves
    * the user via the SDK's `getViewer`, then hands the result here so the
    * server render of the catalog shell is already personalised (contact
-   * pricing, account menu state). Unlike `setUser`/`setToken` this writes NO
+   * pricing, account menu state). Unlike `setUser`/`setSession` this writes NO
    * storage/cookie — it only sets the in-memory refs, which then serialize
-   * into `__INITIAL_STATE__` and hydrate the client identically.
+   * into `__INITIAL_STATE__` and hydrate the client identically. The token
+   * itself never enters the store, so it never reaches the page.
    */
-  function hydrateFromServer(u: User | null, t: string | null) {
+  function hydrateFromServer(u: User | null) {
     user.value = u ? sanitizeUser(u) : null
-    token.value = t
+    hasSession.value = !!u
   }
 
   return {
-    user, token, isLoading, error, isAuthenticated,
-    setUser, setToken, clearError, updateUser, logout, refreshUser,
+    user, hasSession, isLoading, error, isAuthenticated,
+    setUser, setSession, clearError, updateUser, logout, refreshUser,
     isAuthManagerForCompany, hydrateFromServer,
   }
 })

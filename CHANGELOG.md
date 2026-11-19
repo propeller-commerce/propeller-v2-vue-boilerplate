@@ -5,7 +5,314 @@ All notable changes to the propeller-vue boilerplate are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.24.0] - 2026-11-19
+
+Security release: covers the 2026-11 security review (PWP-1120).
+
+### Dependencies
+
+- `propeller-sdk-v2` ^0.19.2: never elevates `passwordResetLink` by default.
+- `propeller-v2-mollie` ^0.2.5: the webhook acts only on a payment of the order total and never moves a placed order back.
+- `propeller-v2-msp` ^0.1.4: the same for MultiSafepay, plus signed notifications that reject stale and future timestamps.
+- `propeller-v2-punchout` ^0.1.1: the auto-post form accepts only https return URLs (http for loopback hosts only).
+- `propeller-v2-vue-ui` ^0.33.6: SearchBar, ProductBundles, ProductBulkPrices and GridToolbar hide prices from guests in semi-closed and closed portals; `magicLogin` fails without a session; core-ui 0.13.2 (closed portals, JSON-LD escaping).
+
+### Security
+
+- **`passwordResetLink` never runs with the order-editor key** (#1). It
+  returns the reset link to the caller, so anyone could take over an account
+  by its email address. Removed from the proxy's elevated set and from the
+  Mollie, MultiSafepay and PunchOut client lists. Nothing in the shop calls
+  it: forgot-password sends the mail through
+  `triggerPasswordSendResetEmailEvent`.
+- **Checkout mutations get the order-editor key only for the order this
+  browser just placed** (#2). `orderSetStatus`, `triggerQuoteSendRequest` and
+  `triggerOrderSendConfirm` used to run with the order-editor key on any order
+  id. They are now elevated only when `input.orderId` is the order in the
+  signed `propeller_last_order` cookie (set on `cartProcess`, guests and
+  logged-in shoppers alike), each at most once per order (flags signed into
+  the cookie plus a server-side record), and `orderSetStatus` only with the
+  checkout's own values (NEW, REQUEST or UNFINISHED; payment OPEN or absent).
+  An elevated mutation (these three, quote acceptance and `contactRegister`)
+  runs only as the SDK's own document, pinned by hash: the caller no longer
+  chooses what the order-editor key selects on the returned order or contact
+  (e.g. the company's contacts); any other document for them is refused
+  (403), never sent on the storefront key instead. A document with one of the
+  three checkout mutations anywhere that isn't elevated (another order, a step
+  already run, hidden next to another field) is refused the same way instead
+  of going upstream on the storefront key.
+  Accepting a quote (`orderSetStatus` NEW on a quotation) is elevated only
+  for the verified shopper who placed that quotation (see "Orders are read
+  only by their owner").
+- **New env var `COOKIE_SIGNING_SECRET`** signs the last-order cookie (and
+  the registration cookie below) with a purpose label and an expiry. Unset,
+  a key derived from `SSR_ORDER_EDITOR_API_KEY` is used and a warning logged;
+  the API key itself is no longer the HMAC key. Last-order cookies issued
+  before this release no longer verify (they lived an hour).
+- **`contactRegister` with the order-editor key only for a manager**
+  (open question 1). The authorization-settings "add contact" call is
+  elevated only when the upstream-verified viewer is an authorization manager
+  of `input.parentId`'s company; a token that merely looks like a JWT no
+  longer counts as a session.
+- **The GraphQL proxy forwards only `query`, `variables` and
+  `operationName`** (#3). Persisted-query hashes (`extensions`) and other keys
+  are dropped; a body that isn't JSON, has no string `query` or doesn't parse
+  is refused with 400. The anonymous cache key hashes the forwarded body.
+- **Schema introspection is refused** (#13): `__schema` / `__type` answer 403
+  (`__typename` is fine). Every proxy refusal is a JSON GraphQL error with
+  `extensions.code: FORBIDDEN`.
+- **The proxy parses each document once** (#17) and answers errors
+  generically, logging only the error name in production (#15).
+- **Semi-closed and closed shops no longer leak prices through
+  `/api/graphql`** (#4). With `VITE_PORTAL_MODE` `semi-closed` or `closed`,
+  every proxy response is stripped unless the Bearer belongs to a Contact or
+  Customer that upstream verified (looked up once per token, cached for a few
+  minutes, fails closed); a made-up `access_token` cookie no longer counts.
+  `hidePrices` now also clears cart, order, search (`effectivePrice`),
+  discount, margin, cost, tax-level and payment amounts, checked by a test
+  against every SDK type. For those visitors, aliased price fields
+  (`p: price`), inline price filters and `PRICE` sorts are refused, and price
+  filters and sorts in the variables are removed, so the shop's own listings
+  keep working. Anonymous responses are stripped before they are cached.
+  `open` shops are unaffected and pay no lookup.
+- **SSR hides prices in `closed` shops too**, and only a signed-in Contact or
+  Customer counts as logged in (core-ui's `isContentHidden` covers
+  semi-closed only). The anonymous SSR cache is now keyed on whether the
+  render carries a token, not on whether its viewer lookup succeeded, so a
+  failed lookup with a valid token can't store a contact-priced object for
+  everyone.
+- **Self-registration keeps working with a storefront key limited to its
+  role** (#12). The package `RegisterForm` runs `companyCreate` and
+  `companyAddressCreate` from the browser. The proxy now sends exactly the
+  SDK's own two documents (checked by a sha256 of the printed document; a test
+  fails when an SDK upgrade changes them) with the order-editor key and
+  without the Bearer: `companyCreate` only for anonymous visitors, 5 per IP
+  and 30 in total per hour, `input` reduced to name, VAT, CoC, email and
+  phone; `companyAddressCreate` only for the company this browser just created
+  (signed httpOnly `propeller_registration` cookie, 15 minutes), once per
+  address type.
+- **The session token is an httpOnly cookie** (V1). Browser code no longer
+  stores or reads a token: no `accessToken` / `refreshToken` in
+  localStorage, no JavaScript-written `access_token` cookie, and the token is
+  no longer serialised into the page's `__INITIAL_STATE__` (the auth store
+  holds a `hasSession` flag instead). Logins hand their tokens to
+  `POST /api/auth/session`, which sets `access_token` (8 h) and
+  `refresh_token` (30 days) as httpOnly, SameSite=Lax cookies, Secure in
+  production; `DELETE /api/auth/session` logs out. The SDK client never sends
+  an Authorization header; the proxy takes the Bearer from the cookie. The
+  package's login, magic-login and registration flows keep working unchanged:
+  the app's client turns their `setAccessToken` into the session call and
+  holds the next request until the cookie is set. An access token that is
+  missing or about to expire is renewed server-side from the refresh cookie
+  (proxy, SSR and every other route; one exchange per refresh token), so a
+  session now lasts up to 30 days instead of dying after the token's hour.
+  Tokens an older build left in localStorage are deleted on the first page
+  load; a session from before this release lasts until its token expires.
+- **Login CSRF closed** (#8): the session routes accept only same-origin
+  requests (an `Origin`, when sent, must be the request's own host,
+  `x-forwarded-host` or `VITE_SITE_URL`); `POST` also requires
+  `application/json`, which a cross-site form can't send. Logout has the same
+  origin check (#16).
+- **Rate limits key on the real client address** (#6). The first
+  `X-Forwarded-For` entry is whatever the client sent, so a random header per
+  request gave a fresh bucket each time. The proxy limit, the form limits
+  (contact, price request), registration and reCAPTCHA's `remoteip` now use
+  the entry the reverse proxy added: new env var `TRUSTED_PROXY_HOPS`
+  (default 1 = nginx; 2 with a CDN in front; 0 = no proxy, socket address).
+  `X-Real-IP` is no longer read. Only the reverse proxy may reach the app
+  port.
+- **Price-request confirmations are capped per address** (#10): at most 3
+  a day to one address, whatever IP asks. Past the cap the shop still gets
+  the request; only the shopper's copy is skipped, so nobody can block
+  someone else's requests.
+- **Login redirects stay on the site** (#14): `?redirect=` on `/login` and
+  `/magic-login` is followed only when it is a local path (no scheme, `//`,
+  `/\` or control characters).
+- **Preview redirects stay on the site** (#14, final review). `/api/preview/exit`
+  (no secret, live whenever Prepr or the Strapi preview is on) turned
+  `?redirect=\evil.test` into `Location: /\evil.test`, which a browser opens as
+  https://evil.test/. The slug of `/api/preview` had the same gap. Both now add
+  the leading slash first and then refuse `//` and `/\` (exit falls back to `/`,
+  preview answers 400).
+- **No error text from mail or the tracker database in logs or responses**
+  (#15): contact and price-request mail failures log only the error name and
+  SMTP codes (SMTP messages quote addresses); `/api/tracker` answers generic
+  errors and logs codes only.
+- **Smaller hardening** (#16): `/api/revalidate` and `/api/cms-revalidate`
+  compare the secret in constant time; `/api/track` is rate limited (120 per
+  minute per IP) and takes the contact, company and user mode from the
+  verified session instead of the request body (a contact may only name a
+  company it belongs to); the preview redirect strips tabs and newlines
+  before its off-site check, so `\t//evil.test` no longer passes; Express no
+  longer sends `X-Powered-By`. The Prepr visitor IP uses the same trusted
+  client address as the rate limits.
+- **Security headers on every response** (#9). One Express middleware, ahead
+  of all routes, sets a Content-Security-Policy mirroring the Next
+  boilerplate's production policy (scripts from self plus inline, Prepr,
+  Google Tag Manager and reCAPTCHA only when those features are on;
+  `connect-src 'self' https:`; YouTube/Vimeo frames; `base-uri` and
+  `form-action 'self'`), `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy`
+  and, in production, HSTS. SSR pages used to get only the framing headers
+  and API answers none. Framing is unchanged (`frame-ancestors 'none'` +
+  `X-Frame-Options: DENY`, or the active CMS editor). The PunchOut transfer
+  page, which auto-posts the cart to the buyer's system, has no `form-action`
+  limit. Development keeps `'unsafe-eval'` and websockets for Vite.
+- **PSP payments charge the order's own total, for its owner only** (#19).
+  `/api/mollie/create-payment` and `/api/msp/create-payment` took `orderId`,
+  `amount`, `currency` and `redirectUrl` from the browser and ran with the
+  order-editor key: anyone could pay one cent for any unfinished order and
+  have the webhook mark it paid, or point the PSP's return at another site.
+  Now the order must be the one this browser just placed (signed
+  `propeller_last_order` cookie) or one the verified shopper placed;
+  it must be UNFINISHED; amount and currency come from the order as upstream
+  has it (`total.net`, incl. VAT, rounded half-up to cents); the return URL
+  is the thank-you page on `VITE_SITE_URL` (in production create-payment
+  answers 503 without it; only development falls back to the request's own
+  origin, which comes from the client's Host header); the user id is the
+  verified viewer's; same-origin JSON only.
+  `/api/msp/payment-status` answers only the order's owner. The MultiSafepay
+  webhook verifies the `Auth` signature on POST notifications with the site
+  API key (`MSP_TEST_KEY` / `MSP_LIVE_KEY` per `MSP_TEST_MODE`) and refuses
+  a POST that doesn't verify; GET notifications, which carry no signature,
+  only make the provider re-fetch the transaction from MultiSafepay.
+- **MultiSafepay GET notifications run order processing only while the order
+  awaits payment** (final review #1). An unsigned MSP GET (what propeller-v2-msp 0.1.3 orders
+  send) could name any order id, and the provider re-applies NEW/PAID, the
+  confirmation mail, PDF and cart delete for every paid status: walking order
+  ids re-mailed customers and reset back-office statuses. GET notifications are
+  now limited to 30 per minute per client IP and 10 per hour per order (429,
+  MSP retries) and run the provider only while the order, read with the
+  order-editor key, is still `UNFINISHED`; otherwise they are acknowledged and
+  do nothing. A signed POST is processed only when its signed body's
+  `order_id` is the query's `transactionid` (403 otherwise); signed POSTs,
+  refunds included, are still processed whatever the order status. Behaviour
+  change: refund and chargeback notifications for orders created before the
+  propeller-v2-msp bump (notified by unsigned GET) are no longer applied
+  automatically; record those in the back office. Mollie notifications are
+  unchanged (unguessable payment ids, order id from Mollie's own metadata).
+- **Logout clears what the session left in the browser** (final review #2).
+  `DELETE /api/auth/session` now also clears `propeller_last_order`,
+  `propeller_registration` and the pending punchout cookie, so the next person
+  on a shared browser can't open or pay for the previous user's last order.
+  Only the magic-login page's own call right before its token exchange
+  (`?keep=punchout-pending`) keeps the pending punchout entry that exchange
+  activates; the page now awaits that call before the exchange starts.
+- **A checkout mutation runs once per order, also under parallel requests**
+  (final review #4). The proxy recorded the spend only after the upstream call
+  succeeded, so N parallel `triggerOrderSendConfirm` requests with the same
+  last-order cookie could all get the order-editor key. The spend is now
+  checked and recorded in one step right before the upstream call (the others
+  get 403) and released when the call fails.
+- **Checkout sent the ex-VAT total to the PSP.** It posted `totalGross`,
+  which Propeller uses for the total excluding VAT; it now sends `totalNet`
+  (incl. VAT). The server's own amount wins either way.
+- **A PunchOut session starts only with its own magic-token login** (#20).
+  `/api/punchout/enter` used to activate a punchout session for anyone who
+  opened a link with any `mtoken` and a `HOOK_URL` of their choice; one click
+  on the cart's transfer button then posted the cart, with negotiated prices,
+  to that URL and emptied it. Now `enter` stores only a signed, 10-minute
+  pending session bound to sha256(mtoken); the GraphQL proxy promotes it to
+  the signed `punchout` cookie when upstream accepts `magicTokenLogin` for
+  that same token. A failed magic login, a password login and logout clear
+  the punchout cookies. The return URL must be https and, when the new env
+  var `PUNCHOUT_HOOK_HOSTS` (comma-separated hostnames) is set, one of those
+  hosts; it is checked at entry and again before the transfer reads or
+  deletes the cart, so a refused URL keeps the cart. cXML's BrowserFormPost
+  URL and buyer details now travel from the shared-secret-authenticated setup
+  signed and bound to the token instead of as query parameters. The transfer
+  route is same-origin only and 404s with PunchOut disabled.
+- **The price gate refuses aliases the SDK doesn't use** (#4, follow-up).
+  `hidePrices` works on response keys, so an alias could move a price under a
+  key it keeps: `priceData { per: list }`, or a whole catalogue page as
+  `priceData: products(...) { per: items { ... price } }`. For a visitor the
+  gate applies to (semi-closed or closed, no verified Contact or Customer)
+  every alias except the SDK's own (`urlId: categoryId`, checked by a test
+  against every SDK document) is refused with a FORBIDDEN error, before the
+  anonymous cache. Inside `priceData`, `hidePrices` now keeps the display
+  enums only as strings and `per` only as a scalar. A blank `access_token`
+  cookie or Bearer (`%09`) counts as no token: no viewer lookup, SSR renders
+  as a guest.
+- **CMS rich text is sanitised** (#21). `RichTextBlock` renders the body with
+  `v-html` on the shop's own origin, and neither Strapi markdown (`marked`
+  passes raw HTML through) nor Prepr's `Text.html` was cleaned, so a CMS
+  editor could run script as any visitor. The providers now pass rich text
+  through an allowlist (`sanitize-html`, new dependency): prose tags and
+  images only, links and images over http(s) (links also mailto/tel), no
+  scripts, styles, frames, forms, event handlers or `javascript:` URLs;
+  new-tab links get `rel="noopener noreferrer"`.
+- **Prepr drafts need the signed preview cookie** (V2). A hand-set
+  `prepr_preview=1` cookie unlocked draft content, and without
+  `PREPR_PREVIEW_SECRET` the preview route accepted the public default
+  `prepr-preview`. The cookie is now HMAC-signed (`COOKIE_SIGNING_SECRET`,
+  own purpose label, 12 hours) and httpOnly; the preview route and the cookie
+  work only while `PREPR_PREVIEW_SECRET` is set (404 otherwise), and the
+  example value is empty. **Prepr shops that relied on the default secret
+  must set `PREPR_PREVIEW_SECRET` and update the preview URL in Prepr.**
+- **`xlsx` 0.20.3 from the SheetJS CDN** (#18). 0.18.5, the last npm
+  release, has a prototype-pollution and a ReDoS advisory. The quick-order
+  upload now uses the SheetJS build
+  (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`, same API, no
+  dependencies); the build server must be able to reach cdn.sheetjs.com.
+- **Orders are read only by their owner.** The GraphQL proxy forwarded
+  `order`, `orders`, `orderGetPDF` and `quoteGetPDF` on the storefront key,
+  which on some tenants answers any order id: anyone could open another
+  customer's order (name, address, e-mail, phone), and the anonymous proxy
+  cache kept such answers for 24 hours. A query that reads an order (at any
+  depth, aliased or in a fragment) now runs only as the SDK's own `order`,
+  `orderGetPDF`, `quoteGetPDF` or `orders` document, unchanged (pinned by
+  hash, so nobody chooses what the order-editor key selects, e.g. the
+  company's contacts; update the hashes after an SDK upgrade that changes
+  them, a test fails until then), and only for the signed-in
+  shopper (verified upstream) who placed it (`order.userId`, looked up with
+  the order-editor key), their own `orders` search (`userId` their own id,
+  `companyIds` only their own companies), or a guest's `order` of the order
+  this browser just placed (signed last-order cookie, no PDF). Those reads go
+  upstream on the order-editor key without the session token and are never
+  cached; anything else gets a 403 `FORBIDDEN` error, which the order pages
+  show as the access-error view. `orderRevision(s)`, `tender`,
+  `orderAddress(es)`, `addressesByOrderId`, `shipment(s)`,
+  `shipmentItem(s)` and `payment(s)` are refused for everyone (the storefront
+  key answers them for any order; the shop never sends them). An order read
+  served with the order-editor key loses every `costPrice` key before it is
+  returned (see "No merchant cost prices anywhere"). The payment routes and quote acceptance
+  decide ownership the same way instead of by what the session's token can
+  read. **Order pages now need `SSR_ORDER_EDITOR_API_KEY`** (without it every
+  order read is refused); reads by `orderUUID` are refused. Because the
+  order-editor key skips Propeller's visibility rules, drafts
+  (`DRAFT_ORDER`, `DRAFT_QUOTATION`, any `DRAFT…` status) are refused to
+  their owner too, and an `orders` search must name its statuses, only those
+  the account pages list: NEW, CONFIRMED, VALIDATED, ORDER, QUOTATION,
+  REQUEST.
+- **Log-safe PSP and PunchOut errors** (#15, follow-up). The Mollie and
+  MultiSafepay payment-status routes, the Mollie webhook and the PunchOut
+  token mint and cart load logged the raw error message, which can carry
+  upstream URLs and details; they now log only the error's name and code.
+- **README: API keys and roles.** What the storefront key and the
+  order-editor key may do, that the account order pages need the order-editor
+  key, and that an SDK upgrade changing a pinned document needs the hash lists
+  updated.
+- **No merchant cost prices anywhere.** The storefront key returns
+  `priceData.costPrices` and `inventory.balance.costPrice` to any visitor, and
+  the SDK's product, listing, cart and order documents select them, so every
+  shopper could read the merchant's purchase prices (the price gate only
+  cleared them for gated guests). Every `/api/graphql` answer and every SSR
+  catalog result now loses all `costPrice` / `costPrices` keys, for every
+  viewer in every portal mode, before it is cached (`forVisitor` in
+  `src/server/hidePrices.js`, shared by the proxy and `src/lib/server.ts`); an
+  alias on either field is refused (403). Nothing in the shop displays them.
+  `price.cost` / `bulkPrices[].cost` (ProductPrice.cost) carry the same number
+  and go the same way.
+- **SSR listings ignore a guest's price range and price sort in restricted
+  shops** (#4, follow-up). The category and search pages passed
+  `minPrice` / `maxPrice` and `sortField=PRICE` from the URL upstream for
+  everyone; the response strip keeps `itemsFound`, so a semi-closed or
+  closed guest could narrow a product down to its exact price in a few dozen
+  requests. The SSR fetchers now drop both for viewers who may not see
+  prices, before the query and its cache key are built, and accept a sort
+  field and order only from their enums. The sort dropdown no longer offers
+  PRICE to those visitors in `closed` shops either (the package already hid
+  it in `semi-closed`). Open shops and signed-in contacts are unaffected.
 
 ## [1.23.8] - 2026-11-19
 

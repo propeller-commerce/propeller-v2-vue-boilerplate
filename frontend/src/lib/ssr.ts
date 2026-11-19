@@ -33,11 +33,8 @@ export const safeStorage: Pick<
     }
 
 /**
- * Write a browser cookie. Used to mirror the access token into a cookie so the
- * SSR server can read it and render personalised (contact-priced) HTML — the
- * token otherwise lives only in `localStorage`, which the server cannot see.
- *
- * Not `httpOnly` (the browser SDK and this code both need to read it) and
+ * Write a browser cookie the SSR server reads (the VAT toggle). Never for the
+ * session: that cookie is httpOnly and set by the server (see lib/api.ts).
  * `SameSite=Lax` so it rides along on top-level navigations to our own origin.
  * No-op on the server.
  */
@@ -45,10 +42,4 @@ export function setCookie(name: string, value: string, maxAgeSeconds = 60 * 60 *
   if (!isBrowser) return
   const secure = window.location.protocol === 'https:' ? '; Secure' : ''
   document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`
-}
-
-/** Delete a browser cookie by name. No-op on the server. */
-export function deleteCookie(name: string): void {
-  if (!isBrowser) return
-  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`
 }

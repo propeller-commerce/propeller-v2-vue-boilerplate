@@ -16,11 +16,106 @@
  * Server-only. Never imported by a client component.
  */
 
+import { createHash } from 'node:crypto'
 import { GraphQLClient, MagicTokenService, AttributeService } from '@propeller-commerce/propeller-sdk-v2'
 import { validateSharedSecret } from '@propeller-commerce/propeller-v2-punchout'
+import { signCookie, verifyCookie } from './signedCookie.js'
+
+// ── Session cookies (#20) ───────────────────────────────────────────────────
+//
+// `/api/punchout/enter` never activates a session by itself: it stores a signed,
+// short-lived *pending* session bound to sha256(mtoken). The GraphQL proxy promotes
+// it to the signed `punchout` cookie (plus the readable flag the cart page checks)
+// only when upstream accepts a magicTokenLogin for that same token. Any other
+// login, a failed magic login and logout end the punchout session.
 
 export const PUNCHOUT_COOKIE = 'punchout'
 export const PUNCHOUT_FLAG_COOKIE = 'punchout_active'
+export const PUNCHOUT_PENDING_COOKIE = 'punchout_pending'
+export const PUNCHOUT_MAX_AGE = 60 * 60
+export const PUNCHOUT_PENDING_MAX_AGE = 10 * 60
+
+const tokenHash = (mtoken) => createHash('sha256').update(String(mtoken)).digest('hex')
+
+function parseSigned(purpose, value) {
+  const raw = verifyCookie(purpose, value)
+  if (raw === null) return null
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The URL the cart is handed back to, when allowed: https only, and when
+ * `PUNCHOUT_HOOK_HOSTS` (comma-separated hostnames) is set, one of those hosts.
+ */
+export function validReturnUrl(raw, allowedHosts = process.env.PUNCHOUT_HOOK_HOSTS) {
+  let url
+  try {
+    url = new URL(String(raw ?? ''))
+  } catch {
+    return null
+  }
+  if (url.protocol !== 'https:' || url.username || url.password) return null
+  const hosts = String(allowedHosts || '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean)
+  if (hosts.length && !hosts.includes(url.hostname.toLowerCase())) return null
+  return url.href
+}
+
+/** Signed pending-session cookie value for the token `enter` was called with (null without a signing key). */
+export function signPendingSession(mtoken, session) {
+  return signCookie('punchout-pending', JSON.stringify({ h: tokenHash(mtoken), s: session }), PUNCHOUT_PENDING_MAX_AGE)
+}
+
+/** Signed active-session cookie value. */
+export function signPunchoutSession(session) {
+  return signCookie('punchout', JSON.stringify(session), PUNCHOUT_MAX_AGE)
+}
+
+/** The active session from a valid cookie, with a return URL that is still allowed; else null. */
+export function verifyPunchoutSession(cookie) {
+  const session = parseSigned('punchout', cookie)
+  return session && validReturnUrl(session.returnUrl) ? session : null
+}
+
+/**
+ * The cXML BrowserFormPost and buyer details from the shared-secret-authenticated
+ * setup, signed for the token it minted, carried to `enter` in the start URL.
+ */
+export function signCxmlSetup(mtoken, setup) {
+  return signCookie('punchout-cxml', JSON.stringify({ h: tokenHash(mtoken), ...setup }), PUNCHOUT_TOKEN_TTL_MS / 1000)
+}
+
+/** The signed cXML setup for this token, else null. */
+export function verifyCxmlSetup(value, mtoken) {
+  const setup = parseSigned('punchout-cxml', value)
+  if (!setup || setup.h !== tokenHash(mtoken)) return null
+  const { h: _h, ...rest } = setup
+  return rest
+}
+
+/**
+ * What a login through the proxy means for the punchout cookies:
+ *   `{ promote: session }` a magicTokenLogin that upstream accepted for the very token
+ *                          the pending cookie was issued for;
+ *   `{ clear: true }`      any other magic login, a failed one, or a password login;
+ *   null                   not a login.
+ */
+export function punchoutAfterLogin({ field, succeeded, token, pendingCookie }) {
+  if (field === 'login') return succeeded ? { clear: true } : null
+  if (field !== 'magicTokenLogin') return null
+  const pending = parseSigned('punchout-pending', pendingCookie)
+  if (succeeded && pending && typeof token === 'string' && token && pending.h === tokenHash(token)) {
+    return validReturnUrl(pending.s?.returnUrl) ? { promote: pending.s } : { clear: true }
+  }
+  return { clear: true }
+}
 
 /** Contact track attribute holding the cXML shared secret (backend side). */
 const CXML_SHARED_SECRET_ATTR = 'CXML_SHARED_SECRET'
@@ -69,7 +164,6 @@ export function isPunchoutEnabled() {
  */
 const PUNCHOUT_ORDER_EDITOR_MUTATIONS = [
   'orderSetStatus',
-  'passwordResetLink',
   'triggerQuoteSendRequest',
   'triggerOrderSendConfirm',
   'magicTokenCreate',

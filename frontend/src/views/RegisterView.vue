@@ -112,10 +112,8 @@ async function handleAfterRegistration(
 
   const cleanUser = user;
   authStore.setUser(cleanUser);
-  authStore.setToken(accessToken);
-  localStorage.setItem("accessToken", accessToken);
-  if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-  if (expiresAt) localStorage.setItem("expiresAt", expiresAt);
+  // The tokens go to the server (httpOnly cookies), never into storage.
+  authStore.setSession(accessToken, refreshToken);
 
   window.dispatchEvent(new CustomEvent("userLoggedIn"));
 

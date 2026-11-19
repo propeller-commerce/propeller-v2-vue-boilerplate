@@ -39,7 +39,6 @@ const uuid = (v) => {
   return s && /^[0-9a-fA-F-]{36}$/.test(s) ? s : null;
 };
 
-const USER_MODES = new Set(['anonymous', 'b2c', 'b2b']);
 
 /** Columns promoted out of `props`; whatever is left is stored as JSON. */
 const PROMOTED = new Set([
@@ -50,6 +49,27 @@ const PROMOTED = new Set([
 ]);
 
 /**
+ * Who the batch belongs to, from the verified viewer behind the session cookie
+ * (viewer.js), never from the body (#16). A contact's company is the one the
+ * body names only when the contact belongs to it, else its own company.
+ */
+export function identityFor(viewer, claimedCompanyId) {
+  if (viewer?.type === 'Contact') {
+    const claimed = num(claimedCompanyId);
+    return {
+      userMode: 'b2b',
+      contactId: viewer.contactId,
+      customerId: null,
+      companyId: claimed !== null && viewer.companyIds.includes(claimed) ? claimed : viewer.companyId,
+    };
+  }
+  if (viewer?.type === 'Customer') {
+    return { userMode: 'b2c', contactId: null, customerId: viewer.customerId, companyId: null };
+  }
+  return { userMode: 'anonymous', contactId: null, customerId: null, companyId: null };
+}
+
+/**
  * Ingest one batch.
  *
  * Returns the visitor id in use so the route can set the cookie when it had to
@@ -57,7 +77,7 @@ const PROMOTED = new Set([
  * an HTML response makes that response uncacheable at a CDN, and this app has
  * real page-cache infrastructure to protect.
  */
-export async function ingestBatch({ rawBody, cookieVisitorId, channelId }) {
+export async function ingestBatch({ rawBody, cookieVisitorId, channelId, viewer = null }) {
   const pool = getTrackingPool();
   if (!pool) return { visitorId: null, minted: false, stored: 0 };
 
@@ -77,10 +97,7 @@ export async function ingestBatch({ rawBody, cookieVisitorId, channelId }) {
   if (events.length === 0) return { visitorId, minted, stored: 0 };
 
   const sessionId = uuid(ctx.sessionId) ?? visitorId;
-  const userMode = USER_MODES.has(String(ctx.userMode)) ? String(ctx.userMode) : 'anonymous';
-  const contactId = num(ctx.contactId);
-  const customerId = num(ctx.customerId);
-  const companyId = num(ctx.companyId);
+  const { userMode, contactId, customerId, companyId } = identityFor(viewer, ctx.companyId);
   const language = str(ctx.language, 2);
   const currency = str(ctx.currency, 3);
 

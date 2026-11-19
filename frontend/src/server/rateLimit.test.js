@@ -52,8 +52,34 @@ test('expired entries are evicted', () => {
   assert.equal(rl.size(), 1)
 })
 
-test('clientIp prefers the first x-forwarded-for entry, then the socket', () => {
-  assert.equal(clientIp({ headers: { 'x-forwarded-for': '9.9.9.9, 10.0.0.1' }, socket: {} }), '9.9.9.9')
-  assert.equal(clientIp({ headers: {}, socket: { remoteAddress: '8.8.8.8' } }), '8.8.8.8')
+test('clientIp takes the hop our proxy added, never a client-sent one (#6)', () => {
+  const req = (xff, extra = {}) => ({ headers: { 'x-forwarded-for': xff, ...extra }, socket: { remoteAddress: '127.0.0.1' } })
+  // nginx appends the real address on the right; anything left of it is client-supplied.
+  assert.equal(clientIp(req('6.6.6.6, 9.9.9.9'), 1), '9.9.9.9')
+  assert.equal(clientIp(req('1.1.1.1, 2.2.2.2, 9.9.9.9'), 1), '9.9.9.9')
+  // CDN + nginx: two trusted hops.
+  assert.equal(clientIp(req('6.6.6.6, 9.9.9.9, 10.0.0.1'), 2), '9.9.9.9')
+  assert.equal(clientIp(req('9.9.9.9'), 2), '9.9.9.9')
+  // x-real-ip is never trusted.
+  assert.equal(clientIp({ headers: { 'x-real-ip': '6.6.6.6' }, socket: { remoteAddress: '8.8.8.8' } }, 1), '8.8.8.8')
+  // No proxy (0 hops): the socket, whatever x-forwarded-for says.
+  assert.equal(clientIp(req('6.6.6.6'), 0), '127.0.0.1')
+  assert.equal(clientIp({ headers: {}, socket: { remoteAddress: '8.8.8.8' } }, 1), '8.8.8.8')
   assert.equal(clientIp({}), 'unknown')
+  // A nonsense setting falls back to one hop.
+  assert.equal(clientIp(req('6.6.6.6, 9.9.9.9'), -3), '9.9.9.9')
+})
+
+test('clientIp reads TRUSTED_PROXY_HOPS at call time (default 1)', () => {
+  const req = { headers: { 'x-forwarded-for': '6.6.6.6, 9.9.9.9, 10.0.0.1' }, socket: {} }
+  const saved = process.env.TRUSTED_PROXY_HOPS
+  try {
+    delete process.env.TRUSTED_PROXY_HOPS
+    assert.equal(clientIp(req), '10.0.0.1')
+    process.env.TRUSTED_PROXY_HOPS = '2'
+    assert.equal(clientIp(req), '9.9.9.9')
+  } finally {
+    if (saved === undefined) delete process.env.TRUSTED_PROXY_HOPS
+    else process.env.TRUSTED_PROXY_HOPS = saved
+  }
 })

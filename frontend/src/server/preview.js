@@ -7,8 +7,12 @@
  */
 
 import crypto from 'node:crypto'
+import { cookieSigningKey, signCookie, verifyCookie } from './signedCookie.js'
 
 export const PREPR_PREVIEW_COOKIE = 'prepr_preview'
+// The Prepr preview cookie is HMAC-signed (V2): a hand-set `prepr_preview=1` unlocks nothing.
+const PREPR_PREVIEW_PURPOSE = 'prepr-preview'
+const PREPR_PREVIEW_MAX_AGE = 12 * 60 * 60
 export const STRAPI_PREVIEW_COOKIE = 'strapi_preview'
 
 const HOME_SLUGS = ['home', 'home-personalized', 'index', 'home-generic']
@@ -38,7 +42,10 @@ export function isStrapiPreviewActive(cookies, env = process.env) {
 /** Preview state for SSR: each provider honours only its own cookie. */
 export function isCmsPreviewActive(cookies, env = process.env) {
   const provider = cmsProvider(env)
-  if (provider === 'prepr') return cookies?.[PREPR_PREVIEW_COOKIE] === '1'
+  if (provider === 'prepr') {
+    if (!env.PREPR_PREVIEW_SECRET) return false
+    return verifyCookie(PREPR_PREVIEW_PURPOSE, cookies?.[PREPR_PREVIEW_COOKIE], { key: cookieSigningKey(env) }) === '1'
+  }
   return isStrapiPreviewActive(cookies, env)
 }
 
@@ -67,8 +74,9 @@ export function frameHeaders(env = process.env) {
 export function resolvePreviewRequest(query, env = process.env) {
   const provider = cmsProvider(env)
   const prepr = provider === 'prepr'
-  const secret = prepr ? env.PREPR_PREVIEW_SECRET || 'prepr-preview' : env.STRAPI_PREVIEW_SECRET
-  if (!prepr && !isStrapiPreviewEnabled(env)) return { status: 404, body: 'Not found' }
+  // No default secret: a preview route without one stays closed (V2).
+  const secret = prepr ? env.PREPR_PREVIEW_SECRET : env.STRAPI_PREVIEW_SECRET
+  if (prepr ? !secret : !isStrapiPreviewEnabled(env)) return { status: 404, body: 'Not found' }
   if (!safeEqual(str(query.secret), secret)) return { status: 401, body: 'Invalid preview secret' }
 
   const base = previewBase(str(query.slug) || str(query.redirect) || '/')
@@ -85,8 +93,10 @@ export function resolvePreviewRequest(query, env = process.env) {
   const qs = params.toString()
   const location = qs ? `${base}${base.includes('?') ? '&' : '?'}${qs}` : base
 
+  const preprValue = prepr ? signCookie(PREPR_PREVIEW_PURPOSE, '1', PREPR_PREVIEW_MAX_AGE, { key: cookieSigningKey(env) }) : null
+  if (prepr && !preprValue) return { status: 503, body: 'Preview not configured' }
   const cookie = prepr
-    ? { name: PREPR_PREVIEW_COOKIE, value: '1', clear: false }
+    ? { name: PREPR_PREVIEW_COOKIE, value: preprValue, clear: false }
     : str(query.status) === 'published'
       ? { name: STRAPI_PREVIEW_COOKIE, value: '', clear: true }
       : { name: STRAPI_PREVIEW_COOKIE, value: strapiPreviewToken(secret), clear: false }
@@ -97,22 +107,30 @@ export function resolvePreviewRequest(query, env = process.env) {
 export function resolvePreviewExit(query, env = process.env) {
   const provider = cmsProvider(env)
   if (provider !== 'prepr' && !isStrapiPreviewEnabled(env)) return { status: 404, body: 'Not found' }
-  const raw = str(query.redirect) || '/'
-  const location = unsafeSlug(raw) ? '/' : raw.startsWith('/') ? raw : `/${raw}`
+  const location = sitePath(str(query.redirect)) ?? '/'
   const name = provider === 'prepr' ? PREPR_PREVIEW_COOKIE : STRAPI_PREVIEW_COOKIE
   return { status: 302, location, cookie: { name, value: '', clear: true } }
 }
 
+// Browsers drop tabs and newlines in a URL, so "\t//evil.test" would become
+// protocol-relative after the checks below: strip them first (#16).
+const stripControl = (s) => s.replace(/[\u0000-\u001f\u007f]/g, '')
+
 // Same-origin path for a CMS slug; null for anything that could leave the site.
-function previewBase(slug) {
-  if (unsafeSlug(slug)) return null
-  const bare = slug.replace(/^\/+/, '').toLowerCase()
-  if (bare === '' || HOME_SLUGS.includes(bare)) return '/'
-  return slug.startsWith('/') ? slug : `/${slug}`
+export function previewBase(raw) {
+  const path = sitePath(raw)
+  if (!path) return null
+  const bare = path.replace(/^\/+/, '').toLowerCase()
+  return bare === '' || HOME_SLUGS.includes(bare) ? '/' : path
 }
 
-function unsafeSlug(slug) {
-  return /^[/\\]{2}/.test(slug) || /^[a-z][a-z0-9+.-]*:/i.test(slug)
+// The path a slug or redirect names, with its leading slash; null when a browser would read it
+// as another host or a scheme. Checked after the slash is added: `\evil.test` becomes
+// `/\evil.test`, which a browser resolves to https://evil.test/ (#14).
+function sitePath(raw) {
+  const slug = stripControl(raw)
+  const path = slug.startsWith('/') ? slug : `/${slug}`
+  return /^\/[/\\]/.test(path) || /^[a-z][a-z0-9+.-]*:/i.test(slug) ? null : path
 }
 
 function safeEqual(a, b) {

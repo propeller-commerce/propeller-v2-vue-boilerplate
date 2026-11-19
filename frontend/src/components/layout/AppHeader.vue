@@ -535,12 +535,8 @@ async function handleAfterLogin(
 ) {
   const cleanUser = user
   authStore.setUser(cleanUser)
-  if (accessToken) {
-    authStore.setToken(accessToken)
-    localStorage.setItem('accessToken', accessToken)
-  }
-  if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
-  if (expiresAt) localStorage.setItem('expiresAt', expiresAt)
+  // The tokens go to the server (httpOnly cookies), never into storage.
+  if (accessToken) authStore.setSession(accessToken, refreshToken)
 
   window.dispatchEvent(new CustomEvent('userLoggedIn'))
 

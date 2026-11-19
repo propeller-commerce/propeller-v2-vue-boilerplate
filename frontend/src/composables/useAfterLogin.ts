@@ -2,8 +2,8 @@
  * useAfterLogin — the shared post-authentication sequence (Vue).
  *
  * Extracted from `LoginView.vue`'s `handleLoginSuccess` so password login AND
- * magic-token login run the identical flow: persist user + tokens (authStore +
- * localStorage + SSR cookie), select the company, switch language, and reconcile
+ * magic-token login run the identical flow: persist the user and start the
+ * httpOnly session (authStore.setSession), select the company, switch language, and reconcile
  * the cart (fetch active → merge anonymous → drop the anonymous cart). Returns
  * the resolved `effectiveLanguage`; the caller owns the final redirect (login →
  * /account, magic-login → /).
@@ -45,12 +45,8 @@ export function useAfterLogin() {
     method: string = 'password',
   ): Promise<{ effectiveLanguage: string }> {
     authStore.setUser(user)
-    if (accessToken) {
-      authStore.setToken(accessToken)
-      localStorage.setItem('accessToken', accessToken)
-    }
-    if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
-    if (expiresAt) localStorage.setItem('expiresAt', expiresAt)
+    // The tokens go to the server (httpOnly cookies), never into storage.
+    if (accessToken) authStore.setSession(accessToken, refreshToken)
 
     window.dispatchEvent(new CustomEvent('userLoggedIn'))
 

@@ -38,9 +38,9 @@ import { GraphQLClient } from '@propeller-commerce/propeller-sdk-v2'
  * plus the payment mutations.
  */
 const MSP_ORDER_EDITOR_MUTATIONS = [
-  // SDK defaults (must be repeated — this option replaces, not extends):
+  // SDK defaults (must be repeated — this option replaces, not extends),
+  // minus passwordResetLink:
   'orderSetStatus',
-  'passwordResetLink',
   'triggerQuoteSendRequest',
   'triggerOrderSendConfirm',
   // Payment mutations the MultiSafepay flow issues, gated the same way:
@@ -107,6 +107,12 @@ export function mspWebhookUrl() {
       : `${override.replace(/\/$/, '')}/api/msp/webhook`
   }
   return `${siteOrigin()}/api/msp/webhook`
+}
+
+/** The site API key in use (test or live), which also signs POST webhooks. */
+export function mspApiKey() {
+  const testMode = (process.env.MSP_TEST_MODE || 'true').trim().toLowerCase() === 'true'
+  return (testMode ? process.env.MSP_TEST_KEY : process.env.MSP_LIVE_KEY) || ''
 }
 
 let _provider = null

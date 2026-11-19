@@ -24,19 +24,72 @@ import {
   isMollieEnabled,
   isOnAccountMethod,
 } from './src/server/mollie.js'
-import { getMspProvider, isMspEnabled } from './src/server/msp.js'
+import { getMspProvider, isMspEnabled, mspApiKey } from './src/server/msp.js'
+import { verifyWebhookSignature } from '@propeller-commerce/propeller-v2-msp'
+import {
+  chargeFor,
+  handleMspNotification,
+  ownedOrder,
+  PAYMENT_ORDER_QUERY,
+  paymentRedirectUrl,
+  paymentSiteUrl,
+} from './src/server/payments.js'
 import { priceRequestHandler } from './src/server/priceRequest.js'
 import { contactHandler } from './src/server/contact.js'
-import { clientIp } from './src/server/rateLimit.js'
+import { clientIp, createRateLimiter, formLimiter, FORM_RATE_LIMITS } from './src/server/rateLimit.js'
 import { trackerGate } from './src/server/trackerAuth.js'
 import {
+  argument,
+  checkoutFlag,
   createdOrderId,
+  createSpentLog,
+  idOf,
+  isOwnQuotation,
+  isSdkDocument,
   LAST_ORDER_COOKIE,
   LAST_ORDER_MAX_AGE,
-  shouldUseOrderEditorKey,
+  mayReadOrder,
+  mustRefuseElevation,
+  ORDER_EDITOR_CLIENT_ID,
+  orderEditorReason,
+  quoteAcceptOrderId,
   signLastOrder,
+  singleField,
+  upstreamAuth,
   verifyLastOrder,
 } from './src/server/orderEditorRouting.js'
+import {
+  hasPriceFilter,
+  inspectDocument,
+  isCacheableQuery,
+  parseDocument,
+  selectsOrderRead,
+  withoutPriceFilters,
+} from './src/server/graphqlGuards.js'
+import { forVisitor, pricesHidden } from './src/server/hidePrices.js'
+import {
+  companyCreateVariables,
+  createdCompanyId,
+  REGISTRATION_COOKIE,
+  REGISTRATION_MAX_AGE,
+  registrationLimited,
+  registrationStep,
+  signRegistration,
+  verifyRegistration,
+} from './src/server/registrationRouting.js'
+import { createViewerLookup, fetchViewerFrom } from './src/server/viewer.js'
+import { errorSummary, isSameOrigin, isSameOriginJson, safeEqual } from './src/server/httpGuards.js'
+import {
+  ACCESS_COOKIE,
+  ACCESS_MAX_AGE,
+  createRenewer,
+  exchangeRefreshFrom,
+  isSessionToken,
+  needsRenewal,
+  REFRESH_COOKIE,
+  REFRESH_MAX_AGE,
+  withCookie,
+} from './src/server/session.js'
 import { ingestBatch, visitorCookie, VISITOR_COOKIE } from './src/server/trackingIngest.js'
 import { isTrackingConfigured, classifyDbError, STATUS_HINTS, todayLocal, addDays } from './src/server/tracking.js'
 import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS } from './src/server/trackingQueries.js'
@@ -62,6 +115,16 @@ import {
   CART_IMAGE_FILTERS,
   PUNCHOUT_COOKIE,
   PUNCHOUT_FLAG_COOKIE,
+  PUNCHOUT_MAX_AGE,
+  PUNCHOUT_PENDING_COOKIE,
+  PUNCHOUT_PENDING_MAX_AGE,
+  punchoutAfterLogin,
+  signCxmlSetup,
+  signPendingSession,
+  signPunchoutSession,
+  validReturnUrl,
+  verifyCxmlSetup,
+  verifyPunchoutSession,
 } from './src/server/punchout.js'
 import {
   isPreprEnabled,
@@ -72,9 +135,9 @@ import {
   resolvePreviewRequest,
   resolvePreviewExit,
   isCmsPreviewActive,
-  frameHeaders,
   STRAPI_PREVIEW_COOKIE,
 } from './src/server/preview.js'
+import { securityHeaders, transferPolicy } from './src/server/securityHeaders.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -120,6 +183,67 @@ const UPSTREAM =
   'https://api.staging.helice.cloud/v2/graphql'
 const API_KEY = process.env.SSR_API_KEY || ''
 const ORDER_EDITOR_API_KEY = process.env.SSR_ORDER_EDITOR_API_KEY || ''
+
+// Semi-closed and closed shops (#4): /api/graphql answers carry prices only for a
+// verified Contact or Customer. The same var the client bundle is built with.
+const PRICE_GATE = pricesHidden(process.env.VITE_PORTAL_MODE, false)
+
+/**
+ * The verified viewer behind a Bearer (src/server/viewer.js), for every privilege
+ * decision: `await verifiedViewer(token)` → `{ type: 'Contact', contactId, companyId,
+ * companyIds, managerOf }` | `{ type: 'Customer', customerId }` | null. Never rejects;
+ * cached per sha256(token). A token that merely parses as a JWT proves nothing.
+ */
+const verifiedViewer = createViewerLookup(fetchViewerFrom(UPSTREAM, API_KEY))
+
+/**
+ * The request's Bearer: the httpOnly `access_token` cookie, else the Authorization
+ * header. Blank (`access_token=%09`) counts as none.
+ */
+function requestBearer(req) {
+  const cookieToken = parseCookies(req.headers.cookie || '')[ACCESS_COOKIE]?.trim()
+  const auth = req.headers['authorization']
+  const header = Array.isArray(auth) ? auth[0] : auth
+  const headerToken = header?.startsWith('Bearer ') ? header.slice(7).trim() : ''
+  return cookieToken || headerToken || undefined
+}
+
+/** Options for a server-only cookie (signed values: last order, registration, …). */
+function privateCookieOptions(req, maxAgeSeconds) {
+  return { httpOnly: true, secure: isProd || req.secure, sameSite: 'lax', path: '/', maxAge: maxAgeSeconds * 1000 }
+}
+
+function isRecord(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+// ── Session cookies (V1) ────────────────────────────────────────────────────
+//
+// The login flows hand their tokens to POST /api/auth/session, which keeps them in
+// httpOnly cookies; browser code never stores or reads a token. `renewSession` runs
+// before every route: an access token that is missing or about to expire is renewed
+// from the refresh cookie, set on the response and swapped into this request's
+// Cookie header, so the proxy, SSR and every other route see the fresh one.
+
+const renewTokens = createRenewer(exchangeRefreshFrom(UPSTREAM, API_KEY))
+
+function setSessionCookies(req, res, { accessToken, refreshToken }) {
+  res.cookie(ACCESS_COOKIE, accessToken, privateCookieOptions(req, ACCESS_MAX_AGE))
+  if (refreshToken) res.cookie(REFRESH_COOKIE, refreshToken, privateCookieOptions(req, REFRESH_MAX_AGE))
+}
+
+async function renewSession(req, res, next) {
+  // The session routes set or drop the cookies themselves.
+  if (req.path === '/api/auth/session') return next()
+  const cookies = parseCookies(req.headers.cookie || '')
+  if (!cookies[REFRESH_COOKIE] || !needsRenewal(cookies[ACCESS_COOKIE])) return next()
+  const fresh = await renewTokens(cookies[REFRESH_COOKIE])
+  if (fresh) {
+    setSessionCookies(req, res, fresh)
+    req.headers.cookie = withCookie(req.headers.cookie, ACCESS_COOKIE, fresh.accessToken)
+  }
+  next()
+}
 
 // ── Proxy hardening: per-IP rate limit + body cap ───────────────────────────
 //
@@ -203,34 +327,22 @@ function isRateLimited(ip, limit) {
  * presenting any `access_token` cookie value doesn't buy the higher ceiling.
  */
 function rateLimitProxy(req, res, next) {
-  const token = parseCookies(req.headers.cookie || '')['access_token']
+  const token = parseCookies(req.headers.cookie || '')[ACCESS_COOKIE]
   const limit = looksLikeValidJwt(token) ? RATE_LIMIT_AUTH : RATE_LIMIT_ANON
   if (isRateLimited(clientIp(req), limit)) {
-    res
-      .status(429)
-      .set('Retry-After', String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)))
-      .json({ errors: [{ message: 'rate limit exceeded' }] })
+    res.set('Retry-After', String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)))
+    refuse(res, 429, 'rate limit exceeded')
     return
   }
   next()
 }
 
 /**
- * Resolve a GraphQL operation name for API-key routing. Prefer the explicit
- * `operationName` the SDK sends in the body; fall back to the first
- * `query NAME` / `mutation NAME` in the document (mirrors the SDK's
- * `extractOperationName`), stripping leading `#` comment lines first.
+ * A refused proxy request: always a JSON GraphQL error, never text, so the SDK and
+ * the storefront suite can read `errors[0].extensions.code`. Messages stay generic.
  */
-function gqlOperationName(parsed) {
-  if (parsed && typeof parsed.operationName === 'string' && parsed.operationName) {
-    return parsed.operationName
-  }
-  if (parsed && typeof parsed.query === 'string') {
-    const stripped = parsed.query.replace(/^\s*#.*$/gm, '').trimStart()
-    const match = stripped.match(/^(?:query|mutation)\s+(\w+)/)
-    if (match) return match[1]
-  }
-  return undefined
+function refuse(res, status, message) {
+  res.status(status).json({ errors: [{ message, extensions: { code: 'FORBIDDEN' } }] })
 }
 
 // ── Anonymous GraphQL response cache ────────────────────────────────────────
@@ -366,39 +478,30 @@ function parseCacheTagsHeader(headerValue) {
   return out
 }
 
-/**
- * Determine the operation type of a GraphQL document. The SDK's generated
- * documents lead with `fragment` definitions and put the actual operation
- * at the end, so we scan for the first top-level `query` / `mutation` /
- * `subscription` keyword anywhere in the document. Anything we can't match
- * is treated as `mutation` so we err on the side of *not* caching.
- */
-function gqlOperationType(query) {
-  if (typeof query !== 'string') return 'mutation'
-  const match = query.match(/\b(query|mutation|subscription)\b/)
-  return match ? match[1] : 'mutation'
+/** SHA-256 hex digest of the forwarded body — stable cache key per operation+variables. */
+function gqlCacheKey(body) {
+  return crypto.createHash('sha256').update(body).digest('hex')
 }
 
-/** SHA-256 hex digest of the request body — stable cache key per operation+variables. */
-function gqlCacheKey(rawBody) {
-  return crypto.createHash('sha256').update(rawBody).digest('hex')
-}
+// Checkout mutations already run elevated, per order (see createSpentLog).
+const spentCheckout = createSpentLog()
+
+const uniqueFlags = (flags) => [...new Set(flags)].join('')
 
 /**
  * Express handler for POST /api/graphql with anonymous-query response cache.
  * Forwards via `fetch` so we can capture the response body for caching.
  */
 function graphqlCachedHandler() {
-  return async (req, res) => {
-    // Collect the raw body manually — we need it both for the cache key and
-    // for the upstream forward. Capped: this buffers in memory, so without a
+  return (req, res) => {
+    // Collect the raw body manually. Capped: this buffers in memory, so without a
     // ceiling a single client can make the process allocate without bound.
     const chunks = []
     let received = 0
     let aborted = false
     const declared = Number(req.headers['content-length'])
     if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-      res.status(413).json({ errors: [{ message: 'payload too large' }] })
+      refuse(res, 413, 'payload too large')
       req.destroy()
       return
     }
@@ -407,168 +510,412 @@ function graphqlCachedHandler() {
       received += c.length
       if (received > MAX_BODY_BYTES) {
         aborted = true
-        res.status(413).json({ errors: [{ message: 'payload too large' }] })
+        refuse(res, 413, 'payload too large')
         req.destroy()
         return
       }
       chunks.push(c)
     })
-    req.on('end', async () => {
+    req.on('end', () => {
       if (aborted) return
-      const rawBody = Buffer.concat(chunks)
-      const auth = req.headers['authorization']
-      const authHeader = Array.isArray(auth) ? auth[0] : auth
-
-      // Auth precedence (mirrors the nextDemo proxy):
-      //   1. `access_token` cookie — the source of truth. The browser sets it
-      //      same-origin on login (see `setCookie` in lib/ssr.ts) and it rides
-      //      along on this same-origin POST, so we can authenticate upstream
-      //      from it server-side instead of trusting the client to attach a
-      //      header. Without this, a `viewer`/account query that reaches the
-      //      proxy without the header resolves to the bare API key's default
-      //      account — the "dummy user" — and (being header-less) gets cached
-      //      and served to everyone.
-      //   2. Client `Authorization` header — fallback for the brief window
-      //      during login before the cookie lands.
-      const cookieToken = parseCookies(req.headers.cookie || '')['access_token']
-      const headerBearer = authHeader?.startsWith('Bearer ')
-        ? authHeader.slice(7)
-        : undefined
-      const upstreamBearer = cookieToken || headerBearer
-      // A request is authenticated if EITHER carries a token. Used below to
-      // forward the Bearer and to keep personalised responses out of the cache.
-      const isAuthenticated = !!upstreamBearer
-
-      // Pull surgical-invalidation tags off the request. The SDK doesn't
-      // know about these — `lib/server.ts` attaches them via the static
-      // `headers` slot on the GraphQLClient config when `cacheable` infra
-      // is in use. The header is server-internal: the upstream API doesn't
-      // see it (we don't forward it) and the browser shouldn't send it.
-      const tagsHeader = req.headers['x-propeller-cache-tags']
-      const cacheTags = parseCacheTagsHeader(
-        Array.isArray(tagsHeader) ? tagsHeader[0] : tagsHeader,
-      )
-
-      // Try to parse the body so we can read the GraphQL op type. If parsing
-      // fails for any reason, fall through to the bypass path — better to
-      // forward an unparseable request than to cache or reject it.
-      let parsed = null
-      try { parsed = JSON.parse(rawBody.toString('utf-8')) } catch {}
-      const opType = parsed ? gqlOperationType(parsed.query) : 'mutation'
-
-      // Order-editor key only for the allowlisted single-field mutations and a
-      // guest's own just-placed order, decided from the parsed document (see
-      // src/server/orderEditorRouting.js).
-      const operationName = gqlOperationName(parsed)
-      const clientIdHeader = req.headers['x-client-id']
-      const useOrderKey =
-        !!ORDER_EDITOR_API_KEY &&
-        shouldUseOrderEditorKey(parsed, {
-          clientId: Array.isArray(clientIdHeader) ? clientIdHeader[0] : clientIdHeader,
-          hasSession: looksLikeValidJwt(upstreamBearer),
-          isAnonymous: !isAuthenticated,
-          lastOrderId: verifyLastOrder(
-            parseCookies(req.headers.cookie || '')[LAST_ORDER_COOKIE],
-            ORDER_EDITOR_API_KEY,
-          ),
-        })
-      const apiKey = useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY
-
-      // Only anonymous catalog queries are cacheable. An authenticated request
-      // (cookie or header) is personalised — caching it would leak one user's
-      // data to the next, and a header-less `viewer` would pin the dummy
-      // account for everyone. `viewer` is excluded explicitly too: it's the
-      // account-identity query, never anonymous-cacheable even if it somehow
-      // arrives without a token.
-      const cacheable =
-        !isAuthenticated && !useOrderKey && opType === 'query' && operationName !== 'viewer'
-      const key = cacheable ? gqlCacheKey(rawBody) : null
-
-      if (cacheable) {
-        const hit = gqlCacheGet(key)
-        if (hit) {
-          res.status(hit.status)
-          if (hit.contentType) res.set('Content-Type', hit.contentType)
-          res.set('X-Cache', 'HIT')
-          res.end(hit.body)
-          return
-        }
-      }
-
-      // Forward to upstream with the API key injected server-side, plus the
-      // Bearer resolved above (cookie wins over the client header). Sending the
-      // cookie token here is what makes `viewer` and other account queries
-      // resolve to the real user instead of the bare-API-key default.
-      try {
-        const upstreamResp = await fetch(UPSTREAM, {
-          method: 'POST',
-          headers: {
-            'apikey': apiKey,
-            'Content-Type': 'application/json',
-            ...(upstreamBearer ? { Authorization: `Bearer ${upstreamBearer}` } : {}),
-          },
-          // Elevated requests forward exactly what was classified.
-          body: useOrderKey ? JSON.stringify(parsed) : rawBody,
-        })
-        const respBuf = Buffer.from(await upstreamResp.arrayBuffer())
-        const contentType = upstreamResp.headers.get('content-type') || 'application/json'
-
-        const newOrderId =
-          ORDER_EDITOR_API_KEY && upstreamResp.ok ? createdOrderId(parsed, respBuf.toString('utf-8')) : null
-        if (newOrderId) {
-          res.cookie(LAST_ORDER_COOKIE, signLastOrder(newOrderId, ORDER_EDITOR_API_KEY), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' || req.secure,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: LAST_ORDER_MAX_AGE * 1000,
-          })
-        }
-
-        // Only cache 2xx responses — a 4xx/5xx might be a transient upstream
-        // error and we don't want to pin it for 24 h.
-        if (cacheable && upstreamResp.status >= 200 && upstreamResp.status < 300) {
-          // Don't cache a response that contains GraphQL errors — those
-          // typically come back as `{ "errors": [...] }` even with HTTP 200.
-          let hasErrors = false
-          try {
-            const parsedResp = JSON.parse(respBuf.toString('utf-8'))
-            hasErrors = Array.isArray(parsedResp?.errors) && parsedResp.errors.length > 0
-          } catch {}
-          if (!hasErrors) {
-            gqlCacheSet(key, {
-              status: upstreamResp.status,
-              contentType,
-              body: respBuf,
-              tags: cacheTags,
-            })
-          }
-        }
-
-        res.status(upstreamResp.status)
-        res.set('Content-Type', contentType)
-        if (cacheable) res.set('X-Cache', 'MISS')
-        else res.set('X-Cache', 'BYPASS')
-        res.end(respBuf)
-      } catch (err) {
-        console.error('[gql-proxy] upstream error:', err)
-        res.status(502).set('Content-Type', 'application/json').end(
-          JSON.stringify({ errors: [{ message: 'Upstream GraphQL request failed' }] }),
-        )
-      }
+      proxyGraphql(req, res, Buffer.concat(chunks)).catch((err) => {
+        // Generic in production: error text can carry upstream URLs and details (#15).
+        console.error('[gql-proxy] error:', isProd ? err?.name || 'Error' : err)
+        if (!res.headersSent) refuse(res, 500, 'GraphQL request failed')
+      })
     })
     req.on('error', (err) => {
-      console.error('[gql-proxy] request error:', err)
-      res.status(400).end()
+      console.error('[gql-proxy] request error:', isProd ? err?.name || 'Error' : err)
+      if (!res.headersSent) refuse(res, 400, 'Bad request')
     })
+  }
+}
+
+async function proxyGraphql(req, res, rawBody) {
+  // Only `{ query, variables, operationName }` goes upstream (#3): a persisted-query
+  // hash (`extensions`) or any other key would run a document no guard here has seen.
+  let parsed
+  try {
+    parsed = JSON.parse(rawBody.toString('utf-8'))
+  } catch {
+    return refuse(res, 400, 'Invalid JSON body')
+  }
+  if (!isRecord(parsed) || typeof parsed.query !== 'string') return refuse(res, 400, 'query must be a string')
+  if (parsed.variables != null && !isRecord(parsed.variables)) return refuse(res, 400, 'variables must be an object')
+  // Parsed once; every guard below shares this AST (#17).
+  const doc = parseDocument(parsed.query)
+  if (!doc) return refuse(res, 400, 'Invalid GraphQL document')
+  const body = {
+    query: parsed.query,
+    variables: parsed.variables ?? undefined,
+    operationName: typeof parsed.operationName === 'string' ? parsed.operationName : undefined,
+  }
+
+  const guards = inspectDocument(doc)
+  // The storefront never inspects the schema (#13).
+  if (guards.introspection) return refuse(res, 403, 'Introspection is not allowed')
+  // Cost prices are removed by response key below; an alias would rename one past that.
+  if (guards.costPriceAlias) return refuse(res, 403, 'Aliases on cost prices are not allowed')
+
+  // Auth: the browser sends no Authorization header; the Bearer is the httpOnly
+  // `access_token` cookie (POST /api/auth/session, renewed by renewSession). An explicit
+  // header still works for non-browser clients.
+  const cookies = parseCookies(req.headers.cookie || '')
+  const bearer = requestBearer(req)
+  // Looked up at most once per request, only when a decision needs it.
+  let viewerPending
+  const viewer = () => (viewerPending ??= verifiedViewer(bearer))
+
+  // Price gate (#4): the lookup runs alongside the upstream call. Documents that could
+  // reveal prices despite the stripping wait for it: any alias the SDK doesn't use
+  // (hidePrices works on response keys, so an alias can move a price under a key it
+  // keeps) and inline price filters are refused, before the cache; price filters and
+  // PRICE sorts in the variables are removed (the shop's own listings send them
+  // there, so they keep working for guests).
+  if (PRICE_GATE) {
+    viewer()
+    if (guards.foreignAlias || guards.inlinePriceFilter || hasPriceFilter(body.variables)) {
+      if (!(await viewer())) {
+        if (guards.foreignAlias || guards.inlinePriceFilter) {
+          return refuse(res, 403, 'Aliases, price filters and price sorts are not allowed here')
+        }
+        body.variables = withoutPriceFilters(body.variables)
+      }
+    }
+  }
+
+  // Order reads only for their owner (mayReadOrder): the verified viewer who placed the
+  // order, or a guest reading the order this browser just placed, and only as the SDK's
+  // own documents (isSdkDocument). Whatever the storefront key may read, they run on the
+  // order-editor key without the Bearer; anything else is refused.
+  const single = singleField(doc)
+  const orderRead = selectsOrderRead(doc)
+  if (orderRead) {
+    const allowed =
+      !!ORDER_EDITOR_API_KEY &&
+      isSdkDocument(doc, single?.node.name.value) &&
+      (await mayReadOrder(single, body.variables, {
+        viewer: await viewer(),
+        lastOrderId: verifyLastOrder(cookies[LAST_ORDER_COOKIE])?.orderId ?? null,
+        fetchOrder: editorOrder,
+      }))
+    if (!allowed) return refuse(res, 403, 'Forbidden: this order is not available')
+  }
+
+  // Order-editor key also for the checkout's own mutations on the order this browser
+  // just placed, a manager adding a contact and a viewer accepting its own quote
+  // (src/server/orderEditorRouting.js).
+  const clientIdHeader = req.headers['x-client-id']
+  const clientId = Array.isArray(clientIdHeader) ? clientIdHeader[0] : clientIdHeader
+  let reason = null
+  let lastOrder = null
+  // Self-registration (#12): the SDK's own companyCreate (anonymous, rate-limited,
+  // registration fields only) and companyAddressCreate for the company this browser
+  // just created. Sent without the Bearer, so only the order-editor key decides.
+  const registration = ORDER_EDITOR_API_KEY ? verifyRegistration(cookies[REGISTRATION_COOKIE]) : null
+  const regStep = ORDER_EDITOR_API_KEY
+    ? registrationStep(doc, single, body.variables, { isAnonymous: !bearer, registration })
+    : null
+  if (regStep?.kind === 'company') {
+    const retryAfter = registrationLimited(clientIp(req))
+    if (retryAfter) {
+      res.set('Retry-After', String(retryAfter))
+      return refuse(res, 429, 'Too many registrations, try again later')
+    }
+    body.variables = companyCreateVariables(body.variables)
+  }
+  if (orderRead) {
+    reason = 'order-read'
+  } else if (regStep) {
+    reason = 'registration'
+  } else if (ORDER_EDITOR_API_KEY && single) {
+    const state = verifyLastOrder(cookies[LAST_ORDER_COOKIE])
+    // Cookie flags plus the server's own record, which a replayed older cookie can't undo.
+    lastOrder = state && { orderId: state.orderId, used: uniqueFlags(state.used + spentCheckout.flags(state.orderId)) }
+    const isContactRegister = single.node.name.value === 'contactRegister' && clientId === ORDER_EDITOR_CLIENT_ID
+    reason = orderEditorReason(single, body.variables, {
+      clientId,
+      lastOrder,
+      viewer: isContactRegister ? await viewer() : null,
+    })
+    const quoteId = reason ? null : quoteAcceptOrderId(single, body.variables)
+    if (quoteId && (await viewer()) && isOwnQuotation(await editorOrder(quoteId), await viewer())) reason = 'quote-accept'
+  }
+  // Elevated requests run only as the SDK's own documents (the caller doesn't choose what
+  // the order-editor key selects), and the checkout mutations only elevated: refused, never
+  // sent on the storefront key instead (mustRefuseElevation).
+  if (mustRefuseElevation(doc, single, reason)) return refuse(res, 403, 'Forbidden: this request is not allowed')
+  const auth = upstreamAuth(reason, bearer)
+
+  // Only anonymous catalog queries are cacheable. An authenticated request is
+  // personalised; caching it would leak one user's data to the next.
+  const cacheable = !bearer && !auth.orderEditorKey && isCacheableQuery(doc)
+  const forwardBody = JSON.stringify(body)
+  const key = cacheable ? gqlCacheKey(forwardBody) : null
+  if (cacheable) {
+    const hit = gqlCacheGet(key)
+    if (hit) {
+      res.status(hit.status)
+      if (hit.contentType) res.set('Content-Type', hit.contentType)
+      res.set('X-Cache', 'HIT')
+      res.end(hit.body)
+      return
+    }
+  }
+
+  // Tags for surgical invalidation (`lib/server.ts` attaches them); never forwarded.
+  const tagsHeader = req.headers['x-propeller-cache-tags']
+  const cacheTags = parseCacheTagsHeader(Array.isArray(tagsHeader) ? tagsHeader[0] : tagsHeader)
+
+  // Spend the checkout mutation for this order before the call. The flags read above can be
+  // stale by now (viewer lookups awaited since), so reserve() checks and spends in one
+  // synchronous step with no await before the upstream call: of N parallel requests with the
+  // same last-order cookie only one gets the key. A failed call releases it below.
+  const reserved = reason === 'checkout' ? checkoutFlag(single) : null
+  if (reserved && !spentCheckout.reserve(lastOrder.orderId, reserved)) {
+    return refuse(res, 403, 'This checkout step already ran for this order')
+  }
+
+  let upstreamResp
+  try {
+    upstreamResp = await fetch(UPSTREAM, {
+      method: 'POST',
+      headers: {
+        apikey: auth.orderEditorKey ? ORDER_EDITOR_API_KEY : API_KEY,
+        'Content-Type': 'application/json',
+        ...(auth.bearer ? { Authorization: `Bearer ${auth.bearer}` } : {}),
+      },
+      body: forwardBody,
+    })
+  } catch (err) {
+    if (reserved) spentCheckout.release(lastOrder.orderId, reserved)
+    console.error('[gql-proxy] upstream error:', isProd ? err?.name || 'Error' : err)
+    res.status(502).json({ errors: [{ message: 'Upstream GraphQL request failed', extensions: { code: 'BAD_GATEWAY' } }] })
+    return
+  }
+  let text = await upstreamResp.text()
+  const contentType = upstreamResp.headers.get('content-type') || 'application/json'
+  let json
+  try {
+    json = JSON.parse(text)
+  } catch {
+    json = undefined
+  }
+  const succeeded = upstreamResp.ok && isRecord(json) && !(Array.isArray(json.errors) && json.errors.length)
+  if (reserved && !succeeded) spentCheckout.release(lastOrder.orderId, reserved)
+
+  // What a visitor may get (forVisitor): never the merchant's cost price, for anyone in any
+  // portal mode, and no prices at all where the price gate (#4) applies. Before the cache, so
+  // a HIT is shaped too. An order read or a gated answer that isn't JSON can't be: 502.
+  const gated = PRICE_GATE && !(await viewer())
+  if (json !== undefined) {
+    json = forVisitor(json, gated)
+    text = JSON.stringify(json)
+  } else if (gated || reason === 'order-read') {
+    res.status(502).json({ errors: [{ message: 'Upstream GraphQL request failed', extensions: { code: 'BAD_GATEWAY' } }] })
+    return
+  }
+
+  if (ORDER_EDITOR_API_KEY && upstreamResp.ok) {
+    // Remember the order this browser just placed, for its checkout steps and thank-you page.
+    const newOrderId = createdOrderId(single, json)
+    // A checkout mutation that ran elevated is spent for this order: server log (reserved
+    // above) and cookie.
+    const spent = !newOrderId && succeeded ? reserved : null
+    const lastOrderValue = newOrderId
+      ? signLastOrder(newOrderId)
+      : spent
+        ? signLastOrder(lastOrder.orderId, uniqueFlags(lastOrder.used + spent))
+        : null
+    if (lastOrderValue) res.cookie(LAST_ORDER_COOKIE, lastOrderValue, privateCookieOptions(req, LAST_ORDER_MAX_AGE))
+  }
+
+  // Remember the company this browser just registered, and which of its addresses exist.
+  if (regStep && succeeded) {
+    const newCompanyId = regStep.kind === 'company' ? createdCompanyId(json) : null
+    const regValue = newCompanyId
+      ? signRegistration(newCompanyId)
+      : regStep.kind === 'address'
+        ? signRegistration(regStep.companyId, registration.used + regStep.flag)
+        : null
+    if (regValue) res.cookie(REGISTRATION_COOKIE, regValue, privateCookieOptions(req, REGISTRATION_MAX_AGE))
+  }
+
+  // PunchOut (#20): only upstream accepting the magic token /api/punchout/enter was
+  // called with activates the session; any other login, or a failed one, ends it.
+  if (isPunchoutEnabled() && single?.operation === 'mutation') {
+    const field = single.node.name.value
+    const result = isRecord(json?.data) ? json.data[single.node.alias?.value ?? field] : null
+    const outcome = punchoutAfterLogin({
+      field,
+      succeeded: succeeded && isRecord(result),
+      token: argument(single, 'id', body.variables),
+      pendingCookie: cookies[PUNCHOUT_PENDING_COOKIE],
+    })
+    if (outcome?.promote) {
+      const signed = signPunchoutSession(outcome.promote)
+      if (signed) {
+        res.cookie(PUNCHOUT_COOKIE, signed, privateCookieOptions(req, PUNCHOUT_MAX_AGE))
+        // Readable on purpose: the cart page shows the transfer button when it is set.
+        res.cookie(PUNCHOUT_FLAG_COOKIE, outcome.promote.mode, { ...privateCookieOptions(req, PUNCHOUT_MAX_AGE), httpOnly: false })
+      }
+      res.clearCookie(PUNCHOUT_PENDING_COOKIE, { path: '/' })
+    } else if (outcome?.clear) {
+      for (const name of [PUNCHOUT_COOKIE, PUNCHOUT_FLAG_COOKIE, PUNCHOUT_PENDING_COOKIE]) res.clearCookie(name, { path: '/' })
+    }
+  }
+
+  // Cache only clean 2xx responses: no transient upstream errors pinned for 24 h.
+  if (cacheable && succeeded) {
+    gqlCacheSet(key, { status: upstreamResp.status, contentType, body: Buffer.from(text), tags: cacheTags })
+  }
+
+  res.status(upstreamResp.status)
+  res.set('Content-Type', contentType)
+  res.set('X-Cache', cacheable ? 'MISS' : 'BYPASS')
+  res.end(text)
+}
+
+// ── PSP payments (#19) ──────────────────────────────────────────────────────
+
+async function readOrder(orderId, headers) {
+  try {
+    const res = await fetch(UPSTREAM, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({ query: PAYMENT_ORDER_QUERY, variables: { orderId } }),
+      signal: AbortSignal.timeout(10_000),
+    })
+    const json = await res.json()
+    return res.ok ? (json?.data?.order ?? null) : null
+  } catch {
+    return null
+  }
+}
+
+/** Any order, read with the order-editor key: owner checks (proxy order reads, quote acceptance, payment routes) and the PSP webhooks. */
+const editorOrder = (orderId) => (ORDER_EDITOR_API_KEY ? readOrder(orderId, { apikey: ORDER_EDITOR_API_KEY }) : Promise.resolve(null))
+
+// Unsigned MSP notifications per IP and per order (src/server/payments.js); its own map, so a
+// flood of made-up keys can't evict the form limits.
+const mspWebhookLimiter = createRateLimiter()
+
+/** The order behind a payment request, for its owner only (payments.js ownedOrder), else null. */
+function requestOrder(req, orderId) {
+  return ownedOrder(orderId, {
+    lastOrderId: verifyLastOrder(parseCookies(req.headers.cookie || '')[LAST_ORDER_COOKIE])?.orderId,
+    getViewer: () => verifiedViewer(requestBearer(req)),
+    fetchOrder: editorOrder,
+  })
+}
+
+/** Where the PSP sends the payer back (payments.js paymentSiteUrl); null in production without VITE_SITE_URL. */
+function siteOrigin(req) {
+  return paymentSiteUrl(process.env.VITE_SITE_URL, `${req.protocol}://${req.get('host')}`, isProd)
+}
+
+/**
+ * POST /api/<psp>/create-payment. The browser names the order and the method; the
+ * rest comes from the server (#19): the order must belong to the caller and be
+ * UNFINISHED, the amount and currency are its total incl. VAT as upstream has it,
+ * the return URL is on this site, the user id is the verified viewer's.
+ */
+function createPaymentRoute({ slug, isEnabled, getProvider }) {
+  return async (req, res) => {
+    if (!isEnabled()) {
+      res.status(503).json({ error: `${slug} not configured` })
+      return
+    }
+    if (!isSameOriginJson(req)) {
+      res.status(403).json({ error: 'cross-origin request refused' })
+      return
+    }
+    // The return URL must not come from the request's Host header in production.
+    const site = siteOrigin(req)
+    if (!site) {
+      console.error(`[${slug}] create-payment refused: VITE_SITE_URL is not set`)
+      res.status(503).json({ error: 'payments are not available' })
+      return
+    }
+    const b = isRecord(req.body) ? req.body : {}
+    const orderId = idOf(b.orderId)
+    if (!orderId || typeof b.method !== 'string' || !b.method) {
+      res.status(400).json({ error: 'missing or invalid fields' })
+      return
+    }
+    // Defense in depth: on-account methods must never reach the PSP.
+    if (isOnAccountMethod(b.method)) {
+      res.status(400).json({ error: 'on-account method does not use a PSP' })
+      return
+    }
+    const order = await requestOrder(req, orderId)
+    const charge = chargeFor(order, process.env.VITE_CURRENCY_CODE || 'EUR')
+    if (charge.error) {
+      res.status(order ? 409 : 403).json({ error: charge.error })
+      return
+    }
+    const viewer = await verifiedViewer(requestBearer(req))
+    const userId = viewer?.type === 'Contact' ? viewer.contactId : viewer?.type === 'Customer' ? viewer.customerId : undefined
+    try {
+      const result = await getProvider().createPayment({
+        orderId,
+        amount: charge.amount,
+        currency: charge.currency,
+        method: b.method,
+        description: `Order ${orderId}`,
+        redirectUrl: paymentRedirectUrl(site, b.redirectUrl, orderId, slug),
+        ...(userId ? { userId } : {}),
+      })
+      res.json({ ok: true, ...result })
+    } catch (e) {
+      console.error(`[${slug}] create-payment failed:`, errorSummary(e))
+      res.status(500).json({ error: 'payment creation failed' })
+    }
   }
 }
 
 async function createServer() {
   const app = express()
+  app.disable('x-powered-by')
+
+  // CSP, framing, nosniff, referrer policy and HSTS on every response, SSR and API (#9).
+  const SECURITY_HEADERS = securityHeaders(process.env, isProd)
+  app.use((req, res, next) => {
+    res.set(SECURITY_HEADERS)
+    next()
+  })
 
   // Basic-auth gate for /tracker and /api/tracker*; first so nothing else serves them.
   app.use(trackerGate)
+
+  app.use(renewSession)
+
+  // ── /api/auth/session — the httpOnly session cookies (V1, #8) ──────────────
+  //
+  // POST { accessToken, refreshToken? } right after a login, registration or magic
+  // login: the tokens go into httpOnly, SameSite=Lax cookies (Secure in production).
+  // Same-origin JSON only, so another site can't log a visitor into its account.
+  app.post('/api/auth/session', express.json({ limit: '16kb' }), (req, res) => {
+    if (!isSameOriginJson(req)) return refuse(res, 403, 'Cross-origin request refused')
+    const { accessToken, refreshToken } = isRecord(req.body) ? req.body : {}
+    if (!isSessionToken(accessToken)) return refuse(res, 400, 'Invalid access token')
+    const refresh = typeof refreshToken === 'string' && refreshToken.length <= 8192 ? refreshToken : undefined
+    setSessionCookies(req, res, { accessToken, refreshToken: refresh })
+    res.status(204).end()
+  })
+
+  // DELETE: logout. Also clears what the session left in this browser: the last order it
+  // placed (which unlocks that order's thank-you page and payment), the company it just
+  // registered and the punchout session (#20), so the next person on a shared browser
+  // inherits none of it. `?keep=punchout-pending` (magic-login, right before its token
+  // exchange) spares only the pending punchout entry that exchange activates.
+  app.delete('/api/auth/session', (req, res) => {
+    if (!isSameOrigin(req)) return refuse(res, 403, 'Cross-origin request refused')
+    const names = [ACCESS_COOKIE, REFRESH_COOKIE, LAST_ORDER_COOKIE, REGISTRATION_COOKIE, PUNCHOUT_COOKIE, PUNCHOUT_FLAG_COOKIE]
+    if (req.query.keep !== 'punchout-pending') names.push(PUNCHOUT_PENDING_COOKIE)
+    for (const name of names) res.clearCookie(name, { path: '/' })
+    res.status(204).end()
+  })
 
   // ── /api/revalidate — surgical cache invalidation ─────────────────────────
   //
@@ -592,7 +939,7 @@ async function createServer() {
     }
     const provided = req.headers['x-revalidate-secret']
     const providedStr = Array.isArray(provided) ? provided[0] : provided
-    if (!providedStr || providedStr !== expected) {
+    if (!safeEqual(providedStr, expected)) {
       res.status(401).json({ error: 'unauthorized' })
       return
     }
@@ -673,7 +1020,7 @@ async function createServer() {
     }
     const provided = req.headers['x-revalidate-secret']
     const providedStr = Array.isArray(provided) ? provided[0] : provided
-    if (!providedStr || providedStr !== expected) {
+    if (!safeEqual(providedStr, expected)) {
       res.status(401).json({ error: 'unauthorized' })
       return
     }
@@ -716,51 +1063,11 @@ async function createServer() {
   // provider talks DIRECTLY to upstream (not via the proxy above), carrying the
   // order-editor key itself — see src/server/mollie.js.
 
-  // POST /api/mollie/create-payment — start a payment for a placed order.
+  // POST /api/mollie/create-payment — start a payment for a placed order (#19, see createPaymentRoute).
   app.post(
     '/api/mollie/create-payment',
     express.json({ limit: '8kb' }),
-    async (req, res) => {
-      if (!isMollieEnabled()) {
-        res.status(503).json({ error: 'mollie not configured' })
-        return
-      }
-      const b = req.body || {}
-      const valid =
-        typeof b.orderId === 'number' &&
-        (typeof b.amount === 'number' || typeof b.amount === 'string') &&
-        typeof b.currency === 'string' &&
-        typeof b.method === 'string' &&
-        typeof b.description === 'string' &&
-        typeof b.redirectUrl === 'string'
-      if (!valid) {
-        res.status(400).json({ error: 'missing or invalid fields' })
-        return
-      }
-      // Defense in depth: on-account methods must never reach the PSP. The
-      // client already skips Mollie for these, but guard server-side too.
-      if (isOnAccountMethod(b.method)) {
-        res.status(400).json({ error: 'on-account method does not use a PSP' })
-        return
-      }
-      try {
-        const result = await getMollieProvider().createPayment({
-          orderId: b.orderId,
-          amount: b.amount,
-          currency: b.currency,
-          method: b.method,
-          description: b.description,
-          redirectUrl: b.redirectUrl,
-          ...(b.userId !== undefined ? { userId: b.userId } : {}),
-          ...(b.anonymousId !== undefined ? { anonymousId: b.anonymousId } : {}),
-        })
-        res.json({ ok: true, ...result })
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'payment creation failed'
-        console.error('[mollie] create-payment failed:', message)
-        res.status(500).json({ error: 'payment creation failed' })
-      }
-    },
+    createPaymentRoute({ slug: 'mollie', isEnabled: isMollieEnabled, getProvider: getMollieProvider }),
   )
 
   // GET /api/mollie/payment-status?paymentId=tr_xxx — live status for return page.
@@ -780,8 +1087,7 @@ async function createServer() {
       const result = await getMollieProvider().getPaymentStatus(paymentId)
       res.json(result) // { ok, paymentId, status?, settled?, orderId?, error? }
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'status lookup failed'
-      console.error('[mollie] payment-status failed:', message)
+      console.error('[mollie] payment-status failed:', errorSummary(e))
       res.json({ ok: false, paymentId, error: 'status lookup failed' })
     }
   })
@@ -809,10 +1115,7 @@ async function createServer() {
           )
         }
       } catch (e) {
-        console.error(
-          '[mollie] webhook handler error:',
-          e instanceof Error ? e.message : e,
-        )
+        console.error('[mollie] webhook handler error:', errorSummary(e))
       }
       res.status(200).end() // unconditional ack
     },
@@ -826,56 +1129,17 @@ async function createServer() {
   // and calls via POST or GET, so that route takes no body parser. The provider
   // talks directly to upstream with the order-editor key — see src/server/msp.js.
 
-  // POST /api/msp/create-payment — start a payment for a placed order.
+  // POST /api/msp/create-payment — start a payment for a placed order (#19, see createPaymentRoute).
   app.post(
     '/api/msp/create-payment',
     express.json({ limit: '8kb' }),
-    async (req, res) => {
-      if (!isMspEnabled()) {
-        res.status(503).json({ error: 'multisafepay not configured' })
-        return
-      }
-      const b = req.body || {}
-      const valid =
-        typeof b.orderId === 'number' &&
-        (typeof b.amount === 'number' || typeof b.amount === 'string') &&
-        typeof b.currency === 'string' &&
-        typeof b.method === 'string' &&
-        typeof b.description === 'string' &&
-        typeof b.redirectUrl === 'string'
-      if (!valid) {
-        res.status(400).json({ error: 'missing or invalid fields' })
-        return
-      }
-      // Defense in depth: on-account methods must never reach the PSP. The
-      // shared helper is provider-agnostic and lives in mollie.js.
-      if (isOnAccountMethod(b.method)) {
-        res.status(400).json({ error: 'on-account method does not use a PSP' })
-        return
-      }
-      try {
-        const result = await getMspProvider().createPayment({
-          orderId: b.orderId,
-          amount: b.amount,
-          currency: b.currency,
-          method: b.method,
-          description: b.description,
-          redirectUrl: b.redirectUrl,
-          ...(b.userId !== undefined ? { userId: b.userId } : {}),
-          ...(b.anonymousId !== undefined ? { anonymousId: b.anonymousId } : {}),
-        })
-        res.json({ ok: true, ...result })
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'payment creation failed'
-        console.error('[msp] create-payment failed:', message)
-        res.status(500).json({ error: 'payment creation failed' })
-      }
-    },
+    createPaymentRoute({ slug: 'multisafepay', isEnabled: isMspEnabled, getProvider: getMspProvider }),
   )
 
   // GET /api/msp/payment-status?paymentId=<orderId> — live status for the return
   // page. MSP keys transactions by order id, so paymentId IS the order id
   // (orderId accepted as an alias). Read-only; a non-ok body means "unknown".
+  // Only for the order's owner (#19): the browser that placed it or its account.
   app.get('/api/msp/payment-status', async (req, res) => {
     if (!isMspEnabled()) {
       res.status(503).json({ error: 'multisafepay not configured' })
@@ -888,40 +1152,55 @@ async function createServer() {
       res.status(400).json({ error: 'missing paymentId' })
       return
     }
+    if (!(await requestOrder(req, paymentId))) {
+      res.status(403).json({ ok: false, paymentId, error: 'order not found' })
+      return
+    }
     try {
       const result = await getMspProvider().getPaymentStatus(paymentId)
       res.json(result) // { ok, paymentId, status?, settled?, orderId?, error? }
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'status lookup failed'
-      console.error('[msp] payment-status failed:', message)
+      console.error('[msp] payment-status failed:', errorSummary(e))
       res.json({ ok: false, paymentId, error: 'status lookup failed' })
     }
   })
 
-  // POST|GET /api/msp/webhook — MSP calls with `?transactionid=<orderId>` (the id
-  // is in the query, never a form body → no body parser). The provider re-fetches
-  // from MSP, classifies, and updates Propeller. ALWAYS 200 ("OK") so MSP never
-  // retry-storms.
+  // POST|GET /api/msp/webhook — MSP calls with `?transactionid=<orderId>`. The
+  // provider re-fetches from MSP, classifies, and updates Propeller. Answers 200
+  // ("OK") so MSP never retry-storms, except as handleMspNotification says:
+  //
+  // POST notifications carry an `Auth` signature over the raw body, made with the
+  // site API key (#19); one that doesn't verify, or whose signed body names
+  // another order, is refused. GET notifications (orders created by package
+  // <= 0.1.3) carry none: limited per IP and per order, and processed only while
+  // the order is still UNFINISHED, so a forged GET can't re-mail a paid order,
+  // clear its cart or reset its back-office status.
   const mspWebhookHandler = async (req, res) => {
     if (!isMspEnabled()) {
       res.status(200).send('OK')
       return
     }
     const id = String(req.query.transactionid || req.query.orderId || '').trim()
+    const body = req.method === 'POST' && typeof req.body === 'string' ? req.body : ''
     try {
-      const result = await getMspProvider().handleWebhook(id)
-      if (!result.ok) {
-        console.warn('[msp] webhook not processed:', result.error, 'order:', id)
-      }
-    } catch (e) {
-      console.error(
-        '[msp] webhook handler error:',
-        e instanceof Error ? e.message : e,
+      const answer = await handleMspNotification(
+        {
+          method: req.method,
+          id,
+          ip: clientIp(req),
+          signed: req.method === 'POST' && verifyWebhookSignature(body, req.get('auth') || '', mspApiKey()),
+          body,
+        },
+        { limiter: mspWebhookLimiter, fetchOrder: editorOrder, provider: getMspProvider },
       )
+      res.status(answer.status).send(answer.body)
+    } catch (e) {
+      console.error('[msp] webhook handler error:', errorSummary(e))
+      res.status(200).send('OK') // the provider already swallows; this guards the wiring
     }
-    res.status(200).send('OK') // unconditional ack
   }
-  app.post('/api/msp/webhook', mspWebhookHandler)
+  // Raw body: the signature covers the exact bytes MSP sent.
+  app.post('/api/msp/webhook', express.text({ type: () => true, limit: '256kb' }), mspWebhookHandler)
   app.get('/api/msp/webhook', mspWebhookHandler)
 
   // ── /api/punchout/* — OCI + cXML PunchOut host endpoints ──────────────────
@@ -952,72 +1231,75 @@ async function createServer() {
       try {
         mtoken = await createPunchoutMagicToken(buyer.contactId)
       } catch (err) {
-        console.error('[punchout] token mint failed:', err?.message || err)
+        console.error('[punchout] token mint failed:', errorSummary(err))
         return sendXml(buildErrorResponse(500, 'Could not start punchout session'), 500)
       }
-      const origin = `${req.protocol}://${req.get('host')}`
-      const startUrl = buildStartUrl(`${origin}/api/punchout/enter`, {
-        mode: 'cxml',
-        mtoken,
-        redirect: '/cart',
-        HOOK_URL: parsed.browserFormPostUrl,
-        buyer_cookie: parsed.buyerCookie,
-        cxml_from: parsed.fromIdentity,
-        cxml_to: parsed.toIdentity,
-        deployment_mode: parsed.deploymentMode,
+      // The BrowserFormPost URL and buyer details come from this authenticated request
+      // and travel to /enter signed and bound to the token (#20), never as plain query
+      // parameters someone could swap.
+      const returnUrl = validReturnUrl(parsed.browserFormPostUrl)
+      if (!returnUrl) return sendXml(buildErrorResponse(400, 'BrowserFormPost URL not allowed'), 400)
+      const cx = signCxmlSetup(mtoken, {
+        returnUrl,
+        buyerCookie: parsed.buyerCookie || undefined,
+        from: parsed.fromIdentity || undefined,
+        to: parsed.toIdentity || undefined,
+        deploymentMode: parsed.deploymentMode || 'test',
       })
+      if (!cx) return sendXml(buildErrorResponse(500, 'Could not start punchout session'), 500)
+      const origin = `${req.protocol}://${req.get('host')}`
+      const startUrl = buildStartUrl(`${origin}/api/punchout/enter`, { mode: 'cxml', mtoken, redirect: '/cart', cx })
       return sendXml(buildSetupResponse({ startUrl }), 200)
     },
   )
 
-  // GET /api/punchout/enter — capture the session cookie, redirect to magic-login.
+  // GET /api/punchout/enter — store a *pending* session bound to this token and
+  // hand over to magic-login (#20). Nothing is active until upstream accepts the
+  // magicTokenLogin for this same token (see punchoutAfterLogin in the proxy).
   app.get('/api/punchout/enter', (req, res) => {
     if (!isPunchoutEnabled()) return res.status(404).send('PunchOut disabled')
     const q = req.query
-    const mtoken = String(q.mtoken || '')
+    const mtoken = typeof q.mtoken === 'string' ? q.mtoken : ''
     if (!mtoken) return res.status(400).send('Missing mtoken')
 
     const mode = q.mode === 'cxml' ? 'cxml' : 'oci'
-    const returnUrl = String(q.HOOK_URL || q.hook_url || q.returnUrl || '')
-    const session =
-      mode === 'oci'
-        ? { mode, returnUrl, target: PUNCHOUT_CONFIG.transferTarget, session: mapOciParams(q) }
-        : {
-            mode,
-            returnUrl,
-            target: PUNCHOUT_CONFIG.transferTarget,
-            session: {},
-            buyerCookie: q.buyer_cookie ? String(q.buyer_cookie) : undefined,
-            from: q.cxml_from ? String(q.cxml_from) : undefined,
-            to: q.cxml_to ? String(q.cxml_to) : undefined,
-            deploymentMode: String(q.deployment_mode || 'test'),
-          }
+    let session
+    if (mode === 'cxml') {
+      const setup = verifyCxmlSetup(q.cx, mtoken)
+      if (!setup) return res.status(400).send('Invalid punchout session')
+      session = { mode, target: PUNCHOUT_CONFIG.transferTarget, session: {}, ...setup }
+    } else {
+      const hook = [q.HOOK_URL, q.hook_url, q.returnUrl].find((v) => typeof v === 'string' && v)
+      session = { mode, returnUrl: hook, target: PUNCHOUT_CONFIG.transferTarget, session: mapOciParams(q) }
+    }
+    session.returnUrl = validReturnUrl(session.returnUrl)
+    if (!session.returnUrl) return res.status(400).send('Return URL not allowed')
 
-    const redirect = String(q.redirect || '/cart')
-    const cookieOpts = { path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' }
-    res.cookie(PUNCHOUT_COOKIE, JSON.stringify(session), { ...cookieOpts, httpOnly: true, maxAge: 3600_000 })
-    res.cookie(PUNCHOUT_FLAG_COOKIE, mode, { ...cookieOpts, httpOnly: false, maxAge: 3600_000 })
+    const pending = signPendingSession(mtoken, session)
+    if (!pending) return res.status(503).send('PunchOut not configured')
+    res.cookie(PUNCHOUT_PENDING_COOKIE, pending, privateCookieOptions(req, PUNCHOUT_PENDING_MAX_AGE))
+    // A new entry ends any earlier punchout session in this browser.
+    res.clearCookie(PUNCHOUT_COOKIE, { path: '/' })
+    res.clearCookie(PUNCHOUT_FLAG_COOKIE, { path: '/' })
+    const redirect = typeof q.redirect === 'string' && q.redirect ? q.redirect : '/cart'
     const target = `/magic-login?mtoken=${encodeURIComponent(mtoken)}&redirect=${encodeURIComponent(redirect)}`
     res.redirect(302, target)
   })
 
   // POST /api/punchout/transfer — build the OCI/cXML payload, hand the cart back.
   app.post('/api/punchout/transfer', express.urlencoded({ extended: false, limit: '16kb' }), async (req, res) => {
+    if (!isPunchoutEnabled()) return res.status(404).send('PunchOut disabled')
+    if (!isSameOrigin(req)) return res.status(403).send('Cross-origin request refused')
     const cookies = parseCookies(req.headers.cookie || '')
-    const rawSession = cookies[PUNCHOUT_COOKIE]
-    if (!rawSession) return res.status(400).send('No punchout session')
-    let session
-    try {
-      session = JSON.parse(rawSession)
-    } catch {
-      return res.status(400).send('Bad punchout session')
-    }
-    if (!session.returnUrl) return res.status(400).send('No return URL')
+    // Signed by the proxy after the token exchange; its return URL is re-checked
+    // here, before the cart is read or deleted, so a disallowed URL keeps the cart (#20).
+    const session = verifyPunchoutSession(cookies[PUNCHOUT_COOKIE])
+    if (!session) return res.status(400).send('No punchout session')
 
     const cartId = String(req.body?.cartId || '')
     if (!cartId) return res.status(400).send('Missing cartId')
 
-    const client = createAuthedClient(cookies['access_token'])
+    const client = createAuthedClient(requestBearer(req))
     const cartService = new CartService(client)
     let cart
     try {
@@ -1028,7 +1310,7 @@ async function createServer() {
         imageVariantFilters: CART_IMAGE_FILTERS.imageVariantFilters,
       })
     } catch (err) {
-      console.error('[punchout] cart load failed:', err?.message || err)
+      console.error('[punchout] cart load failed:', errorSummary(err))
       return res.status(502).send('Could not load cart')
     }
 
@@ -1074,6 +1356,8 @@ async function createServer() {
       res.clearCookie(PUNCHOUT_COOKIE, { path: '/' })
       res.clearCookie(PUNCHOUT_FLAG_COOKIE, { path: '/' })
     }
+    // This page auto-posts the cart to the buyer's procurement system, so no form-action limit.
+    res.set('Content-Security-Policy', transferPolicy(process.env, isProd))
     res.status(200).type('text/html; charset=utf-8').send(html)
   })
 
@@ -1190,12 +1474,20 @@ async function createServer() {
     '/api/track',
     express.text({ type: ['application/json', 'text/plain'], limit: '128kb' }),
     async (req, res) => {
+      // Per IP (#16): every accepted batch is a database write.
+      const hit = formLimiter.hit(`track:${clientIp(req)}`, FORM_RATE_LIMITS.track.limit, FORM_RATE_LIMITS.track.windowMs)
+      if (!hit.ok) {
+        res.status(429).set('Retry-After', String(hit.retryAfter)).end()
+        return
+      }
       try {
         const cookies = parseCookies(req.headers.cookie || '')
         const result = await ingestBatch({
           rawBody: typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {}),
           cookieVisitorId: cookies[VISITOR_COOKIE],
           channelId: TRACKING_CHANNEL_ID,
+          // Who the events belong to comes from the session, not the body (#16).
+          viewer: isTrackingConfigured() ? await verifiedViewer(requestBearer(req)) : null,
         })
         // Minted here rather than during SSR: a Set-Cookie on an HTML response
         // makes that response uncacheable at a CDN.
@@ -1203,7 +1495,7 @@ async function createServer() {
           res.setHeader('Set-Cookie', visitorCookie(result.visitorId))
         }
       } catch (e) {
-        console.error('[track] ingest failed:', e instanceof Error ? e.message : e)
+        console.error('[track] ingest failed:', errorSummary(e))
       }
       // 202 regardless: the caller is a fire-and-forget beacon, and a storefront
       // must not care whether analytics is configured or healthy.
@@ -1252,16 +1544,16 @@ async function createServer() {
       res.setHeader('Cache-Control', 'no-store')
       res.json({ metric, from, to: safeTo, data })
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'query failed'
       // A setup problem is not a server fault: 503 with the fix attached, so the
       // dashboard can say "run tracking:init" instead of relaying ER_NO_SUCH_TABLE.
+      // The driver's message (hosts, SQL) stays in the log, as codes only (#15).
       const status = classifyDbError(e)
       if (status) {
-        res.status(503).json({ error: message, status, hint: STATUS_HINTS[status], metric })
+        res.status(503).json({ error: 'analytics database unavailable', status, hint: STATUS_HINTS[status], metric })
         return
       }
-      console.error('[tracker] query failed:', message)
-      res.status(500).json({ error: message, metric })
+      console.error('[tracker] query failed:', errorSummary(e))
+      res.status(500).json({ error: 'query failed', metric })
     }
   })
 
@@ -1289,6 +1581,8 @@ async function createServer() {
       // loaders can fetch personalized/preview content server-side.
       const prepr = resolvePreprRequest(req)
       const cookies = parseCookies(cookieHeader)
+      // A blank session cookie is no session: SSR then renders as a guest.
+      if (!cookies[ACCESS_COOKIE]?.trim()) delete cookies[ACCESS_COOKIE]
       const cmsPreview = isCmsPreviewActive(cookies)
       const ssrContext = {
         cookieHeader,
@@ -1332,7 +1626,7 @@ async function createServer() {
 
       res
         .status(result.status)
-        .set({ 'Content-Type': 'text/html; charset=utf-8', ...frameHeaders() })
+        .set('Content-Type', 'text/html; charset=utf-8')
       // Drafts must never land in a shared or CDN cache.
       if (cmsPreview) res.set('Cache-Control', 'private, no-store')
       res.end(html)
@@ -1358,7 +1652,7 @@ function sendPreviewResult(req, res, r) {
   const secure = req.protocol === 'https' || /^https\b/.test(req.get('x-forwarded-proto') || '')
   const options = name === STRAPI_PREVIEW_COOKIE
     ? { path: '/', httpOnly: true, sameSite: secure ? 'none' : 'lax', secure }
-    : { path: '/', httpOnly: false, sameSite: 'lax' }
+    : { path: '/', httpOnly: true, sameSite: 'lax' }
   if (clear) res.clearCookie(name, options)
   else res.cookie(name, value, options)
   res.redirect(302, r.location)

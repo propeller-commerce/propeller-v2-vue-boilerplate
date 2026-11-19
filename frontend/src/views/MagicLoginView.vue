@@ -22,12 +22,13 @@
 import { onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@propeller-commerce/propeller-v2-vue-ui'
-import { graphqlClient } from '@/lib/api'
+import { endSession, graphqlClient } from '@/lib/api'
 import { configuration, localizeHref } from '@/lib/config'
 import { useLanguageStore } from '@/stores/language'
 import { useAfterLogin } from '@/composables/useAfterLogin'
 import { track } from '@/lib/tracking/bus'
 import { onceForToken } from '@/lib/auth/magicLoginOnce'
+import { localPath } from '@/lib/auth/localPath'
 
 const router = useRouter()
 const route = useRoute()
@@ -38,7 +39,8 @@ const failed = ref(false)
 
 onMounted(async () => {
   const token = (route.query.mtoken as string) || ''
-  const redirect = (route.query.redirect as string) || ''
+  // Same-site paths only (#14): never a link to another site.
+  const redirect = localPath(route.query.redirect) ?? ''
 
   const target = token ? await onceForToken(token, () => signIn(token, redirect)) : null
   if (!target) {
@@ -52,8 +54,11 @@ onMounted(async () => {
 /** Exchanges the token and runs the post-login steps; returns the page to go to, or null. */
 async function signIn(token: string, redirect: string): Promise<string | null> {
   // Clear any stale token so the exchange is anonymous (matches the WP flow) and
-  // a magic link can hand off to a DIFFERENT contact than the one signed in.
-  graphqlClient.clearAccessToken()
+  // a magic link can hand off to a DIFFERENT contact than the one signed in. The
+  // pending punchout entry stays: this very exchange activates it. Awaited, so the
+  // logout's cookie clearing can't land after the exchange sets its cookies. Best
+  // effort: endSession never rejects, a failed logout still lets the exchange run.
+  await endSession({ keepPunchoutPending: true })
 
   const res = await magicLogin(token)
   if (!res.ok || !res.data.user) return null

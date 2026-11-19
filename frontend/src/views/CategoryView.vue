@@ -59,6 +59,7 @@
             class="sticky top-20 z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2"
           >
             <GridToolbar
+              :hidePriceSort="priceSortHidden"
               :viewMode="viewMode"
               :offset="[12, 24, 48]"
               :itemsFound="itemsFound"
@@ -162,7 +163,8 @@ import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { useSsrCatalogStore } from "@/stores/ssrCatalog";
 import { graphqlClient } from "@/lib/api";
-import { configuration, localizeHref } from "@/lib/config";
+import { configuration, localizeHref, portalMode } from "@/lib/config";
+import { pricesHidden } from "@/lib/catalog/hidePrices";
 import { parseFiltersFromQuery, parseAvailability, serializeAvailability } from "@/lib/listingParams";
 import { resolveSeoTitle, resolveSeoDescription, resolveSeoKeywords, resolveCanonicalUrl, buildJsonLdContext } from "@/lib/seo";
 
@@ -174,6 +176,8 @@ import { trackAddToCart, trackSelectItem, trackViewItemList } from '@/lib/tracki
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+// No price sort for a visitor who sees no prices (semi-closed and closed guests).
+const priceSortHidden = computed(() => pricesHidden(portalMode, authStore.isAuthenticated));
 const cartStore = useCartStore();
 const companyStore = useCompanyStore();
 const priceStore = usePriceStore();

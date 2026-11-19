@@ -1,6 +1,7 @@
 import { getMailProvider } from './mail/index.js';
 import { detailRow, escapeHtml, renderEmail, sectionHeading } from './mail/template.js';
 import { guardForm } from './formGuard.js';
+import { errorSummary } from './httpGuards.js';
 
 /**
  * CMS contact-form submission. Same contract as the Next and Nuxt apps' equivalents.
@@ -68,7 +69,8 @@ export function createContactHandler({ getMail = getMailProvider, limiter, verif
         }),
       });
     } catch (e) {
-      console.error('[api/contact] send failed:', e);
+      // Codes only: SMTP errors quote addresses (#15).
+      console.error('[api/contact] send failed:', errorSummary(e));
       res.status(502).json({ error: 'Failed to send the message' });
       return;
     }

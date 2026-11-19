@@ -4,6 +4,46 @@ This template should help get you started developing with Vue 3 and TypeScript i
 
 Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
 
+## API keys and roles
+
+`server.js` holds both Propeller API keys; neither ever reaches the browser
+(never give them a `VITE_` prefix: Vite bundles `VITE_*` values into the client).
+
+- **`SSR_API_KEY`, the storefront key: storefront role only.** The
+  `/api/graphql` proxy forwards browser requests with it, so anything this key
+  may do, any visitor can do. Never give it more than the storefront role.
+- **`SSR_ORDER_EDITOR_API_KEY`, the order-editor key: role `user:owner`,
+  server-only.** The proxy uses it only for what it has authorized itself:
+  - the checkout steps (`orderSetStatus`, `triggerQuoteSendRequest`,
+    `triggerOrderSendConfirm`) on the order this browser just placed (signed
+    last-order cookie), once each, and a shopper accepting their own quotation;
+  - self-registration (`companyCreate`, `companyAddressCreate`) and a manager
+    adding a contact (`contactRegister`);
+  - order reads (`order`, `orders`, `orderGetPDF`, `quoteGetPDF`) for the order's
+    verified owner or the browser that just placed it. **The account order,
+    quote and thank-you pages need this key**: without it every order read is
+    refused.
+
+  The PSP routes and webhooks (Mollie, MultiSafepay) and PunchOut use it
+  server-side as well.
+
+Every request the proxy elevates must be the SDK's own document, pinned by the
+sha256 of its printed text (`SDK_DOCUMENT_HASHES` in
+`src/server/orderEditorRouting.js`, `REGISTRATION_DOCUMENT_HASHES` in
+`src/server/registrationRouting.js`), so a caller can't choose what the
+order-editor key selects. **An SDK upgrade that changes one of those documents
+needs the hash lists updated**: `npm run test:server` fails until they match, and
+until then the affected pages are refused.
+
+Two more server settings that protect the proxy:
+
+- `COOKIE_SIGNING_SECRET`: HMAC secret for the signed cookies (last order,
+  registration, punchout, Prepr preview). Empty: derived from the order-editor
+  key, with a warning. Set it in production.
+- `TRUSTED_PROXY_HOPS`: reverse proxies that append to `X-Forwarded-For`
+  (default 1 = nginx; 2 with a CDN or load balancer in front). Rate limits and
+  reCAPTCHA key on that hop, so only the reverse proxy may reach the app port.
+
 ## Translations
 
 UI strings emitted by `propeller-v2-vue-ui` components are resolved through `src/lib/i18n/`. The default provider reads from `src/locales/<lang>/<Component>.json` (one JSON file per component namespace).
@@ -230,14 +270,24 @@ SAP OCI), shops in a live session, and transfers the cart back as a requisition.
   StartPage is `/api/punchout/enter`.
 - **OCI**: no handshake — the ERP opens
   `/api/punchout/enter?mode=oci&mtoken=…&HOOK_URL=…` directly.
-- `enter` stores an httpOnly `punchout` cookie (survives magic-login's session
-  clear) and redirects to `/magic-login`. The cart page then shows **Transfer
-  cart to procurement** → `/api/punchout/transfer`, which builds the OCI
-  `NEW_ITEM-*` set / cXML `PunchOutOrderMessage` and hands it back to the ERP.
+- The cXML BrowserFormPost URL and buyer details travel from the setup to
+  `enter` signed and bound to the minted token, never as plain query parameters.
+- `enter` only stores a signed, 10-minute *pending* session bound to the token
+  and redirects to `/magic-login`. The session becomes active (signed httpOnly
+  `punchout` cookie plus the readable `punchout_active` flag) only when the
+  GraphQL proxy sees upstream accept the `magicTokenLogin` for that same token.
+  A failed magic login, any other login and logout end it. The cart page then
+  shows **Transfer cart to procurement** → `/api/punchout/transfer`, which
+  builds the OCI `NEW_ITEM-*` set / cXML `PunchOutOrderMessage` and hands it
+  back to the ERP.
+- The return URL (OCI `HOOK_URL`, cXML BrowserFormPost) must be https, and one
+  of `PUNCHOUT_HOOK_HOSTS` when that is set; it is checked at entry and again
+  before the transfer reads or deletes the cart.
 
 **Environment** — `PUNCHOUT_ENABLED=true`, `CXML_CONTACT_ID=<csv of buyer
 contact ids>`, `PUNCHOUT_DEBUG=true|false`, optional `PUNCHOUT_CURRENCY` /
-`PUNCHOUT_TRANSFER_TARGET`. Output fields are overridable in
+`PUNCHOUT_TRANSFER_TARGET`, optional `PUNCHOUT_HOOK_HOSTS=<csv of hostnames the
+cart may be handed back to>` (recommended; unset = any https host). Output fields are overridable in
 `PUNCHOUT_CONFIG.ociMapping` / `cxmlMapping` in `src/server/punchout.js` (deep-
 merged over the package defaults; `null` drops a field) — see the package README
 for the rule shape.

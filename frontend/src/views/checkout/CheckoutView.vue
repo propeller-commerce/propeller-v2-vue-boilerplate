@@ -919,8 +919,9 @@ async function startPspPayment(
 ): Promise<string | null> {
   try {
     const total = (cart.value as any)?.total;
-    // The PSP collects the gross (incl. VAT) amount the shopper pays.
-    const amount = total?.totalGross ?? total?.totalNet;
+    // What the shopper pays: incl. VAT, which Propeller calls `totalNet`
+    // (`totalGross` is ex VAT). The server charges the order's own total anyway.
+    const amount = total?.totalNet ?? total?.totalGross;
     if (amount === undefined || amount === null) return null;
 
     const origin = (

@@ -6,7 +6,12 @@ const SWEEP_EVERY_MS = 60 * 1000
 export const FORM_RATE_LIMITS = {
   contact: { limit: 5, windowMs: TEN_MINUTES },
   'price-request': { limit: 10, windowMs: TEN_MINUTES },
+  // Analytics beacons: generous, a page sends a few.
+  track: { limit: 120, windowMs: 60 * 1000 },
 }
+
+// Shop-branded confirmations one address can receive, whatever IP asks (#10).
+export const CONFIRMATION_DAILY_CAP = { limit: 3, windowMs: 24 * 60 * 60 * 1000 }
 
 export function createRateLimiter({ now = Date.now } = {}) {
   const buckets = new Map()
@@ -37,14 +42,22 @@ export function createRateLimiter({ now = Date.now } = {}) {
   }
 }
 
-// Best-effort client IP; x-forwarded-for comes from the reverse proxy and can be spoofed.
-export function clientIp(req) {
-  const headers = req?.headers || {}
-  const xff = headers['x-forwarded-for']
-  const xffStr = Array.isArray(xff) ? xff[0] : xff
-  if (xffStr) return xffStr.split(',')[0].trim()
-  const xri = headers['x-real-ip']
-  if (xri) return Array.isArray(xri) ? xri[0] : xri
+/**
+ * The client address for rate limits and reCAPTCHA (#6): the x-forwarded-for entry
+ * our own reverse proxy added, `TRUSTED_PROXY_HOPS` from the right (default 1:
+ * nginx; add one per CDN / load balancer in front). Entries further left are
+ * whatever the client sent. 0 hops = no proxy: the socket address. x-real-ip is
+ * never read: without our proxy in front a client sets it. Only the reverse
+ * proxy may reach the app port.
+ */
+export function clientIp(req, trustedHops = Number(process.env.TRUSTED_PROXY_HOPS?.trim() || 1)) {
+  const hopsTrusted = Number.isInteger(trustedHops) && trustedHops >= 0 ? trustedHops : 1
+  const xff = req?.headers?.['x-forwarded-for']
+  const hops = (Array.isArray(xff) ? xff.join(',') : xff || '')
+    .split(',')
+    .map((h) => h.trim())
+    .filter(Boolean)
+  if (hopsTrusted > 0 && hops.length) return hops[Math.max(0, hops.length - hopsTrusted)]
   return req?.socket?.remoteAddress || 'unknown'
 }
 

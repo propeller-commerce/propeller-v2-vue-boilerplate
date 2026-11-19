@@ -49,7 +49,7 @@ import {
   channelService,
 } from '@propeller-commerce/propeller-sdk-v2'
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-vue-ui/shared'
-import { buildInventoryFilter, isContentHidden, type Availability } from '@propeller-commerce/propeller-v2-core-ui'
+import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui'
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,
@@ -61,7 +61,8 @@ import {
   configuration,
 } from './config'
 import { retypeTextFilters } from './listingParams'
-import { hidePrices } from './catalog/hidePrices'
+import { forVisitor, pricesHidden } from './catalog/hidePrices'
+import { listingOptionsFor } from './catalog/listingGate'
 import { portalMode } from './config'
 import { cms } from './cms'
 import { TAG_CMS, cmsPageTag, cmsArticleTag } from './cms/core'
@@ -285,9 +286,20 @@ function withCacheTagsServices(infra: ServerInfra, extraTags: readonly string[])
   return createServices(withCacheTags(infra, extraTags))
 }
 
-// Semi-closed shops must not send prices to visitors who are not logged in.
+// Semi-closed and closed shops send prices only to a signed-in Contact or Customer.
+// `user` comes from getViewer with the request's token, so upstream verified it; an
+// expired token resolves to the bare `User`, which has neither id and sees no prices.
+// (core-ui's isContentHidden covers semi-closed only, so it isn't used here.)
+function viewerPricesHidden(infra: ServerInfra): boolean {
+  const user = infra.user
+  const signedIn = !!user && ('contactId' in user || 'customerId' in user)
+  return pricesHidden(portalMode, signedIn)
+}
+
+// Never the merchant's cost price, for anyone; no prices at all where the portal mode says
+// so. Runs inside the cache loaders, so cached entries are shaped too.
 function forViewer<T>(infra: ServerInfra, data: T): T {
-  return isContentHidden(portalMode, infra.user) ? hidePrices(data) : data
+  return forVisitor(data, viewerPricesHidden(infra))
 }
 
 // ── Per-request infra (mirrors the PropellerProvider value object) ───────────
@@ -309,10 +321,11 @@ export interface ServerInfra {
    */
   selectedCompanyId?: number
   /**
-   * Whether GraphQL POSTs issued through this infra should attach cache
-   * tags. True for `getAnonymousInfra()`, false for `getServerInfra()`
-   * (authenticated). The fetch helpers branch on this flag to decide
-   * whether to mint a tagged client via `withCacheTags`.
+   * Whether this infra carries no Bearer, so its results are the same for every
+   * anonymous visitor: they go into the anonymous SSR cache and attach cache
+   * tags. Decided by the token, never by `user`: a token whose getViewer failed
+   * leaves `user` null while the client still sends the Bearer, and that
+   * contact-priced result must not land under the anonymous key.
    */
   cacheable: boolean
   /**
@@ -372,7 +385,9 @@ export async function getServerInfra(
     currency: '€',
     includeTax: cookies['price_include_tax'] === '1',
     selectedCompanyId,
-    cacheable: false, // authenticated render — bypasses the SSR proxy cache
+    // Without a token the render is anonymous and shares the anonymous cache.
+    cacheable: !token,
+    ...(!token && { cacheTags: [TAG_CATALOG] }),
   }
 }
 
@@ -409,10 +424,10 @@ export function getAnonymousInfra(
 }
 
 /**
- * Anonymous infra variant that honours the VAT toggle cookie. Reading the
- * cookie opts the route out of the cacheable path — use this for routes that
+ * Anonymous infra variant that honours the VAT toggle cookie, for routes that
  * render prices in the initial HTML and need the gross/net toggle to take
- * effect server-side.
+ * effect server-side. The toggle only changes how prices are shown, not what
+ * is fetched, so the data stays in the anonymous cache.
  */
 export function getAnonymousInfraWithTax(
   cookies: Record<string, string>,
@@ -427,7 +442,8 @@ export function getAnonymousInfraWithTax(
     language,
     currency: '€',
     includeTax: cookies['price_include_tax'] === '1',
-    cacheable: false,
+    cacheable: true,
+    cacheTags: [TAG_CATALOG],
   }
 }
 
@@ -573,7 +589,7 @@ function resolveCompanyId(infra: ServerInfra): number | undefined {
  * while the cart charged the selected one's (PWP-1015).
  *
  * Returns `undefined` for anonymous visitors on purpose — they never reach this
- * anyway (`withAnonymousCache` only caches when `infra.user` is null), and
+ * anyway (`withAnonymousCache` only caches infra without a Bearer), and
  * leaving their request bodies untouched keeps the cached shape stable.
  */
 export function buildPriceInput(
@@ -689,8 +705,8 @@ export async function resolveBaseCategoryId(): Promise<number> {
 //
 // Mirrors propeller-next's `export const revalidate = 300` posture — anonymous
 // catalog renders are byte-identical across visitors and may be served from
-// memory for up to 5 minutes. Authenticated renders are skipped entirely (the
-// `infra.user` check at the wrapper level): contact-specific pricing must
+// memory for up to 5 minutes. Renders with a Bearer are skipped entirely (the
+// `infra.cacheable` check at the wrapper level): contact-specific pricing must
 // never be cross-served.
 //
 // Why hand-rolled and not a library: it is ~40 lines, has no peer deps, and
@@ -777,8 +793,9 @@ function cacheSet<T>(key: string, value: T, tags: readonly string[] = []): void 
 }
 
 /**
- * Memoise an anonymous fetch by `key`. When `infra.user` is set the cache is
- * bypassed entirely — authenticated renders are dynamic, never cached. Errors
+ * Memoise an anonymous fetch by `key`. Infra that carries a Bearer
+ * (`cacheable` false) bypasses the cache entirely, whether or not its viewer
+ * lookup succeeded — authenticated renders are dynamic, never cached. Errors
  * are not cached; only successful resolutions (including `null` "not found").
  *
  * `tags` is merged with the infra baseline tags and recorded on the entry so
@@ -791,7 +808,7 @@ async function withAnonymousCache<T>(
   tags: readonly string[],
   load: () => Promise<T>,
 ): Promise<T> {
-  if (infra.user) return load()
+  if (!infra.cacheable) return load()
   const cached = cacheGet<T>(key)
   if (cached !== undefined) return cached
   const fresh = await load()
@@ -885,8 +902,10 @@ export async function fetchProduct(
 export async function fetchCategory(
   infra: ServerInfra,
   categoryId: number,
-  opts: ListingFetchOptions = {},
+  requested: ListingFetchOptions = {},
 ): Promise<Category | null> {
+  // Before anything is built from them, the cache key included (see listingOptionsFor).
+  const opts = listingOptionsFor(requested, viewerPricesHidden(infra))
   const lang = opts.language ?? infra.language
   const sortField = opts.sortField ?? ProductSortField.CATEGORY_ORDER
   const sortOrder = opts.sortOrder ?? SortOrder.DESC
@@ -957,9 +976,11 @@ export async function fetchCategory(
 export async function fetchSearch(
   infra: ServerInfra,
   term: string,
-  opts: ListingFetchOptions = {},
+  requested: ListingFetchOptions = {},
   baseCategoryId?: number,
 ): Promise<ProductsResponse | null> {
+  // Before anything is built from them, the cache key included (see listingOptionsFor).
+  const opts = listingOptionsFor(requested, viewerPricesHidden(infra))
   // Env override, else the channel's catalog root — never a literal.
   const rootCategoryId = baseCategoryId ?? (await resolveBaseCategoryId())
   const lang = opts.language ?? infra.language

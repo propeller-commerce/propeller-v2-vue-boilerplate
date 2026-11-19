@@ -27,7 +27,7 @@ function call(body, deps = {}) {
     set(k, v) { out.headers[k] = v; return this },
     json(j) { out.json = j; return this },
   }
-  return handler({ body, headers: {}, socket: {} }, res).then(() => ({ ...out, sent }))
+  return handler({ body, headers: {}, socket: { remoteAddress: deps.ip } }, res).then(() => ({ ...out, sent }))
 }
 
 const valid = { items: [{ code: 'A1', name: 'Widget', quantity: 2 }], email: 'ann@example.com' }
@@ -69,4 +69,35 @@ test('captcha is checked with the price_request action; unavailable answers 503'
   assert.equal(r.status, 503)
   assert.deepEqual(r.json, { error: 'captcha_unavailable' })
   assert.equal(r.sent.length, 0)
+})
+
+test('a fourth confirmation to the same address in a day is skipped; the shop still gets the request (#10)', async () => {
+  const limiter = createRateLimiter()
+  // Different IPs: the cap is per recipient, not per client.
+  for (let i = 0; i < 3; i++) {
+    const r = await call({ ...valid, email: 'Ann@Example.com' }, { limiter, ip: `10.0.0.${i}` })
+    assert.equal(r.sent.length, 2)
+  }
+  const r = await call(valid, { limiter, ip: '10.0.0.9' })
+  assert.equal(r.status, 200)
+  assert.deepEqual(r.json, { ok: true })
+  assert.equal(r.sent.length, 1)
+  assert.deepEqual(r.sent[0].to, ['shop@example.com'])
+  // Another address is unaffected.
+  const other = await call({ ...valid, email: 'bob@example.com' }, { limiter, ip: '10.0.0.10' })
+  assert.equal(other.sent.length, 2)
+})
+
+test('mail errors are logged without the message, which quotes addresses (#15)', async () => {
+  const logged = []
+  const origError = console.error
+  console.error = (...args) => logged.push(JSON.stringify(args))
+  try {
+    const err = Object.assign(new Error('550 <ann@example.com> rejected'), { responseCode: 550 })
+    await call(valid, { getMail: () => ({ send: async () => { throw err } }) })
+  } finally {
+    console.error = origError
+  }
+  assert.ok(logged.length > 0)
+  assert.ok(logged.every((l) => !l.includes('@')), logged.join(' | '))
 })

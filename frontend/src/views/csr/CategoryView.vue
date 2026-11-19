@@ -52,6 +52,7 @@
             class="sticky top-20 z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2"
           >
             <GridToolbar
+              :hidePriceSort="priceSortHidden"
               :viewMode="viewMode"
               :offset="[12, 24, 48]"
               :itemsFound="itemsFound"
@@ -168,7 +169,8 @@ import { useCompanyStore } from "@/stores/company";
 import { usePriceStore } from "@/stores/price";
 import { useLanguageStore } from "@/stores/language";
 import { graphqlClient } from "@/lib/api";
-import { configuration, localizeHref } from "@/lib/config";
+import { configuration, localizeHref, portalMode } from "@/lib/config";
+import { pricesHidden } from "@/lib/catalog/hidePrices";
 import { parseFiltersFromQuery, parseAvailability, serializeAvailability } from "@/lib/listingParams";
 
 import { Breadcrumbs, CategoryDescription, GridFilters, GridPagination, GridTitle, GridToolbar, ProductGrid } from '@propeller-commerce/propeller-v2-vue-ui';
@@ -177,6 +179,8 @@ import { useTranslations } from '@/lib/i18n/composable';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+// No price sort for a visitor who sees no prices (semi-closed and closed guests).
+const priceSortHidden = computed(() => pricesHidden(portalMode, authStore.isAuthenticated));
 const cartStore = useCartStore();
 const companyStore = useCompanyStore();
 const priceStore = usePriceStore();

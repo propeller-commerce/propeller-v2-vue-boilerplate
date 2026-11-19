@@ -124,9 +124,9 @@ function listingOptions(
  * user. The seeded state serializes into `__INITIAL_STATE__` and the client
  * hydrates to it identically.
  */
-function seedAuth(infra: ServerInfra, ctx: SSRContext): void {
+function seedAuth(infra: ServerInfra): void {
   if (infra.user) {
-    useAuthStore().hydrateFromServer(infra.user, ctx.cookies['access_token'] ?? null)
+    useAuthStore().hydrateFromServer(infra.user)
   }
 }
 
@@ -141,7 +141,7 @@ export async function prefetchProduct(
   if (!Number.isFinite(productId)) return
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const product = await fetchProduct(infra, productId, lang)
   if (product) {
     useSsrCatalogStore().setSeed(route.fullPath, { kind: 'product', data: product })
@@ -161,7 +161,7 @@ export async function prefetchCategory(
   if (!Number.isFinite(categoryId)) return
   const lang = routeLanguage(route, ctx)
   const infra = await getListingInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const category = await fetchCategory(
     infra,
     categoryId,
@@ -183,7 +183,7 @@ export async function prefetchSearch(
     : (termParam as string) || ''
   const lang = routeLanguage(route, ctx)
   const infra = await getListingInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const products = await fetchSearch(
     infra,
     term,
@@ -217,7 +217,7 @@ export async function prefetchCmsPage(
   }
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const preview = inPreview(ctx)
   const extraHeaders = preprHeadersFrom(ctx)
   const page = await fetchCmsPage(infra, slug, {
@@ -263,7 +263,7 @@ export async function prefetchHome(
 ): Promise<void> {
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const preview = inPreview(ctx)
   const page = await fetchCmsPage(infra, 'home', {
     locale: previewLocaleFrom(ctx) || lang,
@@ -283,7 +283,7 @@ export async function prefetchBlog(
 ): Promise<void> {
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const preview = inPreview(ctx)
   const articles = await fetchCmsArticles(infra, lang, {
     preview,
@@ -304,7 +304,7 @@ export async function prefetchBlogPost(
   }
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const preview = inPreview(ctx)
   const article = await fetchCmsArticle(infra, slug, lang, {
     preview,
@@ -326,7 +326,7 @@ export async function prefetchCluster(
   if (!Number.isFinite(clusterId)) return
   const lang = routeLanguage(route, ctx)
   const infra = await getServerInfra(ctx.cookies, lang)
-  seedAuth(infra, ctx)
+  seedAuth(infra)
   const cluster = await fetchCluster(infra, clusterId, lang)
   if (cluster) {
     useSsrCatalogStore().setSeed(route.fullPath, { kind: 'cluster', data: cluster })
