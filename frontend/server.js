@@ -636,9 +636,15 @@ async function proxyGraphql(req, res, rawBody) {
     }
     body.variables = companyCreateVariables(body.variables)
   }
+  // Self-registration's contact step: the SDK's own contactRegister, anonymous, into the company
+  // this browser just created, once. It needs the order-editor key, like the company and address steps.
+  const contactStep =
+    !!ORDER_EDITOR_API_KEY &&
+    isSdkDocument(doc, 'contactRegister') &&
+    mayRegisterContact(contactRegisterParentId(single, body.variables), { isAnonymous: !bearer, registration })
   if (orderRead) {
     reason = 'order-read'
-  } else if (regStep) {
+  } else if (regStep || contactStep) {
     reason = 'registration'
   } else if (ORDER_EDITOR_API_KEY && single) {
     const state = verifyLastOrder(cookies[LAST_ORDER_COOKIE])
@@ -657,12 +663,8 @@ async function proxyGraphql(req, res, rawBody) {
   // the order-editor key selects), and the checkout mutations only elevated: refused, never
   // sent on the storefront key instead (mustRefuseElevation).
   if (mustRefuseElevation(doc, single, reason)) return refuse(res, 403, 'Forbidden: this request is not allowed')
-  // contactRegister runs only as a manager's elevated call or as this browser's own self-registration.
-  const contactStep =
-    !reason && selectsContactRegister(doc)
-      ? mayRegisterContact(contactRegisterParentId(single, body.variables), { isAnonymous: !bearer, registration })
-      : null
-  if (contactStep === false) return refuse(res, 403, 'Forbidden: contact registration is not allowed here')
+  // contactRegister runs only elevated: a manager's call or this browser's own self-registration.
+  if (!reason && selectsContactRegister(doc)) return refuse(res, 403, 'Forbidden: contact registration is not allowed here')
   const auth = upstreamAuth(reason, bearer)
 
   // Only anonymous catalog queries are cacheable. An authenticated request is
