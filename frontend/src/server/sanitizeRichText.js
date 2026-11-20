@@ -14,15 +14,18 @@ import sanitizeHtml from 'sanitize-html'
  * Plain JS so it is testable with `npm run test:server` (src/server/*.test.js).
  */
 
+// The same allowlist as propeller-next's lib/cms/sanitize.ts.
 const OPTIONS = {
-  allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img'],
+  allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img', 'del', 'ins'],
   allowedAttributes: {
     a: ['href', 'name', 'target', 'title', 'rel'],
-    img: ['src', 'alt', 'title', 'width', 'height', 'loading'],
-    th: ['colspan', 'rowspan', 'scope'],
-    td: ['colspan', 'rowspan'],
+    img: ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
+    th: ['align', 'colspan', 'rowspan', 'scope'],
+    td: ['align', 'colspan', 'rowspan'],
     ol: ['start', 'type'],
+    code: ['class'],
   },
+  allowedClasses: { code: ['language-*'] },
   allowedSchemes: ['http', 'https', 'mailto', 'tel'],
   allowedSchemesByTag: { img: ['http', 'https'] },
   allowProtocolRelative: false,

@@ -70,6 +70,7 @@ import {
 } from './src/server/graphqlGuards.js'
 import { forVisitor, pricesHidden } from './src/server/hidePrices.js'
 import {
+  COMPANY_CREATE_FIELD,
   companyCreateVariables,
   CONTACT_FLAG,
   createdCompanyId,
@@ -80,6 +81,7 @@ import {
   registrationLimited,
   registrationStep,
   selectsContactRegister,
+  selectsField,
   signRegistration,
   verifyRegistration,
 } from './src/server/registrationRouting.js'
@@ -622,6 +624,10 @@ async function proxyGraphql(req, res, rawBody) {
   const regStep = ORDER_EDITOR_API_KEY
     ? registrationStep(doc, single, body.variables, { isAnonymous: !bearer, registration })
     : null
+  // A company is created only by that step, never by another document on the storefront key.
+  if (regStep?.kind !== 'company' && selectsField(doc, COMPANY_CREATE_FIELD)) {
+    return refuse(res, 403, 'Forbidden: company registration is not allowed here')
+  }
   if (regStep?.kind === 'company') {
     const retryAfter = registrationLimited(clientIp(req))
     if (retryAfter) {

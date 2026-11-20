@@ -58,3 +58,10 @@ test('non-strings become empty', () => {
   assert.equal(sanitizeRichText(null), '')
   assert.equal(sanitizeRichText(42), '')
 })
+
+test('same allowlist as propeller-next: del/ins, srcset, table align and code language classes stay', () => {
+  assert.equal(sanitizeRichText('<p><del>a</del><ins>b</ins></p>'), '<p><del>a</del><ins>b</ins></p>')
+  assert.equal(sanitizeRichText('<img src="https://x.test/a.png" srcset="https://x.test/a2.png 2x" alt="a">'), '<img src="https://x.test/a.png" srcset="https://x.test/a2.png 2x" alt="a" />')
+  assert.equal(sanitizeRichText('<table><tr><td align="right">1</td></tr></table>'), '<table><tr><td align="right">1</td></tr></table>')
+  assert.equal(sanitizeRichText('<pre><code class="language-js evil">x</code></pre>'), '<pre><code class="language-js">x</code></pre>')
+})

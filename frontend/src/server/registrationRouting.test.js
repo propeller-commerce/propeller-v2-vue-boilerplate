@@ -9,8 +9,11 @@ import {
   registeredContact,
   selectsContactRegister,
   REGISTRATION_DOCUMENT_HASHES,
+  hourlyLimit,
   registrationLimited,
+  registrationLimits,
   registrationStep,
+  selectsField,
   signRegistration,
   verifyRegistration,
 } from './registrationRouting.js'
@@ -130,4 +133,24 @@ test('a contact counts as registered when the response carries it, even with par
   assert.equal(registeredContact({ data: { contactRegister: { contact: { contactId: 1 } } }, errors: [{ message: 'Unauthorized' }] }), true)
   assert.equal(registeredContact({ data: { contactRegister: null }, errors: [{ message: 'Email exists' }] }), false)
   assert.equal(registeredContact(null), false)
+})
+
+test('registration limits come from the environment: a whole number, 0 for none, else the default', () => {
+  assert.deepEqual(hourlyLimit(undefined, 30), { limit: 30, windowMs: 3_600_000 })
+  assert.equal(hourlyLimit(' 200 ', 30).limit, 200)
+  assert.equal(hourlyLimit('0', 30).limit, Number.MAX_SAFE_INTEGER)
+  for (const bad of ['-1', '1.5', 'many', '9999999']) assert.equal(hourlyLimit(bad, 30).limit, 30, bad)
+  const limits = registrationLimits({ REGISTRATION_LIMIT_PER_IP: '2', REGISTRATION_LIMIT_TOTAL: '0' })
+  assert.equal(limits.perIp.limit, 2)
+  const perIp = createRateLimiter()
+  const total = createRateLimiter()
+  assert.equal(registrationLimited('4.4.4.4', { perIp, total, limits }), 0)
+  assert.equal(registrationLimited('4.4.4.4', { perIp, total, limits }), 0)
+  assert.ok(registrationLimited('4.4.4.4', { perIp, total, limits }) > 0, 'per-IP limit from the environment')
+})
+
+test('companyCreate is found anywhere in a document', () => {
+  assert.equal(selectsField(parseDocument('mutation { a: companyCreate(input: { name: "x" }) { companyId } }'), 'companyCreate'), true)
+  assert.equal(selectsField(parseDocument('mutation { cartStart { cartId } b: companyCreate(input: {}) { companyId } }'), 'companyCreate'), true)
+  assert.equal(selectsField(parseDocument('mutation { companyAddressCreate(input: {}) { id } }'), 'companyCreate'), false)
 })

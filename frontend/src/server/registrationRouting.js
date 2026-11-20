@@ -27,11 +27,19 @@ export const REGISTRATION_MAX_AGE = 15 * 60
 const REGISTRATION_PURPOSE = 'registration'
 const ADDRESS_FLAG = { invoice: 'i', delivery: 'd' }
 
-// Each companyCreate creates a company in Propeller: 5 per IP and 30 in total per hour.
-export const REGISTRATION_LIMITS = {
-  perIp: { limit: 5, windowMs: 60 * 60 * 1000 },
-  total: { limit: 30, windowMs: 60 * 60 * 1000 },
+/** An hourly limit from the environment: a whole number, 0 for none; anything else keeps `fallback`. */
+export function hourlyLimit(value, fallback) {
+  const raw = String(value ?? '').trim()
+  const n = /^\d{1,6}$/.test(raw) ? Number(raw) : fallback
+  return { limit: n === 0 ? Number.MAX_SAFE_INTEGER : n, windowMs: 60 * 60 * 1000 }
 }
+
+// Each companyCreate creates a company in Propeller: per IP and in total per hour (default 5 and 30).
+// Read per call: server.js loads its .env files after the imports run.
+export const registrationLimits = (env = process.env) => ({
+  perIp: hourlyLimit(env.REGISTRATION_LIMIT_PER_IP, 5),
+  total: hourlyLimit(env.REGISTRATION_LIMIT_TOTAL, 30),
+})
 // Kept apart from the per-IP buckets, so a flood of IPs can't push the total out.
 const totalLimiter = createRateLimiter()
 
@@ -74,10 +82,10 @@ export function companyCreateVariables(variables) {
 }
 
 /** Seconds to wait when this IP, or registration as a whole, is over its limit; else 0. */
-export function registrationLimited(ip, { perIp = formLimiter, total = totalLimiter } = {}) {
-  const own = perIp.hit(`registration-company:${ip}`, REGISTRATION_LIMITS.perIp.limit, REGISTRATION_LIMITS.perIp.windowMs)
+export function registrationLimited(ip, { perIp = formLimiter, total = totalLimiter, limits = registrationLimits() } = {}) {
+  const own = perIp.hit(`registration-company:${ip}`, limits.perIp.limit, limits.perIp.windowMs)
   if (!own.ok) return own.retryAfter
-  const all = total.hit('registration-company', REGISTRATION_LIMITS.total.limit, REGISTRATION_LIMITS.total.windowMs)
+  const all = total.hit('registration-company', limits.total.limit, limits.total.windowMs)
   return all.ok ? 0 : all.retryAfter
 }
 
@@ -107,12 +115,12 @@ export function registeredContact(json) {
   return !!json?.data?.contactRegister
 }
 
-/** Whether `doc` selects contactRegister anywhere (aliases, several fields, fragments). */
-export function selectsContactRegister(doc) {
+/** Whether `doc` selects the field `name` anywhere (aliases, several fields, fragments). */
+export function selectsField(doc, name) {
   let found = false
   visit(doc, {
     [Kind.FIELD](node) {
-      if (node.name.value === 'contactRegister') {
+      if (node.name.value === name) {
         found = true
         return BREAK
       }
@@ -120,6 +128,12 @@ export function selectsContactRegister(doc) {
   })
   return found
 }
+
+/** Whether `doc` selects contactRegister anywhere. */
+export const selectsContactRegister = (doc) => selectsField(doc, 'contactRegister')
+
+/** Only self-registration creates a company; any other document selecting this is refused. */
+export const COMPANY_CREATE_FIELD = 'companyCreate'
 
 /**
  * Whether an anonymous contactRegister is this browser's own self-registration: into the
