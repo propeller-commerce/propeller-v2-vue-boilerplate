@@ -101,6 +101,12 @@ function inputOf(single, variables) {
   return isRecord(input) ? input : null
 }
 
+/** `input.parentId` of a single contactRegister mutation, else null. */
+export function contactRegisterParentId(single, variables) {
+  if (single?.operation !== 'mutation' || single.node.name.value !== 'contactRegister') return null
+  return idOf(inputOf(single, variables)?.parentId)
+}
+
 /**
  * Why this request may use the order-editor key, or null:
  *   'checkout'         an allowlisted checkout mutation on the signed last order, not yet run

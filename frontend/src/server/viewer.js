@@ -70,6 +70,7 @@ export function fetchViewerFrom(endpoint, apiKey) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: apiKey, Authorization: `Bearer ${token}` },
       body: JSON.stringify({ query: VIEWER_QUERY, variables: VIEWER_VARIABLES }),
+      signal: AbortSignal.timeout(10_000),
     })
     if (!res.ok) throw new Error(`viewer lookup ${res.status}`)
     const json = await res.json()

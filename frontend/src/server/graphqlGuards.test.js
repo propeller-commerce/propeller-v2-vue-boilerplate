@@ -185,3 +185,24 @@ test('no SDK document uses a foreign alias or inlines a price filter, so the sho
   })
   assert.deepEqual(offenders.map(([n]) => n), [])
 })
+
+test('an alias that could carry a discount amount or bulkCostPrices is flagged; plain selections are not', () => {
+  for (const query of [
+    '{ x: bulkCostPrices(input: {}) { items { value } } }',
+    '{ product(productId: 1) { price { d: discount { value } } } }',
+    '{ product(productId: 1) { bulkPrices { discount { v: value } } } }',
+    '{ product(productId: 1) { bulkPrices { discount { quantityFrom: value } } } }',
+    '{ product(productId: 1) { bulkPrices { discount { ... on BulkPrice { q: value } } } } }',
+    'query { product(productId: 1) { bulkPrices { discount { ...D } } } } fragment D on BulkPrice { q: value }',
+  ]) {
+    assert.equal(inspect(query).costPriceAlias, true, query)
+  }
+  assert.equal(inspect('{ product(productId: 1) { bulkPrices { discount { value quantityFrom } } } }').costPriceAlias, false)
+  assert.equal(inspect('{ product(productId: 1) { names: name { nl: value } bulkPrices { discount { value } } } }').costPriceAlias, false)
+})
+
+test("vue-ui's machines query aliases (machine_<n>: machine) are not foreign; other machine aliases are", () => {
+  assert.equal(inspect('{ machine_0: machine(id: "a") { id } machine_12: machine(id: "b") { id } }').foreignAlias, false)
+  assert.equal(inspect('{ m: machine(id: "a") { id } }').foreignAlias, true)
+  assert.equal(inspect('{ machine_0: product(productId: 1) { productId } }').foreignAlias, true)
+})

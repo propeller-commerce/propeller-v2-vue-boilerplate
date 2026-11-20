@@ -45,6 +45,8 @@ import {
   createSpentLog,
   idOf,
   isOwnQuotation,
+  contactRegisterParentId,
+  isOwnOrder,
   isSdkDocument,
   LAST_ORDER_COOKIE,
   LAST_ORDER_MAX_AGE,
@@ -69,11 +71,15 @@ import {
 import { forVisitor, pricesHidden } from './src/server/hidePrices.js'
 import {
   companyCreateVariables,
+  CONTACT_FLAG,
   createdCompanyId,
+  mayRegisterContact,
+  registeredContact,
   REGISTRATION_COOKIE,
   REGISTRATION_MAX_AGE,
   registrationLimited,
   registrationStep,
+  selectsContactRegister,
   signRegistration,
   verifyRegistration,
 } from './src/server/registrationRouting.js'
@@ -645,6 +651,12 @@ async function proxyGraphql(req, res, rawBody) {
   // the order-editor key selects), and the checkout mutations only elevated: refused, never
   // sent on the storefront key instead (mustRefuseElevation).
   if (mustRefuseElevation(doc, single, reason)) return refuse(res, 403, 'Forbidden: this request is not allowed')
+  // contactRegister runs only as a manager's elevated call or as this browser's own self-registration.
+  const contactStep =
+    !reason && selectsContactRegister(doc)
+      ? mayRegisterContact(contactRegisterParentId(single, body.variables), { isAnonymous: !bearer, registration })
+      : null
+  if (contactStep === false) return refuse(res, 403, 'Forbidden: contact registration is not allowed here')
   const auth = upstreamAuth(reason, bearer)
 
   // Only anonymous catalog queries are cacheable. An authenticated request is
@@ -739,6 +751,9 @@ async function proxyGraphql(req, res, rawBody) {
         ? signRegistration(regStep.companyId, registration.used + regStep.flag)
         : null
     if (regValue) res.cookie(REGISTRATION_COOKIE, regValue, privateCookieOptions(req, REGISTRATION_MAX_AGE))
+  }
+  if (contactStep && registeredContact(json)) {
+    res.cookie(REGISTRATION_COOKIE, signRegistration(registration.companyId, registration.used + CONTACT_FLAG), privateCookieOptions(req, REGISTRATION_MAX_AGE))
   }
 
   // PunchOut (#20): only upstream accepting the magic token /api/punchout/enter was
@@ -854,8 +869,9 @@ function createPaymentRoute({ slug, isEnabled, getProvider }) {
       res.status(order ? 409 : 403).json({ error: charge.error })
       return
     }
+    // The viewer's id only when they placed the order (a cookie-authorised guest order has none).
     const viewer = await verifiedViewer(requestBearer(req))
-    const userId = viewer?.type === 'Contact' ? viewer.contactId : viewer?.type === 'Customer' ? viewer.customerId : undefined
+    const userId = isOwnOrder(order, viewer) ? viewer.userId : undefined
     try {
       const result = await getProvider().createPayment({
         orderId,
@@ -1072,20 +1088,27 @@ async function createServer() {
 
   // GET /api/mollie/payment-status?paymentId=tr_xxx — live status for return page.
   // Read-only; does not touch Propeller. A non-ok body means "unknown" so the
-  // caller can retry.
+  // caller can retry. Only for the order's owner (#19); anyone else gets the
+  // same answer as an unknown payment.
   app.get('/api/mollie/payment-status', async (req, res) => {
     if (!isMollieEnabled()) {
       res.status(503).json({ error: 'mollie not configured' })
       return
     }
     const paymentId = String(req.query.paymentId || '').trim()
-    if (!paymentId) {
-      res.status(400).json({ error: 'missing paymentId' })
+    if (!/^tr_[A-Za-z0-9]{1,64}$/.test(paymentId)) {
+      res.status(400).json({ ok: false, error: 'missing paymentId' })
       return
     }
     try {
       const result = await getMollieProvider().getPaymentStatus(paymentId)
-      res.json(result) // { ok, paymentId, status?, settled?, orderId?, error? }
+      // The order id is in the Mollie payment's metadata: check ownership after the lookup.
+      if (!result.ok || !(await requestOrder(req, result.orderId))) {
+        if (!result.ok) console.warn('[mollie] payment-status not ok:', result.error)
+        res.json({ ok: false, paymentId, error: 'status lookup failed' })
+        return
+      }
+      res.json(result) // { ok, paymentId, status, settled, orderId }
     } catch (e) {
       console.error('[mollie] payment-status failed:', errorSummary(e))
       res.json({ ok: false, paymentId, error: 'status lookup failed' })
@@ -1158,7 +1181,12 @@ async function createServer() {
     }
     try {
       const result = await getMspProvider().getPaymentStatus(paymentId)
-      res.json(result) // { ok, paymentId, status?, settled?, orderId?, error? }
+      if (!result.ok) {
+        console.warn('[msp] payment-status not ok:', result.error)
+        res.json({ ok: false, paymentId, error: 'status lookup failed' })
+        return
+      }
+      res.json(result) // { ok, paymentId, status, settled, orderId }
     } catch (e) {
       console.error('[msp] payment-status failed:', errorSummary(e))
       res.json({ ok: false, paymentId, error: 'status lookup failed' })

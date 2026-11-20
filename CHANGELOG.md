@@ -5,6 +5,41 @@ All notable changes to the propeller-vue boilerplate are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.1] - 2026-11-20
+
+Follow-up to the 2026-11 security review (PWP-1120).
+
+### Security
+
+- **Logged-in buyers could work out the merchant's cost price** from a bulk-price tier: on a
+  `COST_PRICE_PLUS` tier, `discount.value` is the markup on cost. Discount records now keep only their ids,
+  dates, `quantityFrom` and type, for every viewer, in the proxy and in SSR; cart and order discounts
+  (numbers) are unchanged. `bulkCostPrices` is removed from every answer. (PWP-1124)
+- The proxy refuses, for every viewer, an alias on `discount`, on any field inside a discount record or a
+  discount fragment, and on `bulkCostPrices`. (PWP-1124)
+- `/api/mollie/payment-status` answers only the order's owner (the browser that placed it or its account);
+  anyone else gets the same answer as an unknown payment. (PWP-1127)
+- Both payment-status routes return a generic error and log the provider's message instead of sending it
+  to the browser. (PWP-1127)
+- create-payment passes the viewer's user id to the PSP only when that viewer placed the order. (PWP-1127)
+- **`contactRegister` runs only as an authorization manager's elevated call, or as a guest's
+  self-registration into the company its browser just created** (signed registration cookie), once.
+  Before, a guest could create a contact inside any existing company: the storefront key accepts any
+  `parentId`. Everything else is refused in the proxy, also when `contactRegister` is aliased or sent
+  next to other fields. (PWP-1145)
+
+### Fixed
+
+- The machines query of vue-ui (`machine_<n>: machine(...)`) is no longer refused as a foreign alias when
+  prices are hidden. (PWP-1124)
+- The proxy's viewer lookup gives up after 10 seconds instead of holding the request open. (PWP-1124)
+
+### Tests
+
+- The hand-written GraphQL queries (viewer, payment order, token refresh) are validated against a snapshot
+  of the Propeller schema (`frontend/src/server/__fixtures__/propeller-schema.graphql`, descriptions
+  stripped). Refresh it with `node scripts/update-propeller-schema.mjs <path-to-sdl>` from `frontend/`.
+
 ## [1.24.0] - 2026-11-19
 
 Security release: covers the 2026-11 security review (PWP-1120).

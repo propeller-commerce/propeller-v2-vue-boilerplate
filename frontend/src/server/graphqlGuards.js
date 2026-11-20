@@ -23,6 +23,11 @@ export function parseDocument(query) {
  * checks every SDK document against this list.
  */
 export const SDK_ALIASES = new Set(['urlId:categoryId'])
+// SDK_ALIASES plus vue-ui's machines query (`machine_<n>: machine(...)`).
+const isOwnAlias = (alias, field) =>
+  SDK_ALIASES.has(`${alias}:${field}`) || (field === 'machine' && /^machine_\d{1,3}$/.test(alias))
+
+const DISCOUNT_TYPES = new Set(['IDiscount', 'BulkCostPrice', 'BulkPrice', 'Discount'])
 
 /**
  * What the proxy refuses or treats specially, from one visit:
@@ -31,8 +36,9 @@ export const SDK_ALIASES = new Set(['urlId:categoryId'])
  * - `foreignAlias`: any alias the SDK doesn't use. hidePrices works on response
  *   keys, so an alias can move a price to a key it keeps (`p: price`,
  *   `priceData { per: list }`, `priceData: products { per: items { … } }`) (#4).
- * - `costPriceAlias`: an alias on a cost-price field. The proxy removes those by response
- *   key (withoutCostPrices), so an alias could carry one past it, for anyone.
+ * - `costPriceAlias`: an alias on a cost-price field or `discount`, or on any field inside
+ *   a discount record. withoutCostPrices works by response key, so an alias could carry a
+ *   cost past it, for anyone.
  * - `inlinePriceFilter`: a price filter or PRICE sort written into the document
  *   instead of the variables: `price: {…}` or `price: $v` inside an input object,
  *   a `PRICE` enum literal, or a sort `field: $v`. Counting results per price range
@@ -41,12 +47,30 @@ export const SDK_ALIASES = new Set(['urlId:categoryId'])
  */
 export function inspectDocument(doc) {
   const result = { introspection: false, foreignAlias: false, costPriceAlias: false, inlinePriceFilter: false }
+  let inDiscount = 0
+  let discountFragment = false
   visit(doc, {
-    [Kind.FIELD](node) {
-      const name = node.name.value
-      if (name === '__schema' || name === '__type') result.introspection = true
-      if (node.alias && !SDK_ALIASES.has(`${node.alias.value}:${name}`)) result.foreignAlias = true
-      if (node.alias && COST_PRICE_FIELDS.has(name)) result.costPriceAlias = true
+    [Kind.FIELD]: {
+      enter(node) {
+        const name = node.name.value
+        if (name === '__schema' || name === '__type') result.introspection = true
+        if (node.alias && !isOwnAlias(node.alias.value, name)) result.foreignAlias = true
+        if (node.alias && (COST_PRICE_FIELDS.has(name) || name === 'discount' || inDiscount || discountFragment)) {
+          result.costPriceAlias = true
+        }
+        if (name === 'discount') inDiscount++
+      },
+      leave(node) {
+        if (node.name.value === 'discount') inDiscount--
+      },
+    },
+    [Kind.FRAGMENT_DEFINITION]: {
+      enter(node) {
+        discountFragment = DISCOUNT_TYPES.has(node.typeCondition.name.value)
+      },
+      leave() {
+        discountFragment = false
+      },
     },
     [Kind.OBJECT_FIELD](node) {
       const name = node.name.value

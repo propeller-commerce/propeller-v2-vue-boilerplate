@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { print } from 'graphql'
+import { BREAK, Kind, print, visit } from 'graphql'
 import { signCookie, verifyCookie } from './signedCookie.js'
 import { createRateLimiter, formLimiter } from './rateLimit.js'
 
@@ -95,6 +95,36 @@ export function signRegistration(companyId, used = '') {
 /** `{ companyId, used }` from a valid registration cookie, else null. */
 export function verifyRegistration(cookie) {
   const value = verifyCookie(REGISTRATION_PURPOSE, cookie)
-  const match = value === null ? null : /^([1-9]\d{0,15})(?:\.([id]{1,2}))?$/.exec(value)
+  const match = value === null ? null : /^([1-9]\d{0,15})(?:\.([idc]{1,3}))?$/.exec(value)
   return match ? { companyId: Number(match[1]), used: match[2] ?? '' } : null
+}
+
+/** Cookie flag for the contact registered into the new company. */
+export const CONTACT_FLAG = 'c'
+
+/** Whether a contactRegister response created a contact (an anonymous one also carries partial errors). */
+export function registeredContact(json) {
+  return !!json?.data?.contactRegister
+}
+
+/** Whether `doc` selects contactRegister anywhere (aliases, several fields, fragments). */
+export function selectsContactRegister(doc) {
+  let found = false
+  visit(doc, {
+    [Kind.FIELD](node) {
+      if (node.name.value === 'contactRegister') {
+        found = true
+        return BREAK
+      }
+    },
+  })
+  return found
+}
+
+/**
+ * Whether an anonymous contactRegister is this browser's own self-registration: into the
+ * company it just created (signed cookie), once. The storefront key accepts any existing parentId.
+ */
+export function mayRegisterContact(parentId, { isAnonymous = false, registration = null } = {}) {
+  return isAnonymous && !!registration && parentId === registration.companyId && !registration.used.includes(CONTACT_FLAG)
 }

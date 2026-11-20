@@ -100,19 +100,44 @@ export function hidePrices(data) {
  * The merchant's cost price: never for a visitor or buyer, signed in or not, in any portal
  * mode. The storefront key answers them, and the SDK's product, listing, cart and order
  * documents select them; nothing in the shop displays them. `cost` is ProductPrice.cost
- * (`price.cost`, `bulkPrices[].cost`): the same number as `costPrices[0].value` for every
- * product checked, and the only field of that name in the schema (2026-11-19).
+ * (`price.cost`, `bulkPrices[].cost`), the only field of that name in the schema
+ * (2026-11-19); `bulkCostPrices` is the root query of the cost tiers.
  */
-export const COST_PRICE_FIELDS = new Set(['costPrice', 'costPrices', 'cost'])
+export const COST_PRICE_FIELDS = new Set(['costPrice', 'costPrices', 'cost', 'bulkCostPrices'])
 
-/** A copy of `data` without any COST_PRICE_FIELDS key, at any depth. */
+// A discount record keeps no amounts: on a COST_PRICE_PLUS tier its `value` is the markup on cost.
+const DISCOUNT_KEPT = new Set([
+  'id',
+  'createdAt',
+  'lastModifiedAt',
+  'quantityFrom',
+  'validFrom',
+  'validTo',
+  'priceId',
+  'pricesheetId',
+  'productId',
+  'categoryId',
+  'priceGroup',
+  'discountType',
+  '__typename',
+])
+
+const keptDiscount = (discount) =>
+  Object.fromEntries(Object.entries(discount).filter(([k, v]) => DISCOUNT_KEPT.has(k) && (v === null || typeof v !== 'object')))
+
+/** A copy of `data` without any COST_PRICE_FIELDS key, and with discount records reduced to DISCOUNT_KEPT. */
 export function withoutCostPrices(data) {
   if (Array.isArray(data)) return data.map(withoutCostPrices)
   if (!data || typeof data !== 'object') return data
   return Object.fromEntries(
     Object.entries(data)
       .filter(([key]) => !COST_PRICE_FIELDS.has(key))
-      .map(([key, child]) => [key, withoutCostPrices(child)]),
+      .map(([key, child]) => [
+        key,
+        key === 'discount' && child && typeof child === 'object' && !Array.isArray(child)
+          ? keptDiscount(child)
+          : withoutCostPrices(child),
+      ]),
   )
 }
 
